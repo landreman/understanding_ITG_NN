@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "itg_nn"
+version = "0.1.0"
+description = "Inference-only cyclic neural-network ensemble for GX ITG heat flux"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "h5py>=3.8",
+  "matplotlib>=3.7",
+  "numpy>=1.24",
+  "torch>=2.1",
+]
+
+[tool.setuptools]
+packages = ["itg_nn"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 88

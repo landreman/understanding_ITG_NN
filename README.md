@@ -1,2 +1,87 @@
-# understanding_ITG_NN
-Understanding neural networks for ITG turbulence
+# Inference for the ITG heat-flux neural-network ensemble
+
+This repository contains the inference-only form of the cyclic convolutional
+ensemble used to predict GX ion-temperature-gradient heat flux. Training,
+hyperparameter search, pickle readers, and unused architecture branches have
+been removed. The inference pipeline reads the metadata-rich HDF5 dataset
+directly.
+
+## Contents
+
+- `itg_nn/`: the model, HDF5 reader, batched ensemble inference, and plotting
+  code.
+- `models/cyclic_ensemble_pre2.pt`: the 100 best legacy state dictionaries,
+  consolidated with only the architecture metadata required for inference.
+- `scripts/build_ensemble_checkpoint.py`: the reproducible one-time converter
+  from the legacy DeepHyper results and state dictionaries.
+- `tests/`: lightweight unit tests.
+
+The HDF5 dataset is intentionally external because it is about 659 MB. Point
+the commands below to your local copy; `*.h5` is ignored by git.
+
+## Environment
+
+The existing conda environment has all required runtime packages, so no
+package changes are needed:
+
+```bash
+conda run -n 20240629-01-ML python -m pytest
+```
+
+## Run inference
+
+This example predicts the first 1,000 varied-gradient rows and writes a
+compressed NumPy archive containing the mean, model-to-model standard
+deviation, one-standard-deviation flux interval, row indices, and member IDs:
+
+```bash
+conda run -n 20240629-01-ML python -m itg_nn.infer \
+  /path/to/20250102-01_GX_stellarator_dataset.h5 \
+  output/predictions_rows_0_1000.npz \
+  --start 0 --stop 1000 --gradient-set varied
+```
+
+Omit `--stop` to process every row. Use `--gradient-set fixed` for the fixed
+temperature- and density-gradient simulations. `--device auto` prefers CUDA,
+then Apple MPS, then CPU; pass `--device cpu` for deterministic CPU inference.
+
+The networks predict `max(log(Q), -2)`. The output archive includes both this
+native target and `exp(prediction)` in gyro-Bohm units. Its lower and upper
+bounds describe ensemble spread, not calibrated confidence intervals.
+
+For varied-gradient rows, the model receives the physical `a_over_LT` value
+stored in HDF5. During legacy training, fixed-gradient samples were marked by
+negating this feature (so their value was -3 rather than +3). The fixed-set
+reader preserves that learned convention and records the actual model inputs
+as `model_a_over_LT` and `model_a_over_Ln` in the output archive.
+
+## Reproduce the reference figure
+
+```bash
+conda run -n 20240629-01-ML python -m itg_nn.reference_figure \
+  /path/to/20250102-01_GX_stellarator_dataset.h5 \
+  --device cpu \
+  --output output/pdf/pred_vs_actual_plot_pre2.pdf
+```
+
+The script reconstructs the seeded 80/10/test split and selects only the
+varied-gradient test rows, matching the legacy evaluation cohort without a
+serialized dataset cache.
+
+## Data-field mapping
+
+The model inputs are HDF5 `raw_feature_tensor`,
+`*/a_over_LT`, and `*/a_over_Ln`. The target is `*/Q_avgs`. Direct comparison
+with the old pickle files shows that `Q_avgs` is exactly equal to the legacy
+field named `Q_avgs_without_FSA_grad_x`; the old field name was misleading,
+while the HDF5 name and description correctly record the normalization.
+
+## Large files
+
+`train_val_test_dataset_5_pre_2.pth` is not needed for inference or reference
+figure reproduction. It is a 518 MB serialization of feature tensors and a
+random split, not learned weights. The split is reproduced from the HDF5 file
+using seed 42, so the cache should not be copied or committed.
+
+If the HDF5 dataset is later added with Git LFS, remove or narrow the `*.h5`
+ignore rule first and track the intended filename explicitly with LFS.

@@ -1,0 +1,67 @@
+from __future__ import annotations
+
+import h5py
+import numpy as np
+import pytest
+import torch
+
+from itg_nn.data import clipped_log_heat_flux, load_hdf5_rows
+from itg_nn.ensemble import EnsemblePrediction
+from itg_nn.model import Architecture, CyclicInvariantNet
+from itg_nn.plotting import r2_score
+
+
+def test_clipped_log_heat_flux() -> None:
+    result = clipped_log_heat_flux(np.array([np.exp(-3), 1.0, np.e]))
+    np.testing.assert_allclose(result, [-2.0, 0.0, 1.0])
+
+
+def test_clipped_log_rejects_nonpositive_flux() -> None:
+    with pytest.raises(ValueError, match="positive"):
+        clipped_log_heat_flux(np.array([0.0]))
+
+
+def test_fixed_gradient_marker_is_preserved(tmp_path) -> None:
+    hdf5_path = tmp_path / "sample.h5"
+    with h5py.File(hdf5_path, "w") as h5_file:
+        h5_file.create_dataset("raw_feature_tensor", data=np.zeros((2, 96, 7)))
+        group = h5_file.create_group("fixed_gradient_simulations")
+        group.create_dataset("a_over_LT", data=np.array([3.0, 3.0]))
+        group.create_dataset("a_over_Ln", data=np.array([0.9, 0.9]))
+        group.create_dataset("Q_avgs", data=np.array([1.0, np.e]))
+
+    data = load_hdf5_rows(
+        hdf5_path, [1], gradient_set="fixed", include_targets=True
+    )
+    assert data.a_over_lt.item() == pytest.approx(-3.0)
+    assert data.a_over_ln.item() == pytest.approx(0.9)
+    assert data.actual_log_heat_flux is not None
+    assert data.actual_log_heat_flux.item() == pytest.approx(1.0)
+
+
+def test_inference_model_output_shape() -> None:
+    architecture = Architecture(
+        kernel_sizes=(3, 3, 3, 3, 3),
+        convolution_channels=(4, 5, 6, 7, 8),
+        dense_dimensions=(9, 10),
+    )
+    model = CyclicInvariantNet(architecture).eval()
+    with torch.inference_mode():
+        result = model(torch.zeros(2, 96, 7), torch.ones(2), torch.ones(2))
+    assert result.shape == (2, 1)
+
+
+def test_r2_score() -> None:
+    actual = np.array([1.0, 2.0, 3.0])
+    assert r2_score(actual, actual) == pytest.approx(1.0)
+
+
+def test_prediction_inverse_transform() -> None:
+    prediction = EnsemblePrediction(
+        mean_log_heat_flux=np.array([0.0], dtype=np.float32),
+        std_log_heat_flux=np.array([np.log(2)], dtype=np.float32),
+        member_count=3,
+    )
+    assert prediction.mean_heat_flux[0] == pytest.approx(1.0)
+    assert prediction.lower_heat_flux[0] == pytest.approx(0.5)
+    assert prediction.upper_heat_flux[0] == pytest.approx(2.0)

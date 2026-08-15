@@ -216,3 +216,11 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Large external scientific data and reproducible dataset caches
+*.h5
+train_val_test_dataset_*.pth
+
+# Generated inference arrays and temporary PDF renders
+output/*.npz
+tmp/
