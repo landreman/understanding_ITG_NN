@@ -25,7 +25,15 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Reproduce the pre2 ensemble validation figure from HDF5."
     )
-    parser.add_argument("hdf5_path", type=Path)
+    parser.add_argument(
+        "hdf5_path",
+        type=Path,
+        nargs="?",
+        default=Path(
+            "/Users/mattland/20260523-01-files_for_Kosmos_interpreting_neural_networks/"
+            "20250102-01_GX_stellarator_dataset.h5"
+        ),
+    )
     parser.add_argument("--checkpoint", type=Path, default=DEFAULT_CHECKPOINT)
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
     parser.add_argument("--predictions", type=Path)
