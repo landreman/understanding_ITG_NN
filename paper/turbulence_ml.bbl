@@ -1,0 +1,411 @@
+\begin{thebibliography}{60}
+\expandafter\ifx\csname natexlab\endcsname\relax\def\natexlab#1{#1}\fi
+\def\au#1{#1} \def\ed#1{#1} \def\yr#1{#1}\def\at#1{#1}\def\jt#1{\textit{#1}}
+  \def\bt#1{#1}\def\bvol#1{\textbf{#1}} \def\vol#1{#1} \def\pg#1{#1}
+  \def\publ#1{#1}\def\arxiv#1{#1}\def\org#1{#1}\def\st#1{\textit{#1}}
+
+\bibitem[Abbate {\em et~al.\/}(2021)Abbate, Conlin \& Kolemen]{abbate2021data}
+{\sc \au{Abbate, Joseph}, \au{Conlin, Rory} \& \au{Kolemen, Egemen}} \yr{2021}
+  \at{Data-driven profile prediction for {DIII-D}}.  \jt{Nuclear Fusion}
+  \bvol{61}~(4),  \pg{046027}.
+
+\bibitem[Balaprakash {\em et~al.\/}(2018)Balaprakash, Salim, Uram, Vishwanath
+  \& Wild]{balaprakash2018deephyper}
+{\sc \au{Balaprakash, Prasanna}, \au{Salim, Michael}, \au{Uram, Thomas~D},
+  \au{Vishwanath, Venkat} \& \au{Wild, Stefan~M}} \yr{2018} Deephyper:
+  Asynchronous hyperparameter search for deep neural networks.  \bt{In {\em
+  2018 IEEE 25th international conference on high performance computing
+  (HiPC)\/}},  \pg{pp. 42--51}. IEEE.
+
+\bibitem[Barnes {\em et~al.\/}(2011)Barnes, Parra \&
+  Schekochihin]{barnes2011critically}
+{\sc \au{Barnes, M}, \au{Parra, FI} \& \au{Schekochihin, AA}} \yr{2011}
+  \at{Critically balanced ion temperature gradient turbulence in fusion
+  plasmas}.  \jt{Physical Review Letters}  \bvol{107}~(11),  \pg{115003}.
+
+\bibitem[Beer {\em et~al.\/}(1995)Beer, Cowley \& Hammett]{beer1995field}
+{\sc \au{Beer, Michael~Alan}, \au{Cowley, SC} \& \au{Hammett, GW}} \yr{1995}
+  \at{Field-aligned coordinates for nonlinear simulations of tokamak
+  turbulence}.  \jt{Physics of Plasmas}  \bvol{2}~(7),  \pg{2687--2700}.
+
+\bibitem[Beurskens {\em et~al.\/}(2021)Beurskens, Bozhenkov, Ford,
+  Xanthopoulos, Zocco, Turkin, Alonso, Beidler, Calvo, Carralero {\em
+  et~al.\/}]{beurskens2021ion}
+{\sc \au{Beurskens, Marc~NA}, \au{Bozhenkov, Sergey~A}, \au{Ford, O},
+  \au{Xanthopoulos, Pavlos}, \au{Zocco, Alessandro}, \au{Turkin, Yuri},
+  \au{Alonso, A}, \au{Beidler, Craig}, \au{Calvo, I}, \au{Carralero, Daniel} \&
+  \au{others}} \yr{2021}  \at{Ion temperature clamping in wendelstein 7-x
+  electron cyclotron heated plasmas}.  \jt{Nuclear Fusion}  \bvol{61}~(11),
+  \pg{116072}.
+
+\bibitem[Boyer \& Chadwick(2021)]{boyer2021prediction}
+{\sc \au{Boyer, Mark~D} \& \au{Chadwick, Jason}} \yr{2021}  \at{Prediction of
+  electron density and pressure profile shapes on nstx-u using neural
+  networks}.  \jt{Nuclear Fusion}  \bvol{61}~(4),  \pg{046024}.
+
+\bibitem[Brunton {\em et~al.\/}(2016)Brunton, Proctor \&
+  Kutz]{brunton2016discovering}
+{\sc \au{Brunton, Steven~L}, \au{Proctor, Joshua~L} \& \au{Kutz, J~Nathan}}
+  \yr{2016}  \at{Discovering governing equations from data by sparse
+  identification of nonlinear dynamical systems}.  \jt{Proceedings of the
+  national academy of sciences}  \bvol{113}~(15),  \pg{3932--3937}.
+
+\bibitem[Chen \& Guestrin(2016)]{chen2016xgboost}
+{\sc \au{Chen, Tianqi} \& \au{Guestrin, Carlos}} \yr{2016} Xgboost: A scalable
+  tree boosting system.  \bt{In {\em Proceedings of the 22nd acm sigkdd
+  international conference on knowledge discovery and data mining\/}},  \pg{pp.
+  785--794}.
+
+\bibitem[Chen {\em et~al.\/}(2003)Chen, Parker, Cohen, Dimits, Nevins,
+  Shumaker, Decyk \& Leboeuf]{chen2003simulations}
+{\sc \au{Chen, Y}, \au{Parker, SE}, \au{Cohen, BI}, \au{Dimits, AM},
+  \au{Nevins, WM}, \au{Shumaker, D}, \au{Decyk, VK} \& \au{Leboeuf, JN}}
+  \yr{2003}  \at{Simulations of turbulent transport with kinetic electrons and
+  electromagnetic effects}.  \jt{Nuclear fusion}  \bvol{43}~(10),  \pg{1121}.
+
+\bibitem[Citrin {\em et~al.\/}(2015)Citrin, Breton, Felici, Imbeaux, Aniel,
+  Artaud, Baiocchi, Bourdelle, Camenen \& Garcia]{citrin2015real}
+{\sc \au{Citrin, Jonathan}, \au{Breton, Sarah}, \au{Felici, Federico},
+  \au{Imbeaux, Frederic}, \au{Aniel, T}, \au{Artaud, JF}, \au{Baiocchi, B},
+  \au{Bourdelle, C}, \au{Camenen, Y} \& \au{Garcia, J}} \yr{2015}
+  \at{Real-time capable first principle based modelling of tokamak turbulent
+  transport}.  \jt{Nuclear Fusion}  \bvol{55}~(9),  \pg{092001}.
+
+\bibitem[Curvo {\em et~al.\/}(2024)Curvo, Ferreira \& Jorge]{curvo2024using}
+{\sc \au{Curvo, P}, \au{Ferreira, DR} \& \au{Jorge, R}} \yr{2024}  \at{Using
+  deep learning to design high aspect ratio fusion devices}.  \jt{arXiv
+  preprint arXiv:2409.00564} .
+
+\bibitem[Dudt \& Kolemen(2020)]{dudt2020desc}
+{\sc \au{Dudt, DW} \& \au{Kolemen, E}} \yr{2020}  \at{Desc: A stellarator
+  equilibrium solver}.  \jt{Physics of Plasmas}  \bvol{27}~(10).
+
+\bibitem[Efroymson(1960)]{efroymson1960}
+{\sc \au{Efroymson, Michael~Alin}} \yr{1960}  \at{Multiple regression
+  analysis}.  \jt{Mathematical methods for digital computers}  \pg{pp.
+  191--203}.
+
+\bibitem[Egel{\'e} {\em et~al.\/}(2023)Egel{\'e}, Guyon, Vishwanath \&
+  Balaprakash]{egele2023asynchronous}
+{\sc \au{Egel{\'e}, Romain}, \au{Guyon, Isabelle}, \au{Vishwanath, Venkatram}
+  \& \au{Balaprakash, Prasanna}} \yr{2023} Asynchronous decentralized bayesian
+  optimization for large scale hyperparameter optimization.  \bt{In {\em 2023
+  IEEE 19th International Conference on e-Science (e-Science)\/}},  \pg{pp.
+  1--10}. IEEE.
+
+\bibitem[Frieman \& Chen(1982)]{frieman1982nonlinear}
+{\sc \au{Frieman, EA} \& \au{Chen, Liu}} \yr{1982}  \at{Nonlinear gyrokinetic
+  equations for low-frequency electromagnetic waves in general plasma
+  equilibria}.  \jt{The Physics of Fluids}  \bvol{25}~(3),  \pg{502--508}.
+
+\bibitem[Giuliani(2024)]{giuliani2024direct}
+{\sc \au{Giuliani, Andrew}} \yr{2024}  \at{Direct stellarator coil design using
+  global optimization: application to a comprehensive exploration of
+  quasi-axisymmetric devices}.  \jt{Journal of Plasma Physics}  \bvol{90}~(3),
+  \pg{905900303}.
+
+\bibitem[Giuliani {\em et~al.\/}(2024)Giuliani, Rodr{\'\i}guez \&
+  Spivak]{giuliani2024comprehensive}
+{\sc \au{Giuliani, Andrew}, \au{Rodr{\'\i}guez, Eduardo} \& \au{Spivak,
+  Marina}} \yr{2024}  \at{A comprehensive exploration of quasisymmetric
+  stellarators and their coil sets}.  \jt{arXiv preprint arXiv:2409.04826} .
+
+\bibitem[Goodman {\em et~al.\/}(2024)Goodman, Xanthopoulos, Plunk, Smith,
+  N{\"u}hrenberg, Beidler, Henneberg, Roberg-Clark, Drevlak \&
+  Helander]{goodman2024quasi}
+{\sc \au{Goodman, Alan~G}, \au{Xanthopoulos, Pavlos}, \au{Plunk, Gabriel~G},
+  \au{Smith, H{\aa}kan}, \au{N{\"u}hrenberg, Carolin}, \au{Beidler, Craig~D},
+  \au{Henneberg, Sophia~A}, \au{Roberg-Clark, Gareth}, \au{Drevlak, Michael} \&
+  \au{Helander, Per}} \yr{2024}  \at{Quasi-isodynamic stellarators with low
+  turbulence as fusion reactor candidates}.  \jt{PRX Energy}  \bvol{3}~(2),
+  \pg{023010}.
+
+\bibitem[Greene \& Johnson(1968)]{greene1968interchange}
+{\sc \au{Greene, John~M} \& \au{Johnson, John~L}} \yr{1968}  \at{Interchange
+  instabilities in ideal hydromagnetic theory}.  \jt{Plasma Physics}
+  \bvol{10}~(8),  \pg{729}.
+
+\bibitem[Hegna {\em et~al.\/}(2018)Hegna, Terry \& Faber]{hegna2018theory}
+{\sc \au{Hegna, Chris~C}, \au{Terry, Paul~W} \& \au{Faber, Ben~J}} \yr{2018}
+  \at{Theory of itg turbulent saturation in stellarators: identifying
+  mechanisms to reduce turbulent transport}.  \jt{Physics of Plasmas}
+  \bvol{25}~(2).
+
+\bibitem[Hirshman \& Whitson(1983)]{hirshman1983steepest}
+{\sc \au{Hirshman, SP} \& \au{Whitson, JC}} \yr{1983}  \at{Steepest-descent
+  moment method for three-dimensional magnetohydrodynamic equilibria}.  \jt{The
+  Physics of Fluids}  \bvol{26}~(12),  \pg{3553--3568}.
+
+\bibitem[Honda \& Narita(2019)]{honda2019machine}
+{\sc \au{Honda, M} \& \au{Narita, E}} \yr{2019}  \at{Machine-learning assisted
+  steady-state profile predictions using global optimization techniques}.
+  \jt{Physics of Plasmas}  \bvol{26}~(10).
+
+\bibitem[Jorge {\em et~al.\/}(2024)Jorge, Dorland, Kim, Landreman, Mandell,
+  Merlo \& Qian]{Jorge2023}
+{\sc \au{Jorge, R}, \au{Dorland, W}, \au{Kim, P}, \au{Landreman, M},
+  \au{Mandell, N~R}, \au{Merlo, G} \& \au{Qian, T}} \yr{2024}  \at{Direct
+  microstability optimization of stellarator devices}.  \jt{Physical Review E}
+  \bvol{110},  \pg{035201}.
+
+\bibitem[Jorge \& Landreman(2020)]{jorge2020use}
+{\sc \au{Jorge, Rogerio} \& \au{Landreman, Matt}} \yr{2020}  \at{The use of
+  near-axis magnetic fields for stellarator turbulence simulations}.
+  \jt{Plasma Physics and Controlled Fusion}  \bvol{63}~(1),  \pg{014001}.
+
+\bibitem[Kappel {\em et~al.\/}(2024)Kappel, Landreman \&
+  Malhotra]{kappel2024magnetic}
+{\sc \au{Kappel, John}, \au{Landreman, Matt} \& \au{Malhotra, Dhairya}}
+  \yr{2024}  \at{The magnetic gradient scale length explains why certain
+  plasmas require close external magnetic coils}.  \jt{Plasma Physics and
+  Controlled Fusion}  \bvol{66}~(2),  \pg{025018}.
+
+\bibitem[Ke {\em et~al.\/}(2017)Ke, Meng, Finley, Wang, Chen, Ma, Ye \&
+  Liu]{ke2017lightgbm}
+{\sc \au{Ke, Guolin}, \au{Meng, Qi}, \au{Finley, Thomas}, \au{Wang, Taifeng},
+  \au{Chen, Wei}, \au{Ma, Weidong}, \au{Ye, Qiwei} \& \au{Liu, Tie-Yan}}
+  \yr{2017}  \at{Lightgbm: A highly efficient gradient boosting decision tree}.
+   \jt{Advances in neural information processing systems}  \bvol{30}.
+
+\bibitem[Koza(1994)]{koza1994genetic}
+{\sc \au{Koza, John~R}} \yr{1994}  \at{Genetic programming as a means for
+  programming computers by natural selection}.  \jt{Statistics and computing}
+  \bvol{4},  \pg{87--112}.
+
+\bibitem[Kruskal \& Kulsrud(1958)]{kruskal1958equilibrium}
+{\sc \au{Kruskal, MD} \& \au{Kulsrud, RM}} \yr{1958}  \at{Equilibrium of a
+  magnetically confined plasma in a toroid}.  \jt{Physics of Fluids}
+  \bvol{1}~(4),  \pg{265--274}.
+
+\bibitem[Landreman(2025)]{zenodo}
+{\sc \au{Landreman, M.}} \at{ \yr{2025} }
+  \jt{\url{https://doi.org/10.5281/zenodo.14867776}} .
+
+\bibitem[Li {\em et~al.\/}(2024)Li, Wang, Fu, Wang, Wang \&
+  Li]{li2024surrogate}
+{\sc \au{Li, H}, \au{Wang, L}, \au{Fu, YL}, \au{Wang, ZX}, \au{Wang, TB} \&
+  \au{Li, JQ}} \yr{2024}  \at{Surrogate model of turbulent transport in fusion
+  plasmas using machine learning}.  \jt{Nuclear Fusion}  \bvol{65}~(1),
+  \pg{016015}.
+
+\bibitem[Lipovetsky \& Conklin(2001)]{lipovetsky2001analysis}
+{\sc \au{Lipovetsky, Stan} \& \au{Conklin, Michael}} \yr{2001}  \at{Analysis of
+  regression in game theory approach}.  \jt{Applied stochastic models in
+  business and industry}  \bvol{17}~(4),  \pg{319--330}.
+
+\bibitem[Liu {\em et~al.\/}(2024)Liu, Wang, Vaidya, Ruehle, Halverson,
+  Solja{\v{c}}i{\'c}, Hou \& Tegmark]{liu2024kan}
+{\sc \au{Liu, Ziming}, \au{Wang, Yixuan}, \au{Vaidya, Sachin}, \au{Ruehle,
+  Fabian}, \au{Halverson, James}, \au{Solja{\v{c}}i{\'c}, Marin}, \au{Hou,
+  Thomas~Y} \& \au{Tegmark, Max}} \yr{2024}  \at{Kan: Kolmogorov-arnold
+  networks}.  \jt{arXiv preprint arXiv:2404.19756} .
+
+\bibitem[Lundberg {\em et~al.\/}(2020)Lundberg, Erion, Chen, DeGrave, Prutkin,
+  Nair, Katz, Himmelfarb, Bansal \& Lee]{lundberg2020local2global}
+{\sc \au{Lundberg, Scott~M.}, \au{Erion, Gabriel}, \au{Chen, Hugh},
+  \au{DeGrave, Alex}, \au{Prutkin, Jordan~M.}, \au{Nair, Bala}, \au{Katz,
+  Ronit}, \au{Himmelfarb, Jonathan}, \au{Bansal, Nisha} \& \au{Lee, Su-In}}
+  \yr{2020}  \at{From local explanations to global understanding with
+  explainable ai for trees}.  \jt{Nature Machine Intelligence}  \bvol{2}~(1),
+  \pg{2522--5839}.
+
+\bibitem[Lundberg \& Lee(2017)]{NIPS2017_7062}
+{\sc \au{Lundberg, Scott~M} \& \au{Lee, Su-In}} \yr{2017}  \at{A unified
+  approach to interpreting model predictions}.  \bt{In {\em Advances in Neural
+  Information Processing Systems 30\/} (ed. \ed{I.~Guyon, U.~V. Luxburg,
+  S.~Bengio, H.~Wallach, R.~Fergus, S.~Vishwanathan \& R.~Garnett})},  \pg{pp.
+  4765--4774}.  \publ{Curran Associates, Inc.}
+
+\bibitem[Lunsford {\em et~al.\/}(2021)Lunsford, Killer, Nagy, Gates, Klinger,
+  Dinklage, Satheeswaran, Kocsis, Lazerson, Nespoli {\em
+  et~al.\/}]{lunsford2021characterization}
+{\sc \au{Lunsford, R}, \au{Killer, C}, \au{Nagy, A}, \au{Gates, DA},
+  \au{Klinger, T}, \au{Dinklage, A}, \au{Satheeswaran, G}, \au{Kocsis, G},
+  \au{Lazerson, SA}, \au{Nespoli, F} \& \au{others}} \yr{2021}
+  \at{Characterization of injection and confinement improvement through
+  impurity induced profile modifications on the wendelstein 7-x stellarator}.
+  \jt{Physics of Plasmas}  \bvol{28}~(8).
+
+\bibitem[Mackenbach {\em et~al.\/}(2022)Mackenbach, Proll \&
+  Helander]{mackenbach2022available}
+{\sc \au{Mackenbach, RJJ}, \au{Proll, Josefine~HE} \& \au{Helander, P}}
+  \yr{2022}  \at{Available energy of trapped electrons and its relation to
+  turbulent transport}.  \jt{Physical Review Letters}  \bvol{128}~(17),
+  \pg{175001}.
+
+\bibitem[Mandell {\em et~al.\/}(2024)Mandell, Dorland, Abel, Gaur, Kim, Martin
+  \& Qian]{mandell2024gx}
+{\sc \au{Mandell, NR}, \au{Dorland, William}, \au{Abel, Ian}, \au{Gaur, R},
+  \au{Kim, P}, \au{Martin, M} \& \au{Qian, T}} \yr{2024}  \at{Gx: a gpu-native
+  gyrokinetic turbulence code for tokamak and stellarator design}.  \jt{Journal
+  of Plasma Physics}  \bvol{90}~(4),  \pg{905900402}.
+
+\bibitem[Martin {\em et~al.\/}(2018)Martin, Landreman, Xanthopoulos, Mandell \&
+  Dorland]{martin2018parallel}
+{\sc \au{Martin, Mike~F}, \au{Landreman, Matt}, \au{Xanthopoulos, Pavlos},
+  \au{Mandell, Noah~R} \& \au{Dorland, William}} \yr{2018}  \at{The parallel
+  boundary condition for turbulence simulations in low magnetic shear devices}.
+   \jt{Plasma Physics and Controlled Fusion}  \bvol{60}~(9),  \pg{095008}.
+
+\bibitem[McKinney {\em et~al.\/}(2019)McKinney, Pueschel, Faber, Hegna,
+  Talmadge, Anderson, Mynick \& Xanthopoulos]{mckinney2019comparison}
+{\sc \au{McKinney, IJ}, \au{Pueschel, MJ}, \au{Faber, BJ}, \au{Hegna, CC},
+  \au{Talmadge, JN}, \au{Anderson, DT}, \au{Mynick, HE} \& \au{Xanthopoulos,
+  P}} \yr{2019}  \at{A comparison of turbulent transport in a quasi-helical and
+  a quasi-axisymmetric stellarator}.  \jt{Journal of Plasma Physics}
+  \bvol{85}~(5),  \pg{905850503}.
+
+\bibitem[Meneghini {\em et~al.\/}(2014)Meneghini, Luna, Smith \&
+  Lao]{meneghini2014modeling}
+{\sc \au{Meneghini, Orso}, \au{Luna, Christopher~J}, \au{Smith, Sterling~P} \&
+  \au{Lao, Lang~L}} \yr{2014}  \at{Modeling of transport phenomena in tokamak
+  plasmas with neural networks}.  \jt{Physics of Plasmas}  \bvol{21}~(6).
+
+\bibitem[Meneghini {\em et~al.\/}(2017)Meneghini, Smith, Snyder, Staebler,
+  Candy, Belli, Lao, Kostuk, Luce, Luda {\em et~al.\/}]{meneghini2017self}
+{\sc \au{Meneghini, Orso}, \au{Smith, Sterling~P}, \au{Snyder, Philip~B},
+  \au{Staebler, Gary~M}, \au{Candy, Jeffrey}, \au{Belli, E}, \au{Lao, L},
+  \au{Kostuk, Mark}, \au{Luce, T}, \au{Luda, Teobaldo} \& \au{others}}
+  \yr{2017}  \at{Self-consistent core-pedestal transport simulations with
+  neural network accelerated models}.  \jt{Nuclear Fusion}  \bvol{57}~(8),
+  \pg{086034}.
+
+\bibitem[Merlo {\em et~al.\/}(2021)Merlo, B{\"o}ckenhoff, Schilling, H{\"o}fel,
+  Kwak, Svensson, Pavone, Lazerson, Pedersen {\em et~al.\/}]{merlo2021proof}
+{\sc \au{Merlo, Andrea}, \au{B{\"o}ckenhoff, Daniel}, \au{Schilling, Jonathan},
+  \au{H{\"o}fel, Udo}, \au{Kwak, Sehyun}, \au{Svensson, Jakob}, \au{Pavone,
+  Andrea}, \au{Lazerson, Samuel~Aaron}, \au{Pedersen, Thomas~Sunn} \&
+  \au{others}} \yr{2021}  \at{Proof of concept of a fast surrogate model of the
+  vmec code via neural networks in wendelstein 7-x scenarios}.  \jt{Nuclear
+  Fusion}  \bvol{61}~(9),  \pg{096039}.
+
+\bibitem[Mynick {\em et~al.\/}(2010)Mynick, Pomphrey \&
+  Xanthopoulos]{mynick2010optimizing}
+{\sc \au{Mynick, HE}, \au{Pomphrey, N} \& \au{Xanthopoulos, P}} \yr{2010}
+  \at{Optimizing stellarators for turbulent transport}.  \jt{Physical review
+  letters}  \bvol{105}~(9),  \pg{095004}.
+
+\bibitem[Mynick {\em et~al.\/}(2014)Mynick, Xanthopoulos, Faber, Lucia, Rorvig
+  \& Talmadge]{mynick2014turbulent}
+{\sc \au{Mynick, H}, \au{Xanthopoulos, P}, \au{Faber, B}, \au{Lucia, M},
+  \au{Rorvig, M} \& \au{Talmadge, JN}} \yr{2014}  \at{Turbulent optimization of
+  toroidal configurations}.  \jt{Plasma Physics and Controlled Fusion}
+  \bvol{56}~(9),  \pg{094001}.
+
+\bibitem[Nakata \& Matsuoka(2022)]{NAKATA2022}
+{\sc \au{Nakata, Motoki} \& \au{Matsuoka, Seikichi}} \yr{2022}  \at{Impact of
+  geodesic curvature on zonal flow generation in magnetically conned plasmas}.
+  \jt{Plasma and Fusion Research}  \bvol{17},  \pg{1203077--1203077}.
+
+\bibitem[Nakayama {\em et~al.\/}(2023)Nakayama, Nakata, Honda, Narita, Nunami
+  \& Matsuoka]{nakayama2023simplified}
+{\sc \au{Nakayama, Tomonari}, \au{Nakata, Motoki}, \au{Honda, Mitsuru},
+  \au{Narita, Emi}, \au{Nunami, Masanori} \& \au{Matsuoka, Seikichi}} \yr{2023}
+   \at{A simplified model to estimate nonlinear turbulent transport by linear
+  dynamics in plasma turbulence}.  \jt{Scientific Reports}  \bvol{13}~(1),
+  \pg{2319}.
+
+\bibitem[Narita {\em et~al.\/}(2019)Narita, Honda, Nakata, Yoshida, Hayashi \&
+  Takenaga]{narita2019neural}
+{\sc \au{Narita, E}, \au{Honda, M}, \au{Nakata, M}, \au{Yoshida, M},
+  \au{Hayashi, N} \& \au{Takenaga, H}} \yr{2019}  \at{Neural-network-based
+  semi-empirical turbulent particle transport modelling founded on gyrokinetic
+  analyses of jt-60u plasmas}.  \jt{Nuclear Fusion}  \bvol{59}~(10),
+  \pg{106018}.
+
+\bibitem[Pedregosa {\em et~al.\/}(2011)Pedregosa, Varoquaux, Gramfort, Michel,
+  Thirion, Grisel, Blondel, Prettenhofer, Weiss, Dubourg, Vanderplas, Passos,
+  Cournapeau, Brucher, Perrot \& Duchesnay]{scikit-learn}
+{\sc \au{Pedregosa, F.}, \au{Varoquaux, G.}, \au{Gramfort, A.}, \au{Michel,
+  V.}, \au{Thirion, B.}, \au{Grisel, O.}, \au{Blondel, M.}, \au{Prettenhofer,
+  P.}, \au{Weiss, R.}, \au{Dubourg, V.}, \au{Vanderplas, J.}, \au{Passos, A.},
+  \au{Cournapeau, D.}, \au{Brucher, M.}, \au{Perrot, M.} \& \au{Duchesnay, E.}}
+  \yr{2011}  \at{Scikit-learn: Machine learning in {P}ython}.  \jt{Journal of
+  Machine Learning Research}  \bvol{12},  \pg{2825--2830}.
+
+\bibitem[van~de Plassche {\em et~al.\/}(2020)van~de Plassche, Citrin,
+  Bourdelle, Camenen, Casson, Dagnelie, Felici, Ho, Van~Mulders \&
+  Contributors]{van2020fast}
+{\sc \au{van~de Plassche, Karel~Lucas}, \au{Citrin, Jonathan}, \au{Bourdelle,
+  Clarisse}, \au{Camenen, Yann}, \au{Casson, Francis~J}, \au{Dagnelie,
+  Victor~I}, \au{Felici, Federico}, \au{Ho, Aaron}, \au{Van~Mulders, Simon} \&
+  \au{Contributors, JET}} \yr{2020}  \at{Fast modeling of turbulent transport
+  in fusion plasmas using neural networks}.  \jt{Physics of Plasmas}
+  \bvol{27}~(2).
+
+\bibitem[Proll {\em et~al.\/}(2015)Proll, Mynick, Xanthopoulos, Lazerson \&
+  Faber]{proll2015tem}
+{\sc \au{Proll, JHE}, \au{Mynick, HE}, \au{Xanthopoulos, P}, \au{Lazerson, SA}
+  \& \au{Faber, BJ}} \yr{2015}  \at{Tem turbulence optimisation in
+  stellarators}.  \jt{Plasma Physics and Controlled Fusion}  \bvol{58}~(1),
+  \pg{014006}.
+
+\bibitem[Roberg-Clark {\em et~al.\/}(2023)Roberg-Clark, Plunk, Xanthopoulos,
+  N{\"u}hrenberg, Henneberg \& Smith]{roberg2023critical}
+{\sc \au{Roberg-Clark, GT}, \au{Plunk, GG}, \au{Xanthopoulos, P},
+  \au{N{\"u}hrenberg, C}, \au{Henneberg, SA} \& \au{Smith, HM}} \yr{2023}
+  \at{Critical gradient turbulence optimization toward a compact stellarator
+  reactor concept}.  \jt{Physical Review Research}  \bvol{5}~(3),
+  \pg{L032030}.
+
+\bibitem[Rosenbluth \& Hinton(1998)]{rosenbluth1998poloidal}
+{\sc \au{Rosenbluth, MN} \& \au{Hinton, FL}} \yr{1998}  \at{Poloidal flow
+  driven by ion-temperature-gradient turbulence in tokamaks}.  \jt{Physical
+  review letters}  \bvol{80}~(4),  \pg{724}.
+
+\bibitem[Shapley(1953)]{shapley1953value}
+{\sc \au{Shapley, Lloyd~S}} \yr{1953}  \at{A value for n-person games}.
+  \jt{Contribution to the Theory of Games}  \bvol{2}.
+
+\bibitem[Stroteich {\em et~al.\/}(2022)Stroteich, Xanthopoulos, Plunk \&
+  Schneider]{stroteich2022seeking}
+{\sc \au{Stroteich, Sven}, \au{Xanthopoulos, Pavlos}, \au{Plunk, Gabriel} \&
+  \au{Schneider, Ralf}} \yr{2022}  \at{Seeking turbulence optimized
+  configurations for the wendelstein 7-x stellarator: ion temperature gradient
+  and electron temperature gradient turbulence}.  \jt{Journal of Plasma
+  Physics}  \bvol{88}~(5),  \pg{175880501}.
+
+\bibitem[Wakasa {\em et~al.\/}(2007)Wakasa, Murakami, Itagaki \&
+  Oikawa]{wakasa2007construction}
+{\sc \au{Wakasa, Arimitsu}, \au{Murakami, Sadayoshi}, \au{Itagaki, Masafumi} \&
+  \au{Oikawa, Shun-ichi}} \yr{2007}  \at{Construction of neoclassical transport
+  database for large helical device plasma applying neural network method}.
+  \jt{Japanese journal of applied physics}  \bvol{46}~(3R),  \pg{1157}.
+
+\bibitem[Whitney(1971)]{whitney1971direct}
+{\sc \au{Whitney, A~Wayne}} \yr{1971}  \at{A direct method of nonparametric
+  measurement selection}.  \jt{IEEE transactions on computers}  \bvol{100}~(9),
+   \pg{1100--1103}.
+
+\bibitem[Xanthopoulos {\em et~al.\/}(2011)Xanthopoulos, Mischchenko, Helander,
+  Sugama \& Watanabe]{xanthopoulos2011zonal}
+{\sc \au{Xanthopoulos, P}, \au{Mischchenko, A}, \au{Helander, P}, \au{Sugama,
+  H} \& \au{Watanabe, T-H}} \yr{2011}  \at{Zonal flow dynamics and control of
+  turbulent transport in stellarators}.  \jt{Physical review letters}
+  \bvol{107}~(24),  \pg{245002}.
+
+\bibitem[Xanthopoulos {\em et~al.\/}(2014)Xanthopoulos, Mynick, Helander,
+  Turkin, Plunk, Jenko, G{\"o}rler, Told, Bird \&
+  Proll]{xanthopoulos2014controlling}
+{\sc \au{Xanthopoulos, P}, \au{Mynick, HE}, \au{Helander, P}, \au{Turkin, Yu},
+  \au{Plunk, GG}, \au{Jenko, F}, \au{G{\"o}rler, T}, \au{Told, D}, \au{Bird, T}
+  \& \au{Proll, JHE}} \yr{2014}  \at{Controlling turbulence in present and
+  future stellarators}.  \jt{Physical review letters}  \bvol{113}~(15),
+  \pg{155001}.
+
+\bibitem[Yeo \& Johnson(2000)]{yeo2000new}
+{\sc \au{Yeo, In-Kwon} \& \au{Johnson, Richard~A}} \yr{2000}  \at{A new family
+  of power transformations to improve normality or symmetry}.  \jt{Biometrika}
+  \bvol{87}~(4),  \pg{954--959}.
+
+\bibitem[Zhang {\em et~al.\/}(2023)Zhang, Buttensch{\"o}n, Jablonski,
+  Kubkowska, Ford, Alcus{\'o}n, Beidler, Burhenn, Beurskens, Langenberg {\em
+  et~al.\/}]{zhang2023observation}
+{\sc \au{Zhang, Daihong}, \au{Buttensch{\"o}n, B}, \au{Jablonski, S},
+  \au{Kubkowska, M}, \au{Ford, O}, \au{Alcus{\'o}n, JA}, \au{Beidler, CD},
+  \au{Burhenn, R}, \au{Beurskens, MNA}, \au{Langenberg, A} \& \au{others}}
+  \yr{2023}  \at{Observation of impurity accumulation and its compatibility
+  with high plasma performance in w7-x}.  \jt{Plasma Physics and Controlled
+  Fusion}  \bvol{65}~(10),  \pg{105006}.
+
+\end{thebibliography}
