@@ -1,0 +1,3 @@
+# Extra XAI dependency tested by the S00 virtual-environment smoke check.
+# Core runtime packages are inherited from conda environment 20240629-01-ML.
+captum==0.7.0

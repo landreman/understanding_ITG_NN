@@ -15,8 +15,15 @@ dependencies = [
   "torch>=2.1",
 ]
 
+[project.optional-dependencies]
+# Keep interpretation packages optional: ordinary inference should retain its
+# small, validated runtime dependency set.
+xai = [
+  "captum==0.7.0",
+]
+
 [tool.setuptools]
-packages = ["itg_nn"]
+packages = ["itg_nn", "itg_nn.xai"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
