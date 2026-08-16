@@ -16,8 +16,10 @@ directly.
   from the legacy DeepHyper results and state dictionaries.
 - `tests/`: lightweight unit tests.
 
-The HDF5 dataset is intentionally external because it is about 659 MB. Point
-the commands below to your local copy; `*.h5` is ignored by git.
+The HDF5 dataset is intentionally external because it is about 659 MB. Its
+canonical location for this repository is
+`/Users/mattland/20260523-01-files_for_Kosmos_interpreting_neural_networks/20250102-01_GX_stellarator_dataset.h5`;
+`*.h5` is ignored by git.
 
 ## Environment
 
@@ -36,7 +38,7 @@ deviation, one-standard-deviation flux interval, row indices, and member IDs:
 
 ```bash
 conda run -n 20240629-01-ML python -m itg_nn.infer \
-  /path/to/20250102-01_GX_stellarator_dataset.h5 \
+  /Users/mattland/20260523-01-files_for_Kosmos_interpreting_neural_networks/20250102-01_GX_stellarator_dataset.h5 \
   output/predictions_rows_0_1000.npz \
   --start 0 --stop 1000 --gradient-set varied
 ```
@@ -59,7 +61,7 @@ as `model_a_over_LT` and `model_a_over_Ln` in the output archive.
 
 ```bash
 conda run -n 20240629-01-ML python -m itg_nn.reference_figure \
-  /path/to/20250102-01_GX_stellarator_dataset.h5 \
+  /Users/mattland/20260523-01-files_for_Kosmos_interpreting_neural_networks/20250102-01_GX_stellarator_dataset.h5 \
   --device cpu \
   --output output/pdf/pred_vs_actual_plot_pre2.pdf
 ```
@@ -77,11 +79,6 @@ field named `Q_avgs_without_FSA_grad_x`; the old field name was misleading,
 while the HDF5 name and description correctly record the normalization.
 
 ## Large files
-
-`train_val_test_dataset_5_pre_2.pth` is not needed for inference or reference
-figure reproduction. It is a 518 MB serialization of feature tensors and a
-random split, not learned weights. The split is reproduced from the HDF5 file
-using seed 42, so the cache should not be copied or committed.
 
 If the HDF5 dataset is later added with Git LFS, remove or narrow the `*.h5`
 ignore rule first and track the intended filename explicitly with LFS.
