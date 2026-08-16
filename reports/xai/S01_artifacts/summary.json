@@ -1,0 +1,158 @@
+{
+  "bootstrap": {
+    "groups": 8113,
+    "replicates": 500,
+    "unit": "equilibrium_files"
+  },
+  "ensemble_metrics": {
+    "bias": 0.005333699272144476,
+    "mse": 0.05175937838674417,
+    "n": 9785.0,
+    "r2": 0.9893106592817136,
+    "residual_q01": -0.696419689655304,
+    "residual_q05": -0.2908699870109558,
+    "residual_q25": -0.04984688758850098,
+    "residual_q50": 0.0015548467636108398,
+    "residual_q75": 0.06454023718833923,
+    "residual_q95": 0.30365281105041486,
+    "residual_q99": 0.6491670322418212
+  },
+  "equilibrium_grouped_bootstrap_r2_se": 0.0005423359821579166,
+  "estimand": "native max(log Q, -2)",
+  "flux_regime_definition": {
+    "near_threshold": "-2 < actual clipped log Q <= -1.9",
+    "stable_floor": "actual clipped log Q == -2",
+    "unstable_flux_tertile_cuts": [
+      0.7497702836990354,
+      2.4179828166961665
+    ]
+  },
+  "fsa_grad_x_identity": {
+    "formula": "mean_z(sqrt(channel_6)/channel_0) / mean_z(1/channel_0)",
+    "max_absolute_error": 2.309513989517953e-05,
+    "max_relative_error": 1.557832300754585e-05,
+    "passed_1e-7_relative_l2": true,
+    "precision_note": "The registered field is float32 while geometry is float64; max-row relative error is also retained and is not used as the aggregate tolerance.",
+    "registered_feature": "log_FSA_grad_x",
+    "relative_error_quantiles": {
+      "q50": 5.3455442701746395e-08,
+      "q95": 1.5271585966651106e-07,
+      "q99": 1.992969377129268e-07,
+      "q99_9": 2.54360277371249e-07
+    },
+    "relative_l2_error": 9.42434772896933e-08,
+    "rms_relative_error": 9.238118570117404e-08,
+    "rmse": 1.2781558820916388e-07,
+    "rows_above_5e-7_relative": [
+      {
+        "absolute_error": 1.703888551363164e-06,
+        "relative_error": 1.0452152055880217e-06,
+        "row_id": 5268
+      },
+      {
+        "absolute_error": 2.309513989517953e-05,
+        "relative_error": 1.557832300754585e-05,
+        "row_id": 31446
+      },
+      {
+        "absolute_error": 7.624820763663109e-07,
+        "relative_error": 5.326038095574502e-07,
+        "row_id": 33128
+      }
+    ],
+    "rows_checked": 100705,
+    "scope": "full_dataset"
+  },
+  "gradient_tertile_cuts": {
+    "a_over_LT": [
+      1.397530158360799,
+      3.042031208674112
+    ],
+    "a_over_Ln": [
+      0.2726371785004932,
+      1.0626392364501953
+    ]
+  },
+  "grouped_to_tube_bootstrap_se_ratio": 0.9101280870605627,
+  "members_analyzed": 100,
+  "mode": "registered_production",
+  "nominal_independent_unit_count_inflation": 1.2060889929742389,
+  "panel": {
+    "equilibrium_class_counts_varied": {
+      "0": 240,
+      "1": 199,
+      "2": 184,
+      "3": 154,
+      "4": 223
+    },
+    "fixed_rows": 1000,
+    "flux_regime_counts_varied": {
+      "high_flux": 191,
+      "low_flux": 325,
+      "medium_flux": 244,
+      "near_threshold": 25,
+      "stable_floor": 215
+    },
+    "high_disagreement_count": 224,
+    "large_error_count": 212,
+    "unique_equilibrium_files": 1000,
+    "varied_rows": 1000
+  },
+  "perfect_within_equilibrium_design_effect": 1.4177823198773634,
+  "perfect_within_equilibrium_se_inflation": 1.1907066472802457,
+  "reference_r2_absolute_difference": 9.728640115724829e-11,
+  "reference_rows_analyzed": 9785,
+  "reference_rows_registered": 9785,
+  "reference_tubes_per_equilibrium_file": 1.2060889929742389,
+  "scalar_feature_names": [
+    "nfp",
+    "iota",
+    "shat",
+    "d_pressure_d_s",
+    "aspect",
+    "rho",
+    "aspect/rho"
+  ],
+  "split_audit": {
+    "combined_positive_sample_cross_split_fraction": 0.841822908579071,
+    "combined_positive_samples_in_cross_split_equilibria": 168059,
+    "equilibrium_files_in_all_three_splits": 7425,
+    "equilibrium_files_in_multiple_splits": 19571,
+    "equilibrium_files_total": 23577,
+    "geometry_storage_note": "Both simulation groups reference the same root raw_feature_tensor row; paired geometry equality is exact by construction.",
+    "identity_pair_crossing_fraction": 0.3388185824606801,
+    "identity_pair_split_matrix": {
+      "fixed_test__varied_test": 994,
+      "fixed_test__varied_train": 7995,
+      "fixed_test__varied_validation": 1015,
+      "fixed_train__varied_test": 7774,
+      "fixed_train__varied_train": 63400,
+      "fixed_train__varied_validation": 7833,
+      "fixed_validation__varied_test": 1017,
+      "fixed_validation__varied_train": 7886,
+      "fixed_validation__varied_validation": 1018
+    },
+    "identity_pairs_crossing_splits": 33520,
+    "positive_fixed_varied_identity_pairs": 98932,
+    "split_counts": {
+      "fixed": {
+        "excluded_nonpositive": 0,
+        "test": 10180,
+        "train": 80428,
+        "validation": 10097
+      },
+      "varied": {
+        "excluded_nonpositive": 1773,
+        "test": 9785,
+        "train": 79281,
+        "validation": 9866
+      }
+    },
+    "varied_test_rows_with_equilibrium_in_train": 9785,
+    "varied_test_rows_with_equilibrium_in_validation": 5507,
+    "varied_test_rows_with_fixed_pair_outside_test": 8791
+  },
+  "stored_top10_exact_reproduction_probability": 0.0,
+  "stored_validation_vs_heldout_spearman": 0.5652805280528053,
+  "tube_bootstrap_r2_se": 0.0005958897323007547
+}

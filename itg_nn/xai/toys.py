@@ -66,3 +66,21 @@ class FourierBandToy(nn.Module):
         del a_over_lt, a_over_ln
         spectrum = torch.fft.rfft(geometry[:, :, self.channel], dim=1)
         return spectrum[:, self.band].abs().square().unsqueeze(1) / 96
+
+
+class PeriodicPermutationToy(nn.Module):
+    """A regressor invariant to any joint permutation of position vectors.
+
+    Independent channel permutations generally change the result, making this a
+    control for separating use of spatial order from use of cross-channel
+    co-location in S03's perturbation ladder.
+    """
+
+    expectation = ToyExpectation(channels=(1, 4, 6))
+
+    def forward(
+        self, geometry: torch.Tensor, a_over_lt: torch.Tensor, a_over_ln: torch.Tensor
+    ) -> torch.Tensor:
+        del a_over_lt, a_over_ln
+        pointwise = geometry[:, :, 1] * geometry[:, :, 4] + geometry[:, :, 6].square()
+        return pointwise.mean(dim=1, keepdim=True)

@@ -14,7 +14,12 @@ from itg_nn.xai.config import MemberSelectionConfig
 from itg_nn.xai.members import MemberPredictor, select_member_ids
 from itg_nn.xai.module_model import ModuleCyclicInvariantNet
 from itg_nn.xai.runtime import set_deterministic_seed
-from itg_nn.xai.toys import ColocationToy, FourierBandToy, PeriodicWindowToy
+from itg_nn.xai.toys import (
+    ColocationToy,
+    FourierBandToy,
+    PeriodicPermutationToy,
+    PeriodicWindowToy,
+)
 
 
 def _architecture() -> Architecture:
@@ -87,6 +92,23 @@ def test_periodic_toys_have_known_controls() -> None:
     assert result.item() > 20
 
 
+def test_permutation_toy_is_joint_permutation_invariant_but_uses_colocation() -> None:
+    generator = torch.Generator().manual_seed(7)
+    geometry = torch.randn(3, 96, 7, generator=generator)
+    gradients = torch.zeros(3)
+    toy = PeriodicPermutationToy()
+    expected = toy(geometry, gradients, gradients)
+    permutation = torch.randperm(96, generator=generator)
+    joint = toy(geometry[:, permutation], gradients, gradients)
+    torch.testing.assert_close(expected, joint, rtol=1e-6, atol=1e-7)
+    independently_permuted = geometry.clone()
+    independently_permuted[:, :, 4] = independently_permuted[
+        :, torch.randperm(96, generator=generator), 4
+    ]
+    actual = toy(independently_permuted, gradients, gradients)
+    assert not torch.allclose(expected, actual)
+
+
 def test_artifact_manifest_records_required_provenance(tmp_path) -> None:
     dataset = tmp_path / "dataset.bin"
     checkpoint = tmp_path / "checkpoint.bin"
@@ -99,6 +121,7 @@ def test_artifact_manifest_records_required_provenance(tmp_path) -> None:
         axes={"values": ("member", "sample")},
     )
     artifacts.write_json("check.json", {"passed": True})
+    artifacts.write_text("notes.csv", "value\n1\n")
     manifest_path = artifacts.finalize(
         config={"seed": 4, "full": "config"},
         dataset=dataset,
@@ -113,6 +136,10 @@ def test_artifact_manifest_records_required_provenance(tmp_path) -> None:
     manifest = json.loads(manifest_path.read_text())
     assert manifest["dataset"]["sha256"]
     assert manifest["checkpoint"]["sha256"]
-    assert manifest["output_hashes"].keys() == {"check.json", "values.h5"}
+    assert manifest["output_hashes"].keys() == {
+        "check.json",
+        "notes.csv",
+        "values.h5",
+    }
     assert manifest["member_ids"] == ["member-1"]
     assert manifest["row_ids"] == [7, 8, 9]

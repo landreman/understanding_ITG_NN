@@ -5,7 +5,12 @@ import numpy as np
 import pytest
 import torch
 
-from itg_nn.data import clipped_log_heat_flux, load_hdf5_rows
+from itg_nn.data import (
+    clipped_log_heat_flux,
+    load_hdf5_rows,
+    reference_split_assignments,
+    reference_test_rows,
+)
 from itg_nn.ensemble import EnsemblePrediction
 from itg_nn.model import Architecture, CyclicInvariantNet
 from itg_nn.plotting import r2_score
@@ -37,6 +42,23 @@ def test_fixed_gradient_marker_is_preserved(tmp_path) -> None:
     assert data.a_over_ln.item() == pytest.approx(0.9)
     assert data.actual_log_heat_flux is not None
     assert data.actual_log_heat_flux.item() == pytest.approx(1.0)
+
+
+def test_reference_split_assignments_match_test_row_reconstruction(tmp_path) -> None:
+    hdf5_path = tmp_path / "split.h5"
+    fixed_q = np.ones(10)
+    varied_q = np.ones(10)
+    varied_q[3] = 0.0
+    with h5py.File(hdf5_path, "w") as h5_file:
+        fixed = h5_file.create_group("fixed_gradient_simulations")
+        varied = h5_file.create_group("varied_gradient_simulations")
+        fixed.create_dataset("Q_avgs", data=fixed_q)
+        varied.create_dataset("Q_avgs", data=varied_q)
+    assignments = reference_split_assignments(hdf5_path, seed=42)
+    assert assignments["fixed"].shape == (10,)
+    assert assignments["varied"][3] == -1
+    expected = np.flatnonzero(assignments["varied"] == 2)
+    np.testing.assert_array_equal(reference_test_rows(hdf5_path, seed=42), expected)
 
 
 def test_inference_model_output_shape() -> None:

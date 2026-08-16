@@ -85,6 +85,25 @@ class RunArtifacts:
         self._outputs.append(path)
         return path
 
+    def write_text(self, name: str, content: str) -> Path:
+        """Write a UTF-8 text artifact atomically and include it in the manifest."""
+
+        path = self._output_path(name)
+        temporary = path.with_suffix(path.suffix + ".tmp")
+        temporary.write_text(content, encoding="utf-8")
+        temporary.replace(path)
+        self._outputs.append(path)
+        return path
+
+    def register_existing(self, name: str) -> Path:
+        """Register an already-written file (for example, a plot) for hashing."""
+
+        path = self._output_path(name)
+        if not path.is_file():
+            raise FileNotFoundError(path)
+        self._outputs.append(path)
+        return path
+
     def write_hdf5(
         self,
         name: str,
