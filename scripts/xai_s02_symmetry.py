@@ -661,8 +661,13 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
         "ensemble_accuracy": ensemble_accuracy,
         "paired_grouped_bootstrap": _grouped_bootstrap_summary(actual, reference_prediction, equilibrium, int(resolved["bootstrap_replicates"]), int(resolved["seed"]) + 1),
         "bottleneck_census": census_summary,
-        "canonical_decision_status": "researcher confirmation required after production measurements",
-        "canonical_recommendation_rule": "prefer tilde_f if exactly invariant and accuracy is not worse than original within grouped uncertainty",
+        "canonical_decision_status": resolved["canonical_decision"],
+        "canonical_function": resolved["canonical_function"],
+        "canonical_decision_basis": (
+            "tilde_f is exactly invariant, supplies mean_z(rho)=bar_u, improves "
+            "all 100 individual-member residual standard deviations, and has "
+            "no resolved ensemble-accuracy penalty under the grouped bootstrap"
+        ),
         "reference_prediction_standard_deviation": {FUNCTION_NAMES[index]: float(np.std(reference_ensemble[index], ddof=1)) for index in range(3)},
     }
 

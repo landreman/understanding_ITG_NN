@@ -6,6 +6,7 @@ import torch
 
 from itg_nn.model import Architecture, CyclicInvariantNet
 from itg_nn.xai.symmetry import (
+    CANONICAL_FUNCTION,
     InvariantMember,
     circular_shift,
     receptive_field_blocks,
@@ -38,6 +39,13 @@ def test_atrous_density_matches_phase_average_and_is_equivariant(kernel_sizes) -
         member.head(phase_bottlenecks, gradients, gradients),
         rtol=2e-6,
         atol=2e-6,
+    )
+    assert CANONICAL_FUNCTION == "invariant_tilde_f"
+    torch.testing.assert_close(
+        member(geometry, gradients, gradients),
+        member.invariant(geometry, gradients, gradients),
+        rtol=0,
+        atol=0,
     )
     shifted_density = member.equivariant_density(circular_shift(geometry, 7))
     torch.testing.assert_close(

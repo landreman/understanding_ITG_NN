@@ -15,6 +15,7 @@ from itg_nn.model import CyclicInvariantNet, N_Z_POINTS
 
 N_POOLING_PHASES = 32
 PARITY_ODD_CHANNELS = (3, 5)
+CANONICAL_FUNCTION = "invariant_tilde_f"
 
 
 def circular_shift(geometry: torch.Tensor, shift: int) -> torch.Tensor:
@@ -148,6 +149,16 @@ class InvariantMember(nn.Module):
         """Evaluate ``tilde_f = MLP(bar_u, a/L_T, a/L_n)``."""
 
         return self.head(self.invariant_bottleneck(geometry), a_over_lt, a_over_ln)
+
+    def forward(
+        self,
+        geometry: torch.Tensor,
+        a_over_lt: torch.Tensor,
+        a_over_ln: torch.Tensor,
+    ) -> torch.Tensor:
+        """Evaluate the researcher-confirmed canonical function ``tilde_f``."""
+
+        return self.invariant(geometry, a_over_lt, a_over_ln)
 
     def phase_outputs(
         self,

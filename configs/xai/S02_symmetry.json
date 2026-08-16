@@ -1,5 +1,7 @@
 {
   "step": "S02",
+  "canonical_function": "invariant_tilde_f",
+  "canonical_decision": "confirmed_by_researcher_2026-08-16",
   "run_id": "symmetry-all100-panel2000-reference9785",
   "seed": 20260816,
   "device": "cpu",
