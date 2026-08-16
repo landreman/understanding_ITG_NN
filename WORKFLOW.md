@@ -1,55 +1,85 @@
 # Workflow for carrying out the XAI research plan with Codex or Claude
 
-## The simple default
+## What you actually do
 
-Use one fresh AI task per numbered step in `PLAN.md`. Complete S00 and S01 first.
-After that, use the concurrency map in the plan, with one git worktree and branch
-per concurrent step. Have the other AI system review important branches before
-merging: for example, Codex implements and Claude reviews, then reverse the roles
-on the next step.
+For each step in `PLAN.md`, in dependency order:
 
-The only prompt you normally need is:
+1. Make a branch (or worktree — see below) from up-to-date `main`.
+2. Paste **the one prompt** below, with `SNN` replaced by the step number.
+3. When the agent says it is done, run the review prompt in a *fresh* task of the
+   *other* AI system.
+4. Paste the review back to the implementing agent with the fix prompt.
+5. Merge, then delete the branch.
+
+That is the whole loop. Everything else in this document is reference material
+for when something goes sideways.
+
+### The one prompt
 
 ```text
-Execute PLAN.md step SNN end-to-end. Follow WORKFLOW.md. Implement, test, run the
-registered pilot, write the step report, and commit the finished work on the
-current branch.
+Execute PLAN.md step SNN end-to-end. Follow WORKFLOW.md and AGENTS.md.
+Implement, test, run the registered pilot, write the step report, and commit the
+finished work on the current branch.
 ```
 
-Replace `SNN` with the step number. The plan contains the scientific question,
-tasks, deliverables, and acceptance tests, so there is no need to restate them in
-the prompt.
+`PLAN.md` contains the scientific question, tasks, effort budget, deliverables,
+and acceptance tests for every step, so there is nothing to restate in the
+prompt. Do not paste the paper, the plan, or old reports into the prompt — point
+the agent at the files and let it read what it needs.
 
-## One-time setup
+### The review prompt
 
-No dataset environment variable is needed. `PLAN.md` registers the canonical
-dataset path as
+```text
+Review branch <branch> against PLAN.md step SNN and its acceptance criteria.
+Check scientific estimands, cyclic symmetry, leakage, controls, statistics,
+reproducibility, and code correctness. Do not edit. Return actionable issues with
+file and line references, ordered by severity.
+```
+
+### The fix prompt
+
+```text
+Address every valid review issue, rerun affected tests and pilot calculations,
+update the SNN report, and commit the fixes. Explain any issue you reject with
+concrete evidence.
+```
+
+Alternating Codex and Claude between implementation and review is a cheap way to
+reduce tool-specific blind spots. There is no need to decide that one system owns
+all numerical work.
+
+## Setup
+
+### Dataset
+
+No environment variable is needed. `PLAN.md` registers the canonical dataset path
+as
 `/Users/mattland/20260523-01-files_for_Kosmos_interpreting_neural_networks/20250102-01_GX_stellarator_dataset.h5`.
-Agents and XAI scripts should use it by default, with an optional `--dataset`
-override for portability. Keep the large HDF5 file outside git and do not copy
-the legacy 518 MB serialized dataset into this repository.
+Agents and XAI scripts use it by default, with an optional `--dataset` override
+for portability. Keep the large HDF5 file outside git and do not copy the legacy
+518 MB serialized dataset into this repository.
 
-The existing conda environment `20240629-01-ML` has the package and its inference
-dependencies. S00 should create a project-local XAI virtual environment for any
-additional packages, because `AGENTS.md` says not to modify the conda environment.
-A suitable starting pattern is:
+### Python environment
+
+The conda environment `20240629-01-ML` has the package and its inference
+dependencies. `AGENTS.md` forbids installing into it, so XAI extras live in a
+project-local `.venv-xai`. One command creates it in any fresh checkout or
+worktree:
 
 ```bash
-conda run -n 20240629-01-ML python -m venv --system-site-packages .venv-xai
-.venv-xai/bin/python -m pip install -e .
+bash scripts/setup_xai_env.sh
 ```
 
-The S00 agent should then add and lock only the extra dependencies that pass a
-compatibility smoke test. If `--system-site-packages` does not expose the expected
-PyTorch build, the agent should create a standalone venv and document the exact
-install instead of changing conda.
-
-Create `.venv-xai` separately inside every active worktree. Do not share an
+Create `.venv-xai` separately inside **every** active worktree. Do not share an
 editable-install venv across worktrees: its import path can silently point at the
-wrong branch. S00 should make venv creation reproducible and add `.venv-xai/` to
-gitignore; each later agent can then run the same setup command in its checkout.
+wrong branch. The venv inherits torch/numpy/h5py from conda via
+`--system-site-packages`, so it costs a few megabytes, not gigabytes.
 
-Before starting, preserve the user's existing changes:
+If a step needs a new package, the agent adds it to `pyproject.toml`'s `xai`
+extra and `requirements/xai.lock`, runs a compatibility smoke test, and records
+the tested version in its report.
+
+### Before starting anything
 
 ```bash
 git status --short
@@ -63,15 +93,15 @@ Do not delete, reset, or absorb unrelated untracked files such as the existing
 
 ### Sequential steps
 
-For S00 and S01, a normal feature branch is simplest:
+For S01, S02 and S03 — which are deliberately sequential because each one changes
+what the next should measure — a normal feature branch is simplest:
 
 ```bash
-git switch -c codex/xai-s00-scaffold
+git switch -c codex/xai-s01-audit
 ```
 
-After the AI completes and commits S00, review and merge it. Then create and merge
-S01 from the updated base. Keeping these foundation steps sequential avoids every
-later branch inventing its own cohort or file format.
+Review and merge before starting the next. Keeping these foundation steps
+sequential avoids every later branch inventing its own cohort or file format.
 
 ### Concurrent steps
 
@@ -79,42 +109,40 @@ Use git worktrees whenever two AIs may edit or run code at the same time. A
 worktree is an isolated checkout on its own branch, so one agent cannot overwrite
 another agent's files or switch its branch.
 
-In Codex Desktop, the easiest route is to start a new task, select **Worktree** as
-the environment, and choose the fully merged prerequisite branch. Codex creates
-the isolated checkout automatically. Its worktrees begin on a detached `HEAD`, so
-have the task create a named `codex/xai-sNN-short-name` branch and commit before
-integration (or use **Handoff to Local**). See the official
+In Codex Desktop, start a new task, select **Worktree** as the environment, and
+choose the fully merged prerequisite branch; Codex creates the isolated checkout
+automatically. Its worktrees begin on a detached `HEAD`, so have the task create a
+named `codex/xai-sNN-short-name` branch and commit before integration (or use
+**Handoff to Local**). See the official
 [Codex worktree documentation](https://learn.chatgpt.com/docs/environments/git-worktrees).
 
-Manual git worktrees are the universal alternative:
-
-Create worktrees from the same fully merged base. For example, after S01:
+Manual git worktrees are the universal alternative. Create them from the same
+fully merged base:
 
 ```bash
-git worktree add ../understanding_ITG_NN-xai-s02 -b codex/xai-s02-baselines main
-git worktree add ../understanding_ITG_NN-xai-s03 -b claude/xai-s03-symmetry main
+git worktree add ../understanding_ITG_NN-xai-s04 -b codex/xai-s04-bottleneck main
+git worktree add ../understanding_ITG_NN-xai-s06 -b claude/xai-s06-attribution main
 ```
 
 Open each directory as a separate Codex task or start a separate Claude Code
-session there. Claude Code also officially supports isolated sessions directly:
+session there. Claude Code also supports isolated sessions directly:
 
 ```bash
-claude --worktree xai-s03
+claude --worktree xai-s04
 ```
 
-Its [parallel-agent documentation](https://code.claude.com/docs/en/agents) and
-[common-workflows guide](https://code.claude.com/docs/en/common-workflows) explain
-the current worktree behavior.
+See its [parallel-agent documentation](https://code.claude.com/docs/en/agents) and
+[common-workflows guide](https://code.claude.com/docs/en/common-workflows).
 
 Use these branch prefixes so ownership is obvious:
 
 - `codex/xai-sNN-short-name`
 - `claude/xai-sNN-short-name`
 
-Do not have concurrent steps edit `PLAN.md`, `WORKFLOW.md`, the same report, or a
-shared progress file. Shared infrastructure belongs in S00; if a later step truly
-needs a shared change, make that change a small separate commit and tell the
-integrating agent.
+Do not have concurrent steps edit `PLAN.md`, `WORKFLOW.md`, `AGENTS.md`, the same
+report, or a shared progress file. Shared infrastructure belongs in the earliest
+step that needs it; if a later step truly needs a shared change, make that change
+a small separate commit and tell the integrating agent.
 
 ### Cleanup
 
@@ -122,56 +150,60 @@ Only after a branch has been merged and its useful output has been copied or is
 reproducible from a manifest:
 
 ```bash
-git worktree remove ../understanding_ITG_NN-xai-s02
-git branch -d codex/xai-s02-baselines
+git worktree remove ../understanding_ITG_NN-xai-s04
+git branch -d codex/xai-s04-bottleneck
 git worktree prune
 ```
 
-These operations remove the checkout/merged branch, not the external dataset.
+These operations remove the checkout and merged branch, not the external dataset.
 Always run `git worktree list` first. Never use forced branch deletion for an
 unmerged research result.
 
 ## What can run concurrently
 
-Use the dependency map in `PLAN.md` as authoritative. The useful waves are:
+`PLAN.md`'s dependency map is authoritative. The useful waves are:
 
 | Wave | Steps | Notes |
 |---|---|---|
-| 0 | S00 | Alone; creates shared infrastructure. |
-| 1 | S01 | Alone; freezes the cohort and audit. |
-| 2 | S02 and S03 | Safe in parallel after S01. |
-| 3 | S04 | Alone; chooses trustworthy explainers. |
-| 4 | S05, S06, and S08 | Best main parallel wave; input attribution, counterfactuals, and activation catalog write separate artifacts. |
-| 5 | S07 | Integrates the input-level results from S05 and S06. |
-| 6 | S09 and S10 | Hidden interventions and concept tests can proceed in parallel after S07/S08. |
-| 7 | S11 | Requires the intervention and concept results. |
-| 8 | S12 | Compares members after S08--S11. |
-| 9 | S13 | Analyzes disagreement after S05, S06, and S12. |
-| 10 | S14 | Distills after S07, S11, and S12. |
-| 11 | S15 | Optional/new-simulation decision after S07, S13, and S14. |
-| 12 | S16 | Final synthesis after all required predecessor reports. |
+| 0 | S01 | Alone; freezes cohorts, panel, and member re-ranking. |
+| 1 | S02 | Alone; fixes the canonical explained function and the equivariant density. |
+| 2 | S03 | Alone; the counterfactual ladder tells later steps where to spend effort. |
+| 3 | S04 and S06a | Bottleneck anatomy and the attribution-method benchmark are independent. |
+| 4 | S05 and S06b | Unit semantics and the scaled attribution run. |
+| 5 | S07 and S08 | Physics alignment and concept probes. |
+| 6 | S09 | Completeness; needs the concept results. |
+| 7 | S10 | Cross-member comparison after S04, S05, S08. |
+| 8 | S11 and S12 | Disagreement analysis and distillation. |
+| 9 | S13 | Natural experiments and the GX proposal. |
+| 10 | S14 | Final synthesis. |
 
 Concurrency saves agent time, but simultaneous numerical jobs can make all of
-them slower. On one laptop, default to:
+them slower. On this laptop, default to:
 
 - up to three concurrent code-development/pilot tasks;
 - only one full-HDF5, all-shifts, or all-100-member production run at a time; and
 - top-member/64-row pilots before top-10 or full-panel jobs.
 
-If GPUs or a batch scheduler are available later, an AI should add explicit job
-scripts and resource estimates rather than assuming local concurrency scales.
+### Perlmutter
+
+The plan's default target is this laptop. If a step wants NERSC, it must first
+run at pilot scale locally and produce a measured extrapolation (wall time,
+memory, node-hours) — then ask. An agent should not port a calculation it has
+never run. When a step is approved for Perlmutter, it should add explicit job
+scripts and a resource estimate to the repository rather than assuming local
+concurrency scales.
 
 ## The task lifecycle
 
 ### 1. Start from a clean, current base
 
-The step branch must contain every merged prerequisite. Ask the agent to begin by
-reading `AGENTS.md`, `PLAN.md`, `WORKFLOW.md`, the prerequisite reports, and the
-relevant code. The standard prompt already tells it to follow these documents.
+The step branch must contain every merged prerequisite. The standard prompt
+already tells the agent to read `AGENTS.md`, `PLAN.md`, `WORKFLOW.md`, the
+prerequisite reports, and the relevant code.
 
 ### 2. Let the agent implement and pilot
 
-The agent should do the whole bounded step:
+The agent does the whole bounded step:
 
 - implement reusable code and a thin CLI;
 - add unit tests and analytic/control tests;
@@ -184,41 +216,30 @@ The agent should do the whole bounded step:
 Large arrays and routine figures belong under ignored `output/xai/`, not in git.
 Every conclusion in a committed report must be reproducible from a manifest.
 
+If the step is running past its `PLAN.md` budget, the agent delivers the step's
+**minimum viable deliverable** completely, records what it dropped in a
+`## Deferred` section of the report, and stops — rather than delivering a shallow
+version of everything.
+
 ### 3. Review with the other AI
 
-Use a fresh read-only review task when a branch claims scientific results:
-
-```text
-Review branch <branch> against PLAN.md step SNN and its acceptance criteria.
-Check scientific estimands, cyclic symmetry, leakage, controls, statistics,
-reproducibility, and code correctness. Do not edit. Return only actionable issues,
-ordered by severity, with file and line references.
-```
-
-Then send the implementation agent the review:
-
-```text
-Address every valid review issue, rerun affected tests and pilot calculations,
-update the SNN report, and commit the fixes. Explain any issue you reject with
-concrete evidence.
-```
-
-Alternating Codex and Claude between implementation and review is a cheap way to
-reduce tool-specific blind spots. There is no need to decide that one system owns
-all numerical work.
+Use the review prompt above in a fresh, read-only task, then send the
+implementation agent the fix prompt.
 
 ### 4. Verify before merging
 
-The integrating agent, or the researcher with the agent watching, should run:
+The integrating agent, or you with the agent watching, should run:
 
 ```bash
 git status --short
-git diff main...HEAD --check
+```
+
+```bash
 conda run -n 20240629-01-ML python -m pytest
 ```
 
-It should also run the step's documented smoke/pilot command using `.venv-xai`
-when the step uses extra dependencies. Confirm that:
+It should also run the step's documented smoke/pilot command using `.venv-xai`.
+Confirm that:
 
 - the report names the exact estimand and cohort;
 - acceptance criteria are answered one by one;
@@ -231,25 +252,17 @@ when the step uses extra dependencies. Confirm that:
 
 Even if several steps finish together, merge them serially. After each merge, run
 tests. If two branches require the same shared helper, merge the cleaner helper
-change first, rebase or merge the new base into the other worktree, and ask that
-agent to resolve/test. Do not manually paste files between worktrees.
+change first, merge the new base into the other worktree, and ask that agent to
+resolve and test. Do not manually paste files between worktrees.
 
 ### 6. Record the state
 
 The committed report and run manifest are the progress record. Avoid a single
 checkbox file edited by every parallel agent because it becomes a merge-conflict
-hotspot. When starting a new task, the agent can infer readiness from merged
-reports and the dependency map.
+hotspot. When starting a new task, the agent infers readiness from merged reports
+and the dependency map.
 
-## Prompts you can copy
-
-### Implement one step
-
-```text
-Execute PLAN.md step SNN end-to-end. Follow WORKFLOW.md. Implement, test, run the
-registered pilot, write the step report, and commit the finished work on the
-current branch.
-```
+## Other prompts worth keeping
 
 ### Continue a step that stopped
 
@@ -267,15 +280,6 @@ it to completion, validate the artifacts against the report's controls, and
 update and commit only the small report/index files. Keep large outputs ignored.
 ```
 
-### Review a step
-
-```text
-Review branch <branch> against PLAN.md step SNN and its acceptance criteria.
-Check scientific estimands, cyclic symmetry, leakage, controls, statistics,
-reproducibility, and code correctness. Do not edit. Return actionable issues with
-file and line references, ordered by severity.
-```
-
 ### Integrate a completed wave
 
 ```text
@@ -289,22 +293,10 @@ review findings.
 ### Produce the final synthesis
 
 ```text
-Execute PLAN.md step S16. Treat prior reports and machine-readable artifacts as
+Execute PLAN.md step S14. Treat prior reports and machine-readable artifacts as
 evidence, audit their manifests, preserve negative and contradictory results, and
 separate model-mechanistic from physical-causal claims.
 ```
-
-## How much context to give the AI
-
-Do not paste the paper, plan, or old reports into the prompt. Point the agent to
-the files and let it read what is relevant. A fresh task per step prevents a long
-conversation from accumulating stale assumptions. Resume the same task only for
-fixes or a production run of that same step.
-
-If an agent proposes a material change to the scientific estimand, cohort,
-baseline family, or intervention validity, it should stop before the expensive
-run and put a short decision memo in its response. Routine implementation choices
-do not require researcher input.
 
 ## Handling long calculations
 
@@ -320,17 +312,32 @@ do not require researcher input.
 
 ## Decisions that should come back to you
 
-Agents should proceed autonomously through ordinary numerical and coding choices.
-They should ask you only at the decision gates in `PLAN.md`, chiefly:
+Agents proceed autonomously through ordinary numerical and coding choices. They
+should stop and ask only at the `PLAN.md` decision gates:
 
-- whether to retrain an exactly invariant model;
-- whether to spend substantially more compute on all 100 members;
-- whether to restore training code for remove-and-retrain experiments;
-- whether to generate new equilibria or launch GX simulations; and
-- whether publication should wait for those simulations.
+1. which function is canonical after S02 (original, shift-averaged, or the
+   exactly invariant bottleneck model);
+2. whether to move a calculation to Perlmutter;
+3. whether to restore training code for remove-and-retrain experiments — you have
+   said you would rather not, so this needs a genuine scientific reason;
+4. whether to generate new equilibria or launch GX simulations; and
+5. whether publication should wait for those simulations.
 
 The agent's question should be short and include evidence, estimated cost, and a
 recommended option. You should not have to reconstruct the issue from logs.
+
+If an agent proposes a material change to the scientific estimand, cohort,
+baseline family, or intervention validity, it should stop before the expensive
+run and put a short decision memo in its response. Routine implementation choices
+do not require your input.
+
+### Where it is worth actually reading the output
+
+You do not need to read every report closely. The three that change the shape of
+the program are **S02** (which function is canonical, and how badly arbitrary
+shifts break invariance), **S03** (how much of the network can possibly be
+spatial or cross-channel), and **S09** (what the network knows beyond
+$\{a/L_T, a/L_n, f_Q\}$). Skim the rest; read those.
 
 ## Safety and scientific hygiene
 
@@ -350,11 +357,10 @@ recommended option. You should not have to reconstruct the issue from logs.
 
 ## Tool documentation
 
-- The official [Codex worktree documentation](https://learn.chatgpt.com/docs/environments/git-worktrees)
-  describes creating parallel Desktop tasks, detached `HEAD` behavior, and
-  handing a worktree back to the local checkout.
+- [Codex worktree documentation](https://learn.chatgpt.com/docs/environments/git-worktrees):
+  parallel Desktop tasks, detached `HEAD` behavior, and handing a worktree back to
+  the local checkout.
 - Claude Code's [parallel-agent guide](https://code.claude.com/docs/en/agents),
   [worktree workflow](https://code.claude.com/docs/en/common-workflows), and
-  [session documentation](https://code.claude.com/docs/en/sessions) describe its
-  current parallel-session behavior. Worktrees isolate files, but parallel agents
-  consume quota and compute independently.
+  [session documentation](https://code.claude.com/docs/en/sessions). Worktrees
+  isolate files, but parallel agents consume quota and compute independently.

@@ -30,6 +30,43 @@ package changes are needed:
 conda run -n 20240629-01-ML python -m pytest
 ```
 
+## XAI environment and S00 smoke pilot
+
+Interpretation code is optional so normal inference keeps its established
+environment. One command creates a project-local virtual environment from the
+existing conda runtime; this does not modify `20240629-01-ML`:
+
+```bash
+bash scripts/setup_xai_env.sh
+```
+
+`captum==0.9.0` is the intentionally small locked XAI addition; it is also
+declared as the `xai` optional dependency in `pyproject.toml` and pinned in
+`requirements/xai.lock`. Make a separate `.venv-xai` in each worktree because an
+editable install is worktree-specific.
+
+The registered S00 CPU pilot selects the highest stored validation-$R^2$ member,
+uses 64 positive-target varied-gradient rows, verifies the module-form conversion against all
+100 original members, and writes labeled member-level native-target predictions:
+
+```bash
+.venv-xai/bin/python scripts/xai_smoke.py \
+  --config configs/xai/S00_smoke.json
+```
+
+The default dataset path is the canonical HDF5 path registered in `PLAN.md`.
+For a portable checkout, override it without changing the committed config:
+
+```bash
+.venv-xai/bin/python scripts/xai_smoke.py --dataset /path/to/dataset.h5
+```
+
+Its ignored run directory is `output/xai/S00/cpu-top-member-64positive-rows/` and contains
+`predictions.h5`, `module_equivalence.json`, and `manifest.json`. The manifest
+records the fully resolved config, data/checkpoint content hashes, source rows,
+members, environment, git state, command, elapsed time, and hashes of every
+output artifact.
+
 ## Run inference
 
 This example predicts the first 1,000 varied-gradient rows and writes a

@@ -19,6 +19,7 @@ HDF5_GROUPS = {
 }
 LOG_HEAT_FLUX_FLOOR = -2.0
 REFERENCE_SPLIT_SEED = 42
+SPLIT_NAMES = ("train", "validation", "test")
 
 
 @dataclass(frozen=True)
@@ -147,6 +148,47 @@ def reference_test_rows(
     combined_test_rows = positive_combined_rows[np.asarray(test_subset.indices)]
     varied_test_rows = combined_test_rows[combined_test_rows >= tube_count]
     return (varied_test_rows - tube_count).astype(np.int64)
+
+
+def reference_split_assignments(
+    hdf5_path: str | Path, *, seed: int = REFERENCE_SPLIT_SEED
+) -> dict[GradientSet, np.ndarray]:
+    """Reconstruct the legacy split for every source row in both gradient sets.
+
+    Returned arrays use 0/1/2 for train/validation/test and -1 for rows excluded
+    by the legacy positive-flux filter.  Keeping the two source arrays separate
+    makes the fixed/varied identity pairing explicit rather than encoding it in
+    a fragile concatenated index.
+    """
+
+    with h5py.File(hdf5_path, "r") as h5_file:
+        fixed_heat_flux = h5_file["fixed_gradient_simulations/Q_avgs"][:]
+        varied_heat_flux = h5_file["varied_gradient_simulations/Q_avgs"][:]
+
+    tube_count = len(fixed_heat_flux)
+    if len(varied_heat_flux) != tube_count:
+        raise ValueError("Fixed- and varied-gradient groups have different row counts")
+    positive_combined_rows = np.flatnonzero(
+        np.concatenate((fixed_heat_flux, varied_heat_flux)) > 0
+    )
+    sample_count = len(positive_combined_rows)
+    lengths = (
+        int(0.8 * sample_count),
+        int(0.1 * sample_count),
+    )
+    split_lengths = (*lengths, sample_count - sum(lengths))
+    generator = torch.Generator().manual_seed(seed)
+    subsets = random_split(
+        range(sample_count), split_lengths, generator=generator
+    )
+    combined_assignment = np.full(2 * tube_count, -1, dtype=np.int8)
+    for split_index, subset in enumerate(subsets):
+        combined_rows = positive_combined_rows[np.asarray(subset.indices)]
+        combined_assignment[combined_rows] = split_index
+    return {
+        "fixed": combined_assignment[:tube_count].copy(),
+        "varied": combined_assignment[tube_count:].copy(),
+    }
 
 
 def load_reference_test_data(

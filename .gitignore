@@ -151,6 +151,7 @@ activemq-data/
 .env
 .envrc
 .venv
+.venv-xai/
 env/
 venv/
 ENV/
@@ -223,4 +224,5 @@ train_val_test_dataset_*.pth
 
 # Generated inference arrays and temporary PDF renders
 output/*.npz
+output/xai/
 tmp/
