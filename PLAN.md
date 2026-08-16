@@ -82,17 +82,17 @@ project. Each is verified in [Preliminary scoping measurements](#preliminary-sco
 - Geometry has shape `(96, 7)`, **raw and unnormalized** — the network consumes
   `raw_feature_tensor` directly, with no per-channel standardization anywhere in
   the inference path. The authoritative HDF5 channel order and measured scales
-  (3,000-tube sample) are:
+  (S01's 9,785-row varied reference cohort, all 96 positions) are:
 
   | Index | HDF5 name | Physical label | median | 1%–99% | max\|·\| |
   |---:|---|---|---:|---|---:|
-  | 0 | `bmag` | $B$ | 1.05 | 0.73 – 1.57 | 2.2 |
-  | 1 | `gbdrift` | $2B^{-3}\mathbf B\times\nabla B\cdot\nabla y$ | −0.11 | −0.83 – 0.70 | 4.2 |
-  | 2 | `cvdrift` | $2B^{-2}\mathbf B\times\boldsymbol\kappa\cdot\nabla y$ | −0.09 | −0.79 – 0.73 | 4.2 |
-  | 3 | `gbdrift0_over_shat` | $2B^{-3}\mathbf B\times\nabla B\cdot\nabla x$ | 0.00 | −0.66 – 0.66 | 1.9 |
-  | 4 | `gds2` | $\|\nabla y\|^2$ | 1.71 | 0.15 – 9.88 | 443 |
-  | 5 | `gds21_over_shat` | $\nabla x\cdot\nabla y$ | 0.00 | −4.10 – 4.07 | 118 |
-  | 6 | `gds22_over_shat_squared` | $\|\nabla x\|^2$ | 1.42 | 0.24 – 9.24 | 97 |
+  | 0 | `bmag` | $B$ | 1.09 | 0.79 – 2.04 | 2.86 |
+  | 1 | `gbdrift` | $2B^{-3}\mathbf B\times\nabla B\cdot\nabla y$ | −0.06 | −0.80 – 1.18 | 16.6 |
+  | 2 | `cvdrift` | $2B^{-2}\mathbf B\times\boldsymbol\kappa\cdot\nabla y$ | −0.02 | −0.74 – 1.24 | 16.6 |
+  | 3 | `gbdrift0_over_shat` | $2B^{-3}\mathbf B\times\nabla B\cdot\nabla x$ | 0.00 | −0.63 – 0.64 | 2.71 |
+  | 4 | `gds2` | $\|\nabla y\|^2$ | 1.85 | 0.20 – 23.15 | 1,212 |
+  | 5 | `gds21_over_shat` | $\nabla x\cdot\nabla y$ | 0.00 | −5.96 – 5.88 | 109 |
+  | 6 | `gds22_over_shat_squared` | $\|\nabla x\|^2$ | 1.51 | 0.24 – 10.95 | 56.3 |
 
   The `_over_shat` suffixes describe how GX stores the quantity; despite the
   names, channel 6 is $|\nabla x|^2$ in the same normalization used by
@@ -324,7 +324,8 @@ report the data's own parity mismatch alongside the model's.
 ### Compare quantities with units fairly
 
 Raw gradients are not comparable across the seven differently scaled physical
-channels — channel 4 spans 0.016 to 443 while channel 0 spans 0.50 to 2.2.
+channels — on the S01 reference cohort channel 4 has a 1% quantile of 0.20 and
+reaches 1,212 while channel 0 has a 1% quantile of 0.79 and reaches 2.86.
 Report both contribution-valued attributions (for example integrated gradients,
 which include the input-minus-baseline factor) and dimensionless local
 sensitivities such as $\sigma_c\,\partial f/\partial X_c$, with a **robust**

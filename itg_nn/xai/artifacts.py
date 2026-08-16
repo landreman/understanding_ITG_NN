@@ -53,6 +53,13 @@ def _git_output(arguments: Sequence[str], cwd: Path) -> str | None:
     return result.stdout.strip() if result.returncode == 0 else None
 
 
+def _git_success(arguments: Sequence[str], cwd: Path) -> bool:
+    result = subprocess.run(
+        ["git", *arguments], cwd=cwd, text=True, capture_output=True, check=False
+    )
+    return result.returncode == 0
+
+
 def _package_versions() -> dict[str, str]:
     names = ("itg-nn", "torch", "numpy", "h5py", "captum")
     versions: dict[str, str] = {}
@@ -150,7 +157,12 @@ class RunArtifacts:
             "dataset": file_fingerprint(dataset),
             "device": str(device),
             "git_commit": _git_output(["rev-parse", "HEAD"], repository_path),
+            "git_tree": _git_output(["rev-parse", "HEAD^{tree}"], repository_path),
             "git_dirty": bool(_git_output(["status", "--porcelain"], repository_path)),
+            "git_tracked_dirty": not (
+                _git_success(["diff", "--quiet"], repository_path)
+                and _git_success(["diff", "--cached", "--quiet"], repository_path)
+            ),
             "gradient_set": gradient_set,
             "member_ids": list(member_ids),
             "output_hashes": {

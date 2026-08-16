@@ -192,6 +192,17 @@ def grouped_bootstrap(
     return BootstrapResult(r2=r2, mse=mse, bias=bias, ranks=ranks, group_count=group_count)
 
 
+def top_k_members(values: np.ndarray, k: int) -> np.ndarray:
+    """Return exactly ``k`` member indices, breaking ties by member order."""
+
+    array = np.asarray(values, dtype=np.float64)
+    if array.ndim != 1:
+        raise ValueError("top_k_members expects one-dimensional values")
+    if not 0 <= k <= len(array):
+        raise ValueError("k must be between zero and the number of values")
+    return np.argsort(-array, kind="mergesort")[:k]
+
+
 def row_bootstrap_r2(
     actual: np.ndarray,
     predicted: np.ndarray,
@@ -263,10 +274,11 @@ def select_panel_rows(
     chosen: list[int] = []
     chosen_set: set[int] = set()
 
-    def add_balanced(mask: np.ndarray, target: int) -> None:
+    def add_balanced(mask: np.ndarray, quota: int) -> None:
         eligible = candidates[mask[candidates]]
         if not len(eligible):
             return
+        target = min(panel_size, len(chosen) + quota)
         shuffled = eligible[rng.permutation(len(eligible))]
         # Round-robin over equilibrium classes rather than allowing the largest
         # class to consume the diagnostic quota.
@@ -287,7 +299,7 @@ def select_panel_rows(
 
     diagnostic_quota = max(1, panel_size // 10)
     add_balanced(absolute_error >= error_cut, diagnostic_quota)
-    add_balanced(disagreement >= disagreement_cut, 2 * diagnostic_quota)
+    add_balanced(disagreement >= disagreement_cut, diagnostic_quota)
 
     remaining = np.asarray(
         [index for index in candidates if int(index) not in chosen_set], dtype=np.int64
@@ -311,7 +323,8 @@ def select_panel_rows(
         "maximum_rows_per_equilibrium": 1,
         "error_top_decile_cut": error_cut,
         "disagreement_top_decile_cut": disagreement_cut,
-        "diagnostic_quota_each": diagnostic_quota,
+        "diagnostic_quota_per_stage": diagnostic_quota,
+        "diagnostic_stages": ["top_decile_absolute_error", "top_decile_disagreement"],
         "seed": seed,
     }
 
@@ -342,8 +355,38 @@ def robust_channel_statistics(geometry: np.ndarray) -> list[dict[str, float]]:
     return output
 
 
-def mean_power_spectrum(geometry: np.ndarray) -> np.ndarray:
-    """Mean squared rFFT magnitude, retaining channel and Fourier mode axes."""
+def channel_correlation_statistics(geometry: np.ndarray) -> dict[str, np.ndarray]:
+    """Separate local co-location from between-tube channel covariation."""
 
-    spectrum = np.fft.rfft(np.asarray(geometry, dtype=np.float64), axis=1)
-    return np.mean(np.square(np.abs(spectrum)), axis=0).T
+    values = np.asarray(geometry, dtype=np.float64)
+    if values.ndim != 3:
+        raise ValueError("geometry must have shape (sample, position, channel)")
+    pooled = np.corrcoef(values.reshape(-1, values.shape[-1]), rowvar=False)
+    tube_means = values.mean(axis=1)
+    between_tube = np.corrcoef(tube_means, rowvar=False)
+    within_tube_values = values - tube_means[:, None, :]
+    within_tube = np.corrcoef(
+        within_tube_values.reshape(-1, values.shape[-1]), rowvar=False
+    )
+    return {
+        "pooled_channel_correlation": pooled,
+        "within_tube_channel_correlation": within_tube,
+        "between_tube_mean_channel_correlation": between_tube,
+    }
+
+
+def median_normalized_power_spectrum(geometry: np.ndarray) -> np.ndarray:
+    """Median per-sample spectral shape after dropping DC and normalizing power."""
+
+    values = np.asarray(geometry, dtype=np.float64)
+    if values.ndim != 3:
+        raise ValueError("geometry must have shape (sample, position, channel)")
+    power = np.square(np.abs(np.fft.rfft(values, axis=1)))[:, 1:, :]
+    normalizer = power.sum(axis=1, keepdims=True)
+    normalized = np.divide(
+        power,
+        normalizer,
+        out=np.zeros_like(power),
+        where=normalizer > np.finfo(np.float64).tiny,
+    )
+    return np.median(normalized, axis=0).T

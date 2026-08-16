@@ -26,12 +26,13 @@ from itg_nn.data import (
     reference_test_rows,
 )
 from itg_nn.ensemble import load_ensemble
-from itg_nn.xai.artifacts import RunArtifacts
+from itg_nn.xai.artifacts import RunArtifacts, sha256_file
 from itg_nn.xai.audit import (
     STABLE_THRESHOLD,
+    channel_correlation_statistics,
     flux_regimes,
     grouped_bootstrap,
-    mean_power_spectrum,
+    median_normalized_power_spectrum,
     performance_rows,
     quantile_bins,
     regression_metrics,
@@ -39,6 +40,7 @@ from itg_nn.xai.audit import (
     row_bootstrap_r2,
     select_panel_rows,
     spearman_correlation,
+    top_k_members,
 )
 from itg_nn.xai.members import MemberPredictor
 from itg_nn.xai.runtime import iter_inference_batches, set_deterministic_seed
@@ -169,6 +171,40 @@ def _split_audit(dataset: Path, assignments: dict[str, np.ndarray]) -> dict[str,
     }
 
 
+def _equilibrium_in_train(
+    dataset: Path, assignments: dict[str, np.ndarray], source_rows: np.ndarray
+) -> np.ndarray:
+    """Identify whether each source row's equilibrium occurs in legacy training."""
+
+    with h5py.File(dataset, "r") as h5_file:
+        all_equilibria = _decode(h5_file["equilibrium_files"][:])
+    training_rows = (assignments["fixed"] == 0) | (assignments["varied"] == 0)
+    training_equilibria = np.unique(all_equilibria[training_rows])
+    return np.isin(
+        all_equilibria[np.asarray(source_rows, dtype=np.int64)], training_equilibria
+    )
+
+
+def _validate_resume_sources(
+    output_dir: Path, dataset: Path, checkpoint: Path
+) -> None:
+    """Reject cached predictions unless their immutable inputs hash-match."""
+
+    manifest_path = output_dir.resolve() / "manifest.json"
+    if not manifest_path.is_file():
+        raise RuntimeError("cannot validate cached predictions without manifest.json")
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    for label, path in (("dataset", dataset), ("checkpoint", checkpoint)):
+        expected = manifest.get(label, {}).get("sha256")
+        if not expected:
+            raise RuntimeError(f"cached manifest has no {label} SHA-256")
+        actual = sha256_file(path)
+        if actual != expected:
+            raise RuntimeError(
+                f"cached {label} SHA-256 does not match the resolved {label}"
+            )
+
+
 def _predict(
     ensemble,
     member_ids: tuple[str, ...],
@@ -217,11 +253,23 @@ def _identity_audit(dataset: Path, *, full: bool) -> dict[str, Any]:
             relative = np.abs(difference) / np.maximum(np.abs(expected), np.finfo(float).tiny)
             relative_errors.append(relative)
             for offset in np.flatnonzero(relative > 5e-7):
+                geometry_row = values[offset]
                 outliers.append(
                     {
                         "row_id": int(start + offset),
                         "relative_error": float(relative[offset]),
                         "absolute_error": float(abs(difference[offset])),
+                        "calculated_FSA_grad_x": float(calculated[offset]),
+                        "registered_FSA_grad_x": float(expected[offset]),
+                        "minimum_bmag": float(np.min(geometry_row[:, 0])),
+                        "minimum_channel_6": float(np.min(geometry_row[:, 6])),
+                        "maximum_gds2": float(np.max(geometry_row[:, 4])),
+                        "all_geometry_finite": bool(np.isfinite(geometry_row).all()),
+                        "degenerate_geometry_detected": bool(
+                            not np.isfinite(geometry_row).all()
+                            or np.min(geometry_row[:, 0]) <= 0
+                            or np.min(geometry_row[:, 6]) < 0
+                        ),
                     }
                 )
             max_absolute = max(max_absolute, float(np.max(np.abs(difference))))
@@ -260,6 +308,7 @@ def _identity_audit(dataset: Path, *, full: bool) -> dict[str, Any]:
 def _panel_artifact(
     dataset: Path,
     varied_rows: np.ndarray,
+    assignments: dict[str, np.ndarray],
 ) -> tuple[dict[str, np.ndarray], dict[str, tuple[str, ...]], list[dict[str, Any]]]:
     arrays: dict[str, list[np.ndarray]] = {}
     metadata_rows: list[dict[str, Any]] = []
@@ -284,6 +333,7 @@ def _panel_artifact(
             block = {
                 "row_id": varied_rows,
                 "gradient_set_code": np.full(len(varied_rows), gradient_code, dtype=np.int8),
+                "legacy_split_code": assignments[gradient_set][varied_rows],
                 "geometry": geometry,
                 "actual_log_Q": target_log,
                 "a_over_LT_model": model_lt,
@@ -310,6 +360,7 @@ def _panel_artifact(
                 row: dict[str, Any] = {
                     "stable_id": f"{gradient_set}:{int(row_id)}",
                     "gradient_set": gradient_set,
+                    "split": SPLIT_NAMES[int(assignments[gradient_set][row_id])],
                     "row_id": int(row_id),
                     "equilibrium_file": equilibrium_files[index],
                     "tube_file": tube_files[index],
@@ -325,6 +376,7 @@ def _panel_artifact(
     axes = {
         "row_id": ("sample",),
         "gradient_set_code": ("sample",),
+        "legacy_split_code": ("sample",),
         "geometry": ("sample", "z", "channel"),
         "actual_log_Q": ("sample",),
         "a_over_LT_model": ("sample",),
@@ -372,14 +424,11 @@ def _plot_ranking(
 
 def _plot_spectra(path: Path, spectrum: np.ndarray) -> None:
     figure, axes = plt.subplots(figsize=(6.2, 4.2))
-    modes = np.arange(spectrum.shape[1])
-    normalized = spectrum / np.maximum(
-        spectrum.sum(axis=1, keepdims=True), np.finfo(float).tiny
-    )
+    modes = np.arange(1, spectrum.shape[1] + 1)
     for channel, name in enumerate(CHANNEL_NAMES):
-        axes.semilogy(modes, normalized[channel], label=f"{channel}: {name}")
-    axes.set_xlabel("Parallel rFFT mode")
-    axes.set_ylabel("Fraction of channel power")
+        axes.semilogy(modes, spectrum[channel], label=f"{channel}: {name}")
+    axes.set_xlabel("Parallel rFFT mode (DC excluded)")
+    axes.set_ylabel("Median per-sample fraction of non-DC power")
     axes.legend(fontsize=6, ncol=2)
     axes.grid(alpha=0.25)
     figure.tight_layout()
@@ -448,6 +497,7 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
     ensemble = load_ensemble(checkpoint, device=resolved["device"])
     prediction_cache = output_dir.resolve() / "reference_predictions.h5"
     if args.resume and prediction_cache.is_file():
+        _validate_resume_sources(output_dir, dataset, checkpoint)
         with h5py.File(prediction_cache, "r") as h5_file:
             cached_rows = h5_file["row_id"][:]
             cached_predictions = h5_file["member_prediction_log_Q"][:]
@@ -477,16 +527,25 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
         equilibrium_files = _decode(_h5_take(h5_file["equilibrium_files"], analysis_rows))
         equilibrium_class = _h5_take(h5_file["equilibrium_class"], analysis_rows).astype(np.int16)
         scalar_names = _decode(h5_file["scalar_features"][:])
+        reference_geometry_float64 = _h5_take(
+            h5_file["raw_feature_tensor"], analysis_rows
+        )
     flux_labels, flux_definition = flux_regimes(actual)
     lt_bin, lt_cuts = quantile_bins(data.a_over_lt.numpy(), 3)
     ln_bin, ln_cuts = quantile_bins(data.a_over_ln.numpy(), 3)
     stability = np.where(actual <= STABLE_THRESHOLD, "stable_near_floor", "unstable")
+    fixed_pair_split = np.asarray(
+        [SPLIT_NAMES[int(value)] for value in assignments["fixed"][analysis_rows]]
+    )
+    equilibrium_in_train = _equilibrium_in_train(dataset, assignments, analysis_rows)
     strata = {
         "stability": stability,
         "flux_regime": flux_labels,
         "a_over_LT_tertile": lt_bin,
         "a_over_Ln_tertile": ln_bin,
         "equilibrium_class": equilibrium_class,
+        "fixed_pair_split": fixed_pair_split,
+        "equilibrium_in_train": equilibrium_in_train,
     }
     overall_rows, stratified_rows = performance_rows(actual, predictions, member_ids, strata)
     heldout_r2 = np.asarray([row["r2"] for row in overall_rows[1:]])
@@ -500,6 +559,12 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
     )
     ci = np.quantile(bootstrap.r2, (0.025, 0.975), axis=0).T
     heldout_rank = np.argsort(np.argsort(-heldout_r2, kind="mergesort"), kind="mergesort") + 1
+    top10_membership = np.zeros_like(bootstrap.r2, dtype=bool)
+    top_k = min(10, len(member_ids))
+    for replicate in range(len(bootstrap.r2)):
+        top10_membership[
+            replicate, top_k_members(bootstrap.r2[replicate], top_k)
+        ] = True
     ranking_rows: list[dict[str, Any]] = []
     for index, member_id in enumerate(member_ids):
         ranking_rows.append(
@@ -514,14 +579,14 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
                 "bootstrap_rank_median": float(np.median(bootstrap.ranks[:, index])),
                 "bootstrap_rank_ci_low": float(np.quantile(bootstrap.ranks[:, index], 0.025)),
                 "bootstrap_rank_ci_high": float(np.quantile(bootstrap.ranks[:, index], 0.975)),
-                "bootstrap_probability_top10": float(np.mean(bootstrap.ranks[:, index] <= 10)),
+                "bootstrap_probability_top10": float(np.mean(top10_membership[:, index])),
             }
         )
     stored_top10_reproduction = None
     if len(member_ids) == 100:
         stored_top10 = set(range(10))
         reproduced = [
-            set(np.flatnonzero(bootstrap.ranks[replicate] <= 10)) == stored_top10
+            set(np.flatnonzero(top10_membership[replicate])) == stored_top10
             for replicate in range(len(bootstrap.ranks))
         ]
         stored_top10_reproduction = float(np.mean(reproduced))
@@ -564,19 +629,28 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
     )
     panel_lookup = {int(row): index for index, row in enumerate(analysis_rows)}
     panel_indices = np.asarray([panel_lookup[int(row)] for row in panel_rows])
-    panel_arrays, panel_axes, panel_metadata = _panel_artifact(dataset, panel_rows)
+    panel_arrays, panel_axes, panel_metadata = _panel_artifact(
+        dataset, panel_rows, assignments
+    )
     panel_geometry_unique = panel_arrays["geometry"][: len(panel_rows)]
-    channel_stats = robust_channel_statistics(data.geometry.numpy())
+    channel_stats = robust_channel_statistics(reference_geometry_float64)
     for row in channel_stats:
         row["channel_name"] = CHANNEL_NAMES[int(row["channel"])]
-    channel_correlation = np.corrcoef(
-        panel_geometry_unique.reshape(-1, panel_geometry_unique.shape[-1]), rowvar=False
-    )
-    spectrum = mean_power_spectrum(panel_geometry_unique)
+    channel_correlations = channel_correlation_statistics(panel_geometry_unique)
+    spectrum = median_normalized_power_spectrum(panel_geometry_unique)
     identity = _identity_audit(dataset, full=not pilot)
 
+    panel_samples = [
+        {
+            "stable_id": f"{gradient_set}:{int(row)}",
+            "split": SPLIT_NAMES[int(assignments[gradient_set][row])],
+        }
+        for gradient_set in ("varied", "fixed")
+        for row in panel_rows
+    ]
+
     cohorts = {
-        "schema_version": 1,
+        "schema_version": 2,
         "stable_id_schema": "<gradient_set>:<zero-based HDF5 row_id>",
         "reference_varied": {
             "split": "legacy_test",
@@ -588,6 +662,7 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
             "fixed_row_ids": [int(row) for row in panel_rows],
             "stable_ids": [f"varied:{int(row)}" for row in panel_rows]
             + [f"fixed:{int(row)}" for row in panel_rows],
+            "samples": panel_samples,
             "count": int(2 * len(panel_rows)),
             "pairing": "same raw_feature_tensor row; varied then fixed",
             "sampling": panel_sampling,
@@ -616,10 +691,21 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
         ),
         "stored_validation_vs_heldout_spearman": spearman_correlation(validation_r2, heldout_r2),
         "stored_top10_exact_reproduction_probability": stored_top10_reproduction,
+        "stored_top10_zero_success_95pct_upper_bound": (
+            float(1.0 - 0.05 ** (1.0 / len(bootstrap.r2)))
+            if stored_top10_reproduction == 0.0
+            else None
+        ),
         "bootstrap": {
             "unit": "equilibrium_files",
             "groups": bootstrap.group_count,
             "replicates": int(resolved["bootstrap_replicates"]),
+            "single_se_relative_mc_error_approx": float(
+                np.sqrt(1.0 / (2.0 * (len(bootstrap.r2) - 1)))
+            ),
+            "se_ratio_relative_mc_error_approx": float(
+                np.sqrt(1.0 / (len(bootstrap.r2) - 1))
+            ),
         },
         "tube_bootstrap_r2_se": tube_se,
         "equilibrium_grouped_bootstrap_r2_se": group_se,
@@ -632,6 +718,26 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
         ),
         "split_audit": split_audit,
         "flux_regime_definition": flux_definition,
+        "flux_regime_counts_reference": {
+            str(value): int(np.sum(flux_labels == value))
+            for value in np.unique(flux_labels)
+        },
+        "leakage_performance_ensemble": {
+            "fixed_pair_split": {
+                str(level): regression_metrics(
+                    actual[fixed_pair_split == level],
+                    ensemble_prediction[fixed_pair_split == level],
+                )
+                for level in np.unique(fixed_pair_split)
+            },
+            "equilibrium_in_train": {
+                str(level): regression_metrics(
+                    actual[equilibrium_in_train == level],
+                    ensemble_prediction[equilibrium_in_train == level],
+                )
+                for level in np.unique(equilibrium_in_train)
+            },
+        },
         "gradient_tertile_cuts": {
             "a_over_LT": [float(value) for value in lt_cuts],
             "a_over_Ln": [float(value) for value in ln_cuts],
@@ -648,6 +754,21 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
                 str(value): int(np.sum(equilibrium_class[panel_indices] == value))
                 for value in np.unique(equilibrium_class[panel_indices])
             },
+            "fixed_pair_split_counts": {
+                SPLIT_NAMES[index]: int(
+                    np.sum(assignments["fixed"][panel_rows] == index)
+                )
+                for index in range(len(SPLIT_NAMES))
+            },
+            "near_threshold_reference_population": int(
+                np.sum(flux_labels == "near_threshold")
+            ),
+            "near_threshold_panel_count": int(
+                np.sum(flux_labels[panel_indices] == "near_threshold")
+            ),
+            "near_threshold_analysis_limited": bool(
+                np.sum(flux_labels == "near_threshold") < 30
+            ),
             "large_error_count": int(
                 np.sum(absolute_error[panel_indices] >= panel_sampling["error_top_decile_cut"])
             ),
@@ -683,6 +804,7 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
         axes=panel_axes,
         attributes={
             "gradient_set_codes": {"0": "varied", "1": "fixed"},
+            "legacy_split_codes": {str(index): name for index, name in enumerate(SPLIT_NAMES)},
             "channel_names": list(CHANNEL_NAMES),
             "scalar_feature_names": [str(value) for value in scalar_names],
             "sample_order": "varied rows followed by paired fixed rows",
@@ -709,13 +831,18 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
     artifacts.write_hdf5(
         "panel_geometry_summary.h5",
         {
-            "channel_correlation": channel_correlation.astype(np.float32),
-            "mean_power_spectrum": spectrum.astype(np.float32),
-            "fourier_mode": np.arange(spectrum.shape[1], dtype=np.int16),
+            **{
+                name: values.astype(np.float32)
+                for name, values in channel_correlations.items()
+            },
+            "median_normalized_non_dc_power_spectrum": spectrum.astype(np.float32),
+            "fourier_mode": np.arange(1, spectrum.shape[1] + 1, dtype=np.int16),
         },
         axes={
-            "channel_correlation": ("channel", "channel"),
-            "mean_power_spectrum": ("channel", "fourier_mode"),
+            **{
+                name: ("channel", "channel") for name in channel_correlations
+            },
+            "median_normalized_non_dc_power_spectrum": ("channel", "fourier_mode"),
             "fourier_mode": ("fourier_mode",),
         },
         attributes={"channel_names": list(CHANNEL_NAMES)},
@@ -726,7 +853,9 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
     strata_path = artifacts.write_text("stratified_performance.csv", _csv_text(stratified_rows))
     ranking_path = artifacts.write_text("bootstrap_ranking.csv", _csv_text(ranking_rows))
     channel_path = artifacts.write_text("channel_robust_scales.csv", _csv_text(channel_stats))
-    artifacts.write_text("panel_metadata.csv", _csv_text(panel_metadata))
+    panel_metadata_path = artifacts.write_text(
+        "panel_metadata.csv", _csv_text(panel_metadata)
+    )
     ranking_plot = output_dir.resolve() / "ranking_uncertainty.png"
     spectrum_plot = output_dir.resolve() / "panel_fourier_spectra.png"
     _plot_ranking(ranking_plot, validation_r2, heldout_r2, ci)
@@ -741,11 +870,10 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
         strata_path,
         ranking_path,
         channel_path,
+        panel_metadata_path,
         ranking_plot,
         spectrum_plot,
     ]
-    if not pilot and not args.no_publish:
-        _publish(publish_paths, args.published_dir)
     manifest = artifacts.finalize(
         config=resolved,
         dataset=dataset,
@@ -756,6 +884,8 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
         device=ensemble.device,
         repository=Path(__file__).resolve().parents[1],
     )
+    if not pilot and not args.no_publish:
+        _publish(publish_paths, args.published_dir)
     print(json.dumps(summary, indent=2), flush=True)
     print(f"S01 {resolved['mode']} completed; manifest: {manifest}", flush=True)
     return manifest
