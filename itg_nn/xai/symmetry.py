@@ -52,7 +52,11 @@ def _circular_same_convolution(
 
     kernel = int(convolution.kernel_size[0])
     total_padding = dilation * (kernel - 1)
-    left_padding = total_padding // 2
+    # Match Conv1d(padding="same") on the coarser grid exactly.  For an even
+    # kernel the trained layer puts the extra cell on the right *before* the
+    # grid spacing is expanded by dilation; splitting total_padding directly
+    # would translate the full-resolution density by dilation / 2.
+    left_padding = dilation * ((kernel - 1) // 2)
     right_padding = total_padding - left_padding
     indices = torch.arange(
         -left_padding,
@@ -87,10 +91,15 @@ class InvariantMember(nn.Module):
     def bottleneck(self, geometry: torch.Tensor) -> torch.Tensor:
         """Return the original member bottleneck after strided pooling."""
 
+        return self.bottleneck_map(geometry).mean(dim=-1)
+
+    def bottleneck_map(self, geometry: torch.Tensor) -> torch.Tensor:
+        """Return the trained stride-32 pre-GAP map with three positions."""
+
         hidden = geometry.transpose(1, 2)
         for convolution, pooling in zip(self.model.conv_layers, self.model.pool_layers):
             hidden = pooling(F.relu(convolution(hidden)))
-        return hidden.mean(dim=-1)
+        return hidden
 
     def head(
         self,

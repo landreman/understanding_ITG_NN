@@ -13,6 +13,7 @@ from itg_nn.xai.symmetry import (
     reverse_parallel,
     stellarator_parity,
 )
+from scripts.xai_s02_symmetry import _member_grouped_bootstrap_rows
 
 
 @pytest.mark.parametrize("kernel_sizes", [(3, 3, 3, 3, 3), (4, 5, 2, 3, 4)])
@@ -34,6 +35,14 @@ def test_atrous_density_matches_phase_average_and_is_equivariant(kernel_sizes) -
     ).mean(dim=0)
     density = member.equivariant_density(geometry)
     torch.testing.assert_close(density.mean(dim=-1), phase_bottlenecks, rtol=2e-6, atol=2e-6)
+    # This pins rho's spatial origin.  Mean identity and self-equivariance both
+    # remain true under a global circular roll and cannot detect misalignment.
+    torch.testing.assert_close(
+        density[..., ::32],
+        member.bottleneck_map(geometry),
+        rtol=2e-6,
+        atol=2e-6,
+    )
     torch.testing.assert_close(
         member.invariant(geometry, gradients, gradients),
         member.head(phase_bottlenecks, gradients, gradients),
@@ -94,3 +103,26 @@ def test_receptive_fields_include_even_kernel_offset_and_periodic_saturation() -
     assert rows[3].globally_connected
     assert rows[3].unique_periodic_positions == 96
     assert np.all(np.diff([row.unique_periodic_positions for row in rows]) >= 0)
+
+
+def test_member_grouped_bootstrap_preserves_member_axis_and_paired_sign() -> None:
+    actual = np.linspace(-2, 2, 12)
+    noise = np.tile(np.asarray([-1.0, 0.0, 1.0]), 4)
+    predictions = np.stack(
+        [
+            np.stack((actual + scale * noise, actual + 0.5 * scale * noise, actual))
+            for scale in (0.1, 0.2)
+        ]
+    )
+    rows, summary = _member_grouped_bootstrap_rows(
+        actual,
+        predictions,
+        np.repeat(np.arange(4), 3),
+        ("m0", "m1"),
+        replicates=20,
+        seed=5,
+    )
+    assert len(rows) == 4
+    assert summary["shift_averaged_bar_f"]["point_improved_members"] == 2
+    assert summary["invariant_tilde_f"]["point_improved_members"] == 2
+    assert all(row["probability_improved"] == 1.0 for row in rows)

@@ -1,17 +1,23 @@
 {
   "arbitrary_shift_member_rms_over_residual_std": {
-    "median": 0.36585114967296006,
-    "q10": 0.2644766571240084,
-    "q90": 0.44614337413929295
+    "median": 0.5142171593576847,
+    "q10": 0.37105048574922017,
+    "q90": 0.627024258210868
   },
   "bottleneck_census": {
     "dead_definition": "maximum absolute rho on the S01 panel <= 1e-12",
     "dead_unit_count_total": 293,
     "near_dead_definition": "non-dead with active rho fraction < 0.01",
     "near_dead_unit_count_total": 23,
+    "original_dead_definition": "maximum absolute native bottleneck u on the S01 panel <= 1e-12",
+    "original_dead_unit_count_total": 296,
+    "original_near_dead_definition": "non-dead native u with active sample fraction < 0.01",
+    "original_near_dead_unit_count_total": 6,
     "spearman_with_stored_validation_r2": {
       "dead_count": -0.10563484778878518,
       "near_dead_count": 0.05553372368629756,
+      "original_dead_count": -0.10549671511383384,
+      "original_near_dead_count": 0.15024845385334404,
       "width": 0.02281823972062322
     },
     "width_range": [
@@ -19,13 +25,17 @@
       32
     ]
   },
-  "canonical_decision_basis": "tilde_f is exactly invariant, supplies mean_z(rho)=bar_u, improves all 100 individual-member residual standard deviations, and has no resolved ensemble-accuracy penalty under the grouped bootstrap",
+  "canonical_decision_basis": "tilde_f is exactly invariant, supplies mean_z(rho)=bar_u, improves all 100 individual-member residual standard deviations in the registered production run, and has no resolved ensemble-accuracy penalty under the grouped bootstrap",
   "canonical_decision_status": "confirmed_by_researcher_2026-08-16",
   "canonical_function": "invariant_tilde_f",
   "checks": {
+    "density_alignment_max_abs": 7.62939453125e-06,
+    "density_alignment_pass": true,
     "density_equivariance_max_abs": 2.86102294921875e-06,
+    "density_equivariance_pass": true,
     "density_exactness_pass": true,
     "density_mean_identity_max_abs": 1.9073486328125e-06,
+    "density_mean_identity_pass": true,
     "exact_subgroup_max_abs": 9.5367431640625e-06,
     "exact_subgroup_pass": true,
     "phase_32_vs_96_max_abs": 1.0728836059570312e-06,
@@ -34,9 +44,10 @@
   "ensemble_accuracy": {
     "invariant_tilde_f": {
       "bias": 0.006684889310456224,
+      "cost_scope": "sequential_all_members",
       "entity": "ensemble_mean",
       "function": "invariant_tilde_f",
-      "microseconds_per_sample": 417.3630937204854,
+      "microseconds_per_sample": 41736.309372048534,
       "mse": 0.051847712454554246,
       "n": 9785.0,
       "r2": 0.9892924165404503,
@@ -49,13 +60,14 @@
       "residual_q99": 0.6564253909885882,
       "residual_std": 0.22761440942248248,
       "stratum": "all",
-      "wall_seconds": 4.0838978720549495
+      "wall_seconds": 408.38978720549494
     },
     "original_f": {
       "bias": 0.00533369952928879,
+      "cost_scope": "sequential_all_members",
       "entity": "ensemble_mean",
       "function": "original_f",
-      "microseconds_per_sample": 396.06662408396886,
+      "microseconds_per_sample": 39606.662408396885,
       "mse": 0.05175937868113396,
       "n": 9785.0,
       "r2": 0.9893106592209162,
@@ -68,13 +80,14 @@
       "residual_q99": 0.6491670322418212,
       "residual_std": 0.22745596855028857,
       "stratum": "all",
-      "wall_seconds": 3.875511916661635
+      "wall_seconds": 387.5511916661635
     },
     "shift_averaged_bar_f": {
       "bias": 0.00544379814786993,
+      "cost_scope": "sequential_all_members",
       "entity": "ensemble_mean",
       "function": "shift_averaged_bar_f",
-      "microseconds_per_sample": 11164.452520270504,
+      "microseconds_per_sample": 1116445.2520270504,
       "mse": 0.05179368710648199,
       "n": 9785.0,
       "r2": 0.9893035738489607,
@@ -87,7 +100,7 @@
       "residual_q99": 0.6477014350891113,
       "residual_std": 0.22752877367972227,
       "stratum": "all",
-      "wall_seconds": 109.24416791084688
+      "wall_seconds": 10924.416791084688
     }
   },
   "estimand": "native max(log Q, -2)",
@@ -123,6 +136,23 @@
         0.0006839662790298456
       ],
       "median": 0.00016843527555465698
+    },
+    "unit": "equilibrium_files"
+  },
+  "paired_member_grouped_bootstrap": {
+    "groups": 8113,
+    "invariant_tilde_f": {
+      "members_with_ci_upper_below_zero": 98,
+      "point_improved_members": 100,
+      "probability_improved_median": 1.0,
+      "probability_improved_minimum": 0.912
+    },
+    "replicates": 500,
+    "shift_averaged_bar_f": {
+      "members_with_ci_upper_below_zero": 100,
+      "point_improved_members": 100,
+      "probability_improved_median": 1.0,
+      "probability_improved_minimum": 0.992
     },
     "unit": "equilibrium_files"
   },

@@ -1,8 +1,8 @@
-channel,channel_name,stellarator_parity_normalized_mse,plain_reversal_normalized_mse
-0,bmag,0.0,0.0
-1,gbdrift,3.2219784337685e-33,3.2218635663806834e-33
-2,cvdrift,0.0,0.0
-3,gbdrift0_over_shat,0.04071755012350188,3.959283331040456
-4,gds2,0.0,0.0
-5,gds21_over_shat,0.07738727910727375,3.92263580836915
-6,gds22_over_shat_squared,0.0,0.0
+cohort,n,channel,channel_name,stellarator_parity_normalized_mse,plain_reversal_normalized_mse
+varied_reference,9785,0,bmag,0.0,0.0
+varied_reference,9785,1,gbdrift,8.79852197272679e-24,8.792541323966e-24
+varied_reference,9785,2,cvdrift,1.3703642744195718e-25,1.3694253580996578e-25
+varied_reference,9785,3,gbdrift0_over_shat,0.04187002495834077,3.9581466725885166
+varied_reference,9785,4,gds2,0.0,0.0
+varied_reference,9785,5,gds21_over_shat,0.07934536967821619,3.9207548350489927
+varied_reference,9785,6,gds22_over_shat_squared,0.0,0.0

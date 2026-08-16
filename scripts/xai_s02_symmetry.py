@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import gzip
 import io
 import json
 import shutil
@@ -199,9 +200,19 @@ def _accuracy_rows(
         "stable_near_floor": actual <= stable_threshold,
         "unstable": actual > stable_threshold,
     }
-    entities = [(member_id, predictions[index], timings[index]) for index, member_id in enumerate(member_ids)]
-    entities.append(("ensemble_mean", predictions.mean(axis=0), timings.mean(axis=0)))
-    for entity, values, cost in entities:
+    entities = [
+        (member_id, predictions[index], timings[index], "single_member")
+        for index, member_id in enumerate(member_ids)
+    ]
+    entities.append(
+        (
+            "ensemble_mean",
+            predictions.mean(axis=0),
+            timings.sum(axis=0),
+            "sequential_all_members",
+        )
+    )
+    for entity, values, cost, cost_scope in entities:
         for function_index, function_name in enumerate(FUNCTION_NAMES):
             for stratum, mask in stability.items():
                 metrics = regression_metrics(actual[mask], values[function_index, mask])
@@ -213,6 +224,7 @@ def _accuracy_rows(
                         "stratum": stratum,
                         **metrics,
                         "residual_std": float(np.std(residual, ddof=1)),
+                        "cost_scope": cost_scope,
                         "wall_seconds": float(cost[function_index]),
                         "microseconds_per_sample": float(cost[function_index] * 1e6 / len(actual)),
                     }
@@ -256,6 +268,100 @@ def _grouped_bootstrap_summary(
             for name, samples in values.items()
         },
     }
+
+
+def _member_grouped_bootstrap_rows(
+    actual: np.ndarray,
+    predictions: np.ndarray,
+    groups: np.ndarray,
+    member_ids: tuple[str, ...],
+    replicates: int,
+    seed: int,
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    """Paired grouped intervals for each member's residual-std change."""
+
+    unique, inverse = np.unique(groups, return_inverse=True)
+    residual = predictions.astype(np.float64) - actual[None, None, :]
+    flat = residual.reshape(-1, residual.shape[-1])
+    group_sum = np.zeros((flat.shape[0], len(unique)), dtype=np.float64)
+    group_sum_squares = np.zeros_like(group_sum)
+    row_index = np.broadcast_to(inverse, flat.shape)
+    np.add.at(group_sum, (np.arange(flat.shape[0])[:, None], row_index), flat)
+    np.add.at(
+        group_sum_squares,
+        (np.arange(flat.shape[0])[:, None], row_index),
+        np.square(flat),
+    )
+    group_sizes = np.bincount(inverse, minlength=len(unique)).astype(np.float64)
+
+    generator = np.random.default_rng(seed)
+    weights = np.empty((len(unique), replicates), dtype=np.float64)
+    for replicate in range(replicates):
+        chosen = generator.integers(0, len(unique), size=len(unique))
+        weights[:, replicate] = np.bincount(chosen, minlength=len(unique))
+    sample_sizes = group_sizes @ weights
+    sums = group_sum @ weights
+    sums_squares = group_sum_squares @ weights
+    variance = (sums_squares - np.square(sums) / sample_sizes) / (sample_sizes - 1)
+    standard_deviation = np.sqrt(np.maximum(variance, 0)).reshape(
+        len(member_ids), len(FUNCTION_NAMES), replicates
+    )
+
+    original_point = np.std(residual[:, 0], axis=1, ddof=1)
+    rows: list[dict[str, Any]] = []
+    summary: dict[str, Any] = {
+        "unit": "equilibrium_files",
+        "groups": int(len(unique)),
+        "replicates": int(replicates),
+    }
+    for function_index, function_name in enumerate(FUNCTION_NAMES[1:], start=1):
+        deltas = standard_deviation[:, function_index] - standard_deviation[:, 0]
+        point = np.std(residual[:, function_index], axis=1, ddof=1) - original_point
+        lower, upper = np.quantile(deltas, (0.025, 0.975), axis=1)
+        probability_improved = np.mean(deltas < 0, axis=1)
+        for member_index, member_id in enumerate(member_ids):
+            rows.append(
+                {
+                    "member_id": member_id,
+                    "function": function_name,
+                    "point_delta_residual_std_vs_f": float(point[member_index]),
+                    "bootstrap_median_delta": float(np.median(deltas[member_index])),
+                    "ci_95_lower": float(lower[member_index]),
+                    "ci_95_upper": float(upper[member_index]),
+                    "probability_improved": float(probability_improved[member_index]),
+                }
+            )
+        summary[function_name] = {
+            "point_improved_members": int(np.sum(point < 0)),
+            "members_with_ci_upper_below_zero": int(np.sum(upper < 0)),
+            "probability_improved_minimum": float(np.min(probability_improved)),
+            "probability_improved_median": float(np.median(probability_improved)),
+        }
+    return rows, summary
+
+
+def _panel_strata(
+    data: InferenceData, varied_count: int, stable_threshold: float
+) -> dict[tuple[str, str], np.ndarray]:
+    """Return non-pooled gradient-set and stability masks for the paired panel."""
+
+    if data.actual_log_heat_flux is None:
+        raise RuntimeError("panel targets unavailable")
+    actual = data.actual_log_heat_flux.numpy()
+    gradient_masks = {
+        "varied": np.arange(len(actual)) < varied_count,
+        "fixed": np.arange(len(actual)) >= varied_count,
+    }
+    strata: dict[tuple[str, str], np.ndarray] = {}
+    for gradient_set, gradient_mask in gradient_masks.items():
+        strata[(gradient_set, "all")] = gradient_mask
+        strata[(gradient_set, "stable_near_floor")] = gradient_mask & (
+            actual <= stable_threshold
+        )
+        strata[(gradient_set, "unstable")] = gradient_mask & (
+            actual > stable_threshold
+        )
+    return strata
 
 
 def _initialize_prediction_file(
@@ -334,25 +440,43 @@ def _density_census_and_checks(
     check_geometry = panel_data.geometry[:check_count].to(ensemble.device)
     dead_counts: list[int] = []
     near_dead_counts: list[int] = []
+    original_dead_counts: list[int] = []
+    original_near_dead_counts: list[int] = []
     widths: list[int] = []
     with torch.inference_mode():
         for rank, member_id in enumerate(member_ids, start=1):
             wrapped = InvariantMember(ensemble.models[index_by_id[member_id]])
             values: list[np.ndarray] = []
+            original_values: list[np.ndarray] = []
             for batch in iter_inference_batches(panel_data, int(config["batch_size"])):
-                values.append(wrapped.equivariant_density(batch.geometry.to(ensemble.device)).cpu().numpy())
+                geometry = batch.geometry.to(ensemble.device)
+                values.append(wrapped.equivariant_density(geometry).cpu().numpy())
+                original_values.append(wrapped.bottleneck(geometry).cpu().numpy())
             density = np.concatenate(values, axis=0)
+            original_bottleneck = np.concatenate(original_values, axis=0)
             width = density.shape[1]
             widths.append(width)
             dead_count = 0
             near_dead_count = 0
+            original_dead_count = 0
+            original_near_dead_count = 0
             for unit in range(width):
                 flat = density[:, unit, :].astype(np.float64).ravel()
+                original_flat = original_bottleneck[:, unit].astype(np.float64)
                 active_fraction = float(np.mean(flat > 0))
                 dead = bool(np.max(np.abs(flat)) <= 1e-12)
                 near_dead = bool(not dead and active_fraction < float(config["near_dead_active_fraction"]))
+                original_active_fraction = float(np.mean(original_flat > 0))
+                original_dead = bool(np.max(np.abs(original_flat)) <= 1e-12)
+                original_near_dead = bool(
+                    not original_dead
+                    and original_active_fraction
+                    < float(config["near_dead_active_fraction"])
+                )
                 dead_count += int(dead)
                 near_dead_count += int(near_dead)
+                original_dead_count += int(original_dead)
+                original_near_dead_count += int(original_near_dead)
                 unit_rows.append(
                     {
                         "member_id": member_id,
@@ -369,18 +493,33 @@ def _density_census_and_checks(
                         "median": float(np.median(flat)),
                         "q99": float(np.quantile(flat, 0.99)),
                         "maximum": float(np.max(flat)),
+                        "original_dead": original_dead,
+                        "original_near_dead": original_near_dead,
+                        "original_active_fraction": original_active_fraction,
+                        "original_mean": float(np.mean(original_flat)),
+                        "original_std": float(np.std(original_flat, ddof=1)),
+                        "original_q01": float(np.quantile(original_flat, 0.01)),
+                        "original_median": float(np.median(original_flat)),
+                        "original_q99": float(np.quantile(original_flat, 0.99)),
+                        "original_maximum": float(np.max(original_flat)),
                     }
                 )
             dead_counts.append(dead_count)
             near_dead_counts.append(near_dead_count)
+            original_dead_counts.append(original_dead_count)
+            original_near_dead_counts.append(original_near_dead_count)
 
             density_check = wrapped.equivariant_density(check_geometry)
+            original_map = wrapped.bottleneck_map(check_geometry)
             phase_mean = torch.stack(
                 [wrapped.bottleneck(circular_shift(check_geometry, phase)) for phase in range(32)]
             ).mean(dim=0)
             shifted_density = wrapped.equivariant_density(circular_shift(check_geometry, 1))
             mean_error = torch.abs(density_check.mean(-1) - phase_mean)
             equivariance_error = torch.abs(shifted_density - torch.roll(density_check, 1, -1))
+            alignment_error = torch.abs(density_check[..., ::32] - original_map)
+            atol = float(config["exact_atol"])
+            rtol = float(config["exact_rtol"])
             check_rows.append(
                 {
                     "member_id": member_id,
@@ -394,6 +533,31 @@ def _density_census_and_checks(
                         torch.linalg.vector_norm(equivariance_error)
                         / torch.linalg.vector_norm(density_check).clamp_min(torch.finfo(density_check.dtype).tiny)
                     ),
+                    "alignment_max_abs": float(alignment_error.max().cpu()),
+                    "alignment_relative_l2": float(
+                        torch.linalg.vector_norm(alignment_error)
+                        / torch.linalg.vector_norm(original_map).clamp_min(
+                            torch.finfo(original_map.dtype).tiny
+                        )
+                    ),
+                    "mean_identity_pass": bool(
+                        torch.allclose(
+                            density_check.mean(-1), phase_mean, atol=atol, rtol=rtol
+                        )
+                    ),
+                    "equivariance_pass": bool(
+                        torch.allclose(
+                            shifted_density,
+                            torch.roll(density_check, 1, -1),
+                            atol=atol,
+                            rtol=rtol,
+                        )
+                    ),
+                    "alignment_pass": bool(
+                        torch.allclose(
+                            density_check[..., ::32], original_map, atol=atol, rtol=rtol
+                        )
+                    ),
                 }
             )
             print(f"density census complete: {rank}/{len(member_ids)} {member_id}", flush=True)
@@ -405,10 +569,16 @@ def _density_census_and_checks(
         "width_range": [int(min(widths)), int(max(widths))],
         "dead_unit_count_total": int(sum(dead_counts)),
         "near_dead_unit_count_total": int(sum(near_dead_counts)),
+        "original_dead_definition": "maximum absolute native bottleneck u on the S01 panel <= 1e-12",
+        "original_near_dead_definition": f"non-dead native u with active sample fraction < {config['near_dead_active_fraction']}",
+        "original_dead_unit_count_total": int(sum(original_dead_counts)),
+        "original_near_dead_unit_count_total": int(sum(original_near_dead_counts)),
         "spearman_with_stored_validation_r2": {
             "width": correlation(widths),
             "dead_count": correlation(dead_counts),
             "near_dead_count": correlation(near_dead_counts),
+            "original_dead_count": correlation(original_dead_counts),
+            "original_near_dead_count": correlation(original_near_dead_counts),
         },
     }
     return unit_rows, check_rows, summary
@@ -416,14 +586,31 @@ def _density_census_and_checks(
 
 def _plot_shift(path: Path, symmetry_rows: list[dict[str, Any]]) -> None:
     figure, axes = plt.subplots(figsize=(7.2, 3.8))
-    member_rows = [row for row in symmetry_rows if row["entity_type"] == "member"]
+    member_rows = [
+        row
+        for row in symmetry_rows
+        if row["entity_type"] == "member"
+        and row["gradient_set"] == "varied"
+        and row["stratum"] == "all"
+    ]
     shifts = np.arange(96)
-    matrix = np.asarray([[row["rms_change"] for row in member_rows if row["entity"] == member] for member in dict.fromkeys(row["entity"] for row in member_rows)])
+    rows_by_member: dict[str, list[dict[str, Any]]] = {}
+    for row in member_rows:
+        rows_by_member.setdefault(row["entity"], []).append(row)
+    matrix = np.asarray(
+        [
+            [row["rms_change_over_residual_std"] for row in rows_by_member[member]]
+            for member in rows_by_member
+        ]
+    )
     axes.plot(shifts, np.median(matrix, axis=0), color="black", label="member median")
     axes.fill_between(shifts, np.quantile(matrix, 0.1, axis=0), np.quantile(matrix, 0.9, axis=0), alpha=0.25, label="10–90% members")
     axes.axvline(32, color="tab:red", linestyle="--", linewidth=0.8)
     axes.axvline(64, color="tab:red", linestyle="--", linewidth=0.8)
-    axes.set(xlabel="Circular shift (grid points)", ylabel="RMS native-output change")
+    axes.set(
+        xlabel="Circular shift (grid points)",
+        ylabel="RMS change / own varied-reference residual std",
+    )
     axes.grid(alpha=0.25)
     axes.legend(fontsize=8)
     figure.tight_layout()
@@ -449,11 +636,93 @@ def _plot_accuracy(path: Path, accuracy_rows: list[dict[str, Any]]) -> None:
 
 def _publish(paths: list[Path], destination: Path) -> None:
     destination.mkdir(parents=True, exist_ok=True)
+    if any(path.name == "shift_symmetry_summary.csv" for path in paths):
+        (destination / "shift_symmetry.csv").unlink(missing_ok=True)
+        (destination / "shift_symmetry.csv.gz").unlink(missing_ok=True)
     for source in paths:
         target = destination / source.name
         temporary = target.with_suffix(target.suffix + ".tmp")
         shutil.copy2(source, temporary)
         temporary.replace(target)
+
+
+def _write_gzip_csv(
+    artifacts: RunArtifacts, name: str, rows: list[dict[str, Any]]
+) -> Path:
+    """Write a compressed CSV atomically and register it in the run manifest."""
+
+    path = artifacts.output_dir / name
+    temporary = path.with_suffix(path.suffix + ".tmp")
+    with gzip.open(temporary, "wt", encoding="utf-8", newline="") as stream:
+        stream.write(_csv_text(rows))
+    temporary.replace(path)
+    return artifacts.register_existing(name)
+
+
+def _shift_summary_rows(symmetry_rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Compact member quantiles and ensemble rows for the committed report."""
+
+    result: list[dict[str, Any]] = []
+    grouped: dict[tuple[str, str, int, int], list[dict[str, Any]]] = {}
+    for row in symmetry_rows:
+        key = (row["gradient_set"], row["stratum"], row["n"], row["shift"])
+        grouped.setdefault(key, []).append(row)
+    for (gradient_set, stratum, count, shift), selected in grouped.items():
+        members = [row for row in selected if row["entity_type"] == "member"]
+        member_rms = np.asarray([row["rms_change"] for row in members])
+        member_ratio = np.asarray(
+            [
+                row["rms_change_over_residual_std"]
+                for row in members
+                if row["rms_change_over_residual_std"] is not None
+            ]
+        )
+        base = {
+            "gradient_set": gradient_set,
+            "stratum": stratum,
+            "n": count,
+            "shift": shift,
+            "exact_pooling_subgroup": shift in (0, 32, 64),
+        }
+        result.append(
+            {
+                **base,
+                "entity": "member_distribution",
+                "rms_change_q10": float(np.quantile(member_rms, 0.1)),
+                "rms_change_median": float(np.median(member_rms)),
+                "rms_change_q90": float(np.quantile(member_rms, 0.9)),
+                "rms_over_residual_std_q10": (
+                    float(np.quantile(member_ratio, 0.1))
+                    if len(member_ratio)
+                    else None
+                ),
+                "rms_over_residual_std_median": (
+                    float(np.median(member_ratio)) if len(member_ratio) else None
+                ),
+                "rms_over_residual_std_q90": (
+                    float(np.quantile(member_ratio, 0.9))
+                    if len(member_ratio)
+                    else None
+                ),
+            }
+        )
+        for row in selected:
+            if row["entity_type"] != "ensemble":
+                continue
+            ratio = row["rms_change_over_residual_std"]
+            result.append(
+                {
+                    **base,
+                    "entity": row["entity"],
+                    "rms_change_q10": row["rms_change"],
+                    "rms_change_median": row["rms_change"],
+                    "rms_change_q90": row["rms_change"],
+                    "rms_over_residual_std_q10": ratio,
+                    "rms_over_residual_std_median": ratio,
+                    "rms_over_residual_std_q90": ratio,
+                }
+            )
+    return result
 
 
 def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
@@ -554,10 +823,13 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
     actual = reference_data.actual_log_heat_flux.numpy()
     accuracy_rows = _accuracy_rows(actual, reference_prediction, member_ids, timings, float(resolved["stable_threshold_log_Q"]))
     residual_std = {
-        row["entity"]: row["residual_std"]
+        (row["entity"], row["stratum"]): row["residual_std"]
         for row in accuracy_rows
-        if row["function"] == "original_f" and row["stratum"] == "all"
+        if row["function"] == "original_f"
     }
+    panel_strata = _panel_strata(
+        panel_data, len(panel_rows), float(resolved["stable_threshold_log_Q"])
+    )
 
     symmetry_rows: list[dict[str, Any]] = []
     symmetry_entities = [(member_id, panel_shift_prediction[index], "member") for index, member_id in enumerate(member_ids)]
@@ -566,23 +838,49 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
         ("ensemble_spread", panel_shift_prediction.std(axis=0), "ensemble"),
     ))
     for entity, values, entity_type in symmetry_entities:
-        for shift in range(96):
-            metrics = _change_metrics(values[:, 0], values[:, shift])
-            own_residual = residual_std.get(entity)
-            symmetry_rows.append({
-                "entity": entity,
-                "entity_type": entity_type,
-                "shift": shift,
-                "exact_pooling_subgroup": shift in (0, 32, 64),
-                **metrics,
-                "original_reference_residual_std": own_residual,
-                "rms_change_over_residual_std": (metrics["rms_change"] / own_residual if own_residual else None),
-            })
+        for (gradient_set, stratum), mask in panel_strata.items():
+            for shift in range(96):
+                metrics = _change_metrics(values[mask, 0], values[mask, shift])
+                own_residual = (
+                    residual_std.get((entity, stratum))
+                    if gradient_set == "varied"
+                    else None
+                )
+                symmetry_rows.append(
+                    {
+                        "entity": entity,
+                        "entity_type": entity_type,
+                        "gradient_set": gradient_set,
+                        "stratum": stratum,
+                        "n": int(np.sum(mask)),
+                        "shift": shift,
+                        "exact_pooling_subgroup": shift in (0, 32, 64),
+                        **metrics,
+                        "original_reference_residual_std": own_residual,
+                        "rms_change_over_residual_std": (
+                            metrics["rms_change"] / own_residual
+                            if own_residual
+                            else None
+                        ),
+                    }
+                )
 
     phase_rows: list[dict[str, Any]] = []
     for entity, values, entity_type in symmetry_entities:
-        metrics = _change_metrics(values[:, :32].mean(axis=1), values.mean(axis=1))
-        phase_rows.append({"entity": entity, "entity_type": entity_type, **metrics})
+        for (gradient_set, stratum), mask in panel_strata.items():
+            metrics = _change_metrics(
+                values[mask, :32].mean(axis=1), values[mask].mean(axis=1)
+            )
+            phase_rows.append(
+                {
+                    "entity": entity,
+                    "entity_type": entity_type,
+                    "gradient_set": gradient_set,
+                    "stratum": stratum,
+                    "n": int(np.sum(mask)),
+                    **metrics,
+                }
+            )
 
     parity_rows: list[dict[str, Any]] = []
     parity_entities = [(member_id, parity_prediction[index], "member") for index, member_id in enumerate(member_ids)]
@@ -591,17 +889,34 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
         ("ensemble_spread", parity_prediction.std(axis=0), "ensemble"),
     ))
     for entity, values, entity_type in parity_entities:
-        for transform_index, transform_name in ((1, "stellarator_parity"), (2, "plain_reversal_control")):
-            metrics = _change_metrics(values[0], values[transform_index])
-            own_residual = residual_std.get(entity)
-            parity_rows.append({
-                "entity": entity,
-                "entity_type": entity_type,
-                "transform": transform_name,
-                **metrics,
-                "original_reference_residual_std": own_residual,
-                "rms_change_over_residual_std": (metrics["rms_change"] / own_residual if own_residual else None),
-            })
+        for (gradient_set, stratum), mask in panel_strata.items():
+            for transform_index, transform_name in (
+                (1, "stellarator_parity"),
+                (2, "plain_reversal_control"),
+            ):
+                metrics = _change_metrics(values[0, mask], values[transform_index, mask])
+                own_residual = (
+                    residual_std.get((entity, stratum))
+                    if gradient_set == "varied"
+                    else None
+                )
+                parity_rows.append(
+                    {
+                        "entity": entity,
+                        "entity_type": entity_type,
+                        "gradient_set": gradient_set,
+                        "stratum": stratum,
+                        "n": int(np.sum(mask)),
+                        "transform": transform_name,
+                        **metrics,
+                        "original_reference_residual_std": own_residual,
+                        "rms_change_over_residual_std": (
+                            metrics["rms_change"] / own_residual
+                            if own_residual
+                            else None
+                        ),
+                    }
+                )
 
     unit_rows, density_rows, census_summary = _density_census_and_checks(ensemble, member_ids, panel_data, validation, resolved)
     rf_rows: list[dict[str, Any]] = []
@@ -614,32 +929,90 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
         equilibrium = np.asarray(
             [value.decode("utf-8") if isinstance(value, bytes) else str(value) for value in equilibrium_bytes]
         )
-    correct_mismatch = normalized_parity_mismatch(varied_panel.geometry.numpy())
-    reversed_geometry = reverse_parallel(varied_panel.geometry).numpy()
-    original_geometry = varied_panel.geometry.numpy().astype(np.float64)
+    correct_mismatch = normalized_parity_mismatch(reference_data.geometry.numpy())
+    reversed_geometry = reverse_parallel(reference_data.geometry).numpy()
+    original_geometry = reference_data.geometry.numpy().astype(np.float64)
     wrong_mismatch = np.mean(np.square(reversed_geometry - original_geometry), axis=(0, 1)) / np.maximum(np.var(original_geometry, axis=(0, 1)), np.finfo(float).tiny)
     parity_data_rows = [
-        {"channel": index, "channel_name": CHANNEL_NAMES[index], "stellarator_parity_normalized_mse": float(correct_mismatch[index]), "plain_reversal_normalized_mse": float(wrong_mismatch[index])}
+        {
+            "cohort": "varied_reference",
+            "n": len(reference_rows),
+            "channel": index,
+            "channel_name": CHANNEL_NAMES[index],
+            "stellarator_parity_normalized_mse": float(correct_mismatch[index]),
+            "plain_reversal_normalized_mse": float(wrong_mismatch[index]),
+        }
         for index in range(7)
     ]
 
-    exact_rows = [row for row in symmetry_rows if row["entity_type"] == "member" and row["shift"] in (32, 64)]
-    arbitrary_rows = [row for row in symmetry_rows if row["entity_type"] == "member" and row["shift"] not in (0, 32, 64)]
+    exact_rows = [
+        row
+        for row in symmetry_rows
+        if row["entity_type"] == "member"
+        and row["stratum"] == "all"
+        and row["shift"] in (32, 64)
+    ]
+    arbitrary_rows = [
+        row
+        for row in symmetry_rows
+        if row["entity_type"] == "member"
+        and row["gradient_set"] == "varied"
+        and row["stratum"] == "all"
+        and row["shift"] not in (0, 32, 64)
+    ]
     exact_tolerance = float(resolved["exact_atol"])
-    density_tolerance = float(resolved["exact_atol"])
+    relative_tolerance = float(resolved["exact_rtol"])
+    subgroup_pass = bool(
+        np.allclose(
+            panel_shift_prediction[:, :, (0,)],
+            panel_shift_prediction[:, :, (32, 64)],
+            atol=exact_tolerance,
+            rtol=relative_tolerance,
+        )
+    )
+    phase_pass = bool(
+        np.allclose(
+            panel_shift_prediction[:, :, :32].mean(axis=2),
+            panel_shift_prediction.mean(axis=2),
+            atol=exact_tolerance,
+            rtol=relative_tolerance,
+        )
+    )
     checks = {
         "exact_subgroup_max_abs": float(max(row["max_absolute_change"] for row in exact_rows)),
-        "exact_subgroup_pass": bool(max(row["max_absolute_change"] for row in exact_rows) <= exact_tolerance),
+        "exact_subgroup_pass": subgroup_pass,
         "phase_32_vs_96_max_abs": float(max(row["max_absolute_change"] for row in phase_rows)),
-        "phase_32_vs_96_pass": bool(max(row["max_absolute_change"] for row in phase_rows) <= exact_tolerance),
+        "phase_32_vs_96_pass": phase_pass,
         "density_mean_identity_max_abs": float(max(row["mean_identity_max_abs"] for row in density_rows)),
         "density_equivariance_max_abs": float(max(row["equivariance_max_abs"] for row in density_rows)),
-        "density_exactness_pass": bool(max(max(row["mean_identity_max_abs"], row["equivariance_max_abs"]) for row in density_rows) <= density_tolerance),
+        "density_alignment_max_abs": float(max(row["alignment_max_abs"] for row in density_rows)),
+        "density_mean_identity_pass": bool(
+            all(row["mean_identity_pass"] for row in density_rows)
+        ),
+        "density_equivariance_pass": bool(
+            all(row["equivariance_pass"] for row in density_rows)
+        ),
+        "density_alignment_pass": bool(
+            all(row["alignment_pass"] for row in density_rows)
+        ),
     }
+    checks["density_exactness_pass"] = bool(
+        checks["density_mean_identity_pass"]
+        and checks["density_equivariance_pass"]
+        and checks["density_alignment_pass"]
+    )
     if not all((checks["exact_subgroup_pass"], checks["phase_32_vs_96_pass"], checks["density_exactness_pass"])):
         raise RuntimeError(f"registered exactness check failed: {checks}")
 
     reference_ensemble = reference_prediction.mean(axis=0)
+    member_bootstrap_rows, member_bootstrap_summary = _member_grouped_bootstrap_rows(
+        actual,
+        reference_prediction,
+        equilibrium,
+        member_ids,
+        int(resolved["bootstrap_replicates"]),
+        int(resolved["seed"]) + 2,
+    )
     ensemble_accuracy = {
         function: next(row for row in accuracy_rows if row["entity"] == "ensemble_mean" and row["function"] == function and row["stratum"] == "all")
         for function in FUNCTION_NAMES
@@ -660,26 +1033,33 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
         },
         "ensemble_accuracy": ensemble_accuracy,
         "paired_grouped_bootstrap": _grouped_bootstrap_summary(actual, reference_prediction, equilibrium, int(resolved["bootstrap_replicates"]), int(resolved["seed"]) + 1),
+        "paired_member_grouped_bootstrap": member_bootstrap_summary,
         "bottleneck_census": census_summary,
         "canonical_decision_status": resolved["canonical_decision"],
         "canonical_function": resolved["canonical_function"],
         "canonical_decision_basis": (
             "tilde_f is exactly invariant, supplies mean_z(rho)=bar_u, improves "
-            "all 100 individual-member residual standard deviations, and has "
-            "no resolved ensemble-accuracy penalty under the grouped bootstrap"
+            "all 100 individual-member residual standard deviations in the registered "
+            "production run, and has no resolved ensemble-accuracy penalty under the "
+            "grouped bootstrap"
         ),
         "reference_prediction_standard_deviation": {FUNCTION_NAMES[index]: float(np.std(reference_ensemble[index], ddof=1)) for index in range(3)},
     }
 
+    (artifacts.output_dir / "shift_symmetry.csv").unlink(missing_ok=True)
+    _write_gzip_csv(artifacts, "shift_symmetry.csv.gz", symmetry_rows)
     paths = [
         artifacts.write_text("accuracy.csv", _csv_text(accuracy_rows)),
-        artifacts.write_text("shift_symmetry.csv", _csv_text(symmetry_rows)),
+        artifacts.write_text(
+            "shift_symmetry_summary.csv", _csv_text(_shift_summary_rows(symmetry_rows))
+        ),
         artifacts.write_text("phase_average_exactness.csv", _csv_text(phase_rows)),
         artifacts.write_text("parity_symmetry.csv", _csv_text(parity_rows)),
         artifacts.write_text("parity_data_mismatch.csv", _csv_text(parity_data_rows)),
         artifacts.write_text("receptive_fields.csv", _csv_text(rf_rows)),
         artifacts.write_text("bottleneck_units.csv", _csv_text(unit_rows)),
         artifacts.write_text("density_exactness.csv", _csv_text(density_rows)),
+        artifacts.write_text("member_grouped_bootstrap.csv", _csv_text(member_bootstrap_rows)),
         artifacts.write_json("summary.json", summary),
     ]
     artifacts.register_existing("predictions.h5")
