@@ -33,18 +33,17 @@ conda run -n 20240629-01-ML python -m pytest
 ## XAI environment and S00 smoke pilot
 
 Interpretation code is optional so normal inference keeps its established
-environment. Create a project-local virtual environment from the existing conda
-runtime; this does not modify `20240629-01-ML`:
+environment. One command creates a project-local virtual environment from the
+existing conda runtime; this does not modify `20240629-01-ML`:
 
 ```bash
-conda run -n 20240629-01-ML python -m venv --system-site-packages .venv-xai
-.venv-xai/bin/python -m pip install -e '.[xai]'
-.venv-xai/bin/python -c 'import captum, itg_nn, torch; print(captum.__version__, torch.__version__)'
+bash scripts/setup_xai_env.sh
 ```
 
-`captum==0.7.0` is the intentionally small locked XAI addition; it is also
-declared as the `xai` optional dependency in `pyproject.toml`. Make a separate
-`.venv-xai` in each worktree because an editable install is worktree-specific.
+`captum==0.9.0` is the intentionally small locked XAI addition; it is also
+declared as the `xai` optional dependency in `pyproject.toml` and pinned in
+`requirements/xai.lock`. Make a separate `.venv-xai` in each worktree because an
+editable install is worktree-specific.
 
 The registered S00 CPU pilot selects the highest stored validation-$R^2$ member,
 uses 64 positive-target varied-gradient rows, verifies the module-form conversion against all

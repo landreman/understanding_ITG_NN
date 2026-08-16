@@ -5,6 +5,17 @@
 Completed. This step establishes infrastructure only; it makes no claim about a
 learned geometry feature or a plasma mechanism.
 
+### Post-step corrections
+
+Applied after the step was written, outside its numbered scope:
+
+- The Captum pin was raised from `0.7.0` to `0.9.0` after verifying imports and a
+  live `IntegratedGradients` / `LayerIntegratedGradients` call against
+  torch 2.4.1, numpy 1.26.4, Python 3.12.4. The pilot below used `0.7.0`; nothing
+  in it depends on Captum, and the 12-test suite passes on `0.9.0`.
+- `scripts/setup_xai_env.sh` replaces the multi-command venv recipe, so a fresh
+  worktree is one command away from a working `.venv-xai`.
+
 ## Delivered contract
 
 - `itg_nn/xai/` provides validated JSON configuration, deterministic seed setup,
