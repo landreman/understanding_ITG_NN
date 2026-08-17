@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import importlib
 import json
 
 import numpy as np
@@ -20,6 +21,35 @@ from itg_nn.xai.toys import (
     PeriodicPermutationToy,
     PeriodicWindowToy,
 )
+
+
+def test_s03_review_artifact_script_imports_as_a_module() -> None:
+    module = importlib.import_module("scripts.xai_s03_review2_artifacts")
+    assert callable(module.main)
+
+
+def test_s03_compact_summary_reports_a_capped_expanded_cohort() -> None:
+    module = importlib.import_module("scripts.xai_s03_ladder")
+    rows = [
+        {
+            "member_id": f"m{index}",
+            "function": "invariant_tilde_f",
+            "gradient_set": "varied",
+            "stratum": "all",
+            "replicate": 0,
+            "family": "joint_shift",
+            "parameter": "shift=32",
+            "dose": 1.0,
+            "rms_change_over_residual_std": float(index + 1),
+            "bootstrap_ci95_lower": float(index) + 0.5,
+            "bootstrap_ci95_upper": float(index) + 1.5,
+        }
+        for index in range(5)
+    ]
+    summary = module._compact_ladder_summary(rows, {"m0", "m1"})
+    joint_shift = next(row for row in summary if row["item"] == "joint_shift")
+    assert joint_shift["expanded_member_count"] == 5
+    assert joint_shift["expanded_cohort_median"] == 3.0
 
 
 def _architecture() -> Architecture:

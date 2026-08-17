@@ -6,7 +6,7 @@ import torch
 
 from itg_nn.xai.perturbations import (
     ReferenceBackgrounds,
-    RobustPCASupport,
+    ScaledPCASupport,
     attenuate_fourier_band,
     block_permutation,
     independent_channel_shifts,
@@ -102,6 +102,14 @@ def test_common_phase_rotation_preserves_cross_channel_relative_phase() -> None:
         rtol=2e-5,
         atol=2e-5,
     )
+
+
+def test_common_and_independent_phase_edits_share_the_first_channel_realization() -> None:
+    geometry = _geometry(12)
+    common = phase_scramble(geometry, seed=29, independent_channels=False)
+    independent = phase_scramble(geometry, seed=29, independent_channels=True)
+    torch.testing.assert_close(common[:, :, 0], independent[:, :, 0], rtol=0, atol=0)
+    assert not torch.equal(common[:, :, 1:], independent[:, :, 1:])
 
 
 def test_block_permutation_never_returns_an_exact_cyclic_shift() -> None:
@@ -209,7 +217,7 @@ def test_low_pass_and_support_score_behave_analytically() -> None:
     geometry = _geometry(40).numpy()
     fit = geometry[:24]
     heldout = geometry[24:32]
-    support = RobustPCASupport.fit(fit, heldout, components=6)
+    support = ScaledPCASupport.fit(fit, heldout, components=6)
     in_support = support.score(geometry[32:36])
     far = support.score(geometry[32:36] + 100)
     assert np.median(far["warning_score"]) > np.median(in_support["warning_score"])

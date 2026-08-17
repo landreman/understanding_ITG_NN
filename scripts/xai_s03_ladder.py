@@ -29,7 +29,7 @@ from itg_nn.xai.artifacts import RunArtifacts, sha256_file
 from itg_nn.xai.perturbations import (
     PerturbationSpec,
     ReferenceBackgrounds,
-    RobustPCASupport,
+    ScaledPCASupport,
     ValidityTag,
     attenuate_fourier_band,
     block_permutation,
@@ -79,6 +79,10 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--seed", type=int)
     parser.add_argument("--members", type=int, help="Cap the all-member cohort")
     parser.add_argument("--rows", type=int, help="Number of varied rows plus paired fixed rows")
+    parser.add_argument(
+        "--families",
+        help="Comma-separated perturbation families for a targeted reproducible rerun",
+    )
     parser.add_argument("--pilot", action="store_true")
     parser.add_argument("--resume", action="store_true")
     parser.add_argument("--no-publish", action="store_true")
@@ -120,6 +124,10 @@ def _resolve(config: dict[str, Any], args: argparse.Namespace) -> dict[str, Any]
         resolved["panel_varied_rows"] = args.rows
     if args.members is not None:
         resolved["members"] = args.members
+    if args.families:
+        resolved["families"] = [
+            family.strip() for family in args.families.split(",") if family.strip()
+        ]
     for name in ("dataset", "checkpoint", "cohorts", "published_dir"):
         value = getattr(args, name)
         if value is not None:
@@ -332,7 +340,18 @@ def _specs(config: dict[str, Any]) -> list[PerturbationSpec]:
 
 
 def _seed(config: dict[str, Any], spec: PerturbationSpec) -> int:
-    family_offset = sum((index + 1) * ord(value) for index, value in enumerate(spec.family))
+    # Block lengths intentionally share a common random-number stream within a
+    # replicate, reducing realization noise in the length-scale comparison.
+    # Phase variants also share a stream, and phase_scramble maps column zero of
+    # the full tensor to the common endpoint for a genuinely matched contrast.
+    family = (
+        "matched_phase_scramble"
+        if spec.family in ("common_phase_scramble", "channel_phase_scramble")
+        else spec.family
+    )
+    family_offset = sum(
+        (index + 1) * ord(value) for index, value in enumerate(family)
+    )
     return int(config["seed"]) + family_offset + 1009 * spec.replicate
 
 
@@ -543,8 +562,8 @@ def _robust_input_displacements(
     spec: PerturbationSpec,
     masks: dict[tuple[str, str], np.ndarray],
     channel_scales: np.ndarray,
-) -> dict[tuple[str, str, str], float]:
-    """RMS input dose after S01 robust scaling, using only edited channels."""
+) -> dict[tuple[str, str, str], dict[str, float]]:
+    """RMS and median-absolute doses after robust per-channel scaling."""
 
     if spec.family == "channel_replacement":
         channels = [int(spec.parameter.split(";")[0].split("=")[1])]
@@ -554,12 +573,14 @@ def _robust_input_displacements(
         :, :, channels
     ].numpy().astype(np.float64)
     difference /= channel_scales[np.asarray(channels)][None, None, :]
-    return {
-        (spec.name, gradient_set, stratum): float(
-            np.sqrt(np.mean(np.square(difference[mask])))
-        )
-        for (gradient_set, stratum), mask in masks.items()
-    }
+    output: dict[tuple[str, str, str], dict[str, float]] = {}
+    for (gradient_set, stratum), mask in masks.items():
+        selected = difference[mask]
+        output[(spec.name, gradient_set, stratum)] = {
+            "rms": float(np.sqrt(np.mean(np.square(selected)))),
+            "median_abs": float(np.median(np.abs(selected))),
+        }
+    return output
 
 
 def _bootstrap_draws(mask: np.ndarray, replicates: int, seed: int) -> np.ndarray:
@@ -578,7 +599,7 @@ def _ladder_rows(
     panel: InferenceData,
     metadata: dict[str, np.ndarray],
     reference_residual_scales: dict[tuple[str, str, str], float],
-    input_displacements: dict[tuple[str, str, str], float],
+    input_displacements: dict[tuple[str, str, str], dict[str, float]],
     config: dict[str, Any],
 ) -> list[dict[str, Any]]:
     actual = panel.actual_log_heat_flux.numpy()
@@ -609,8 +630,11 @@ def _ladder_rows(
                     normalization: float | str = ""
                     reference_normalization: float | str = ""
                     ratio: float | str = ""
-                    dose = input_displacements[(spec.name, gradient_set, stratum)]
+                    doses = input_displacements[(spec.name, gradient_set, stratum)]
+                    rms_dose = doses["rms"]
+                    median_abs_dose = doses["median_abs"]
                     ratio_per_dose: float | str = ""
+                    ratio_per_median_abs_dose: float | str = ""
                     if gradient_set == "varied":
                         varied_residual = reference[member_index, function_index].astype(
                             np.float64
@@ -620,7 +644,12 @@ def _ladder_rows(
                             (member_id, function_name, stratum)
                         ]
                         ratio = rms / float(normalization)
-                        ratio_per_dose = float(ratio) / dose if dose > 0 else ""
+                        ratio_per_dose = float(ratio) / rms_dose if rms_dose > 0 else ""
+                        ratio_per_median_abs_dose = (
+                            float(ratio) / median_abs_dose
+                            if median_abs_dose > 0
+                            else ""
+                        )
                     ci_lower: float | str = ""
                     ci_upper: float | str = ""
                     if member_id in top_ids and len(selected):
@@ -653,8 +682,10 @@ def _ladder_rows(
                             "panel_residual_std": normalization,
                             "s02_reference_residual_std": reference_normalization,
                             "rms_change_over_residual_std": ratio,
-                            "robust_input_displacement_rms": dose,
+                            "robust_input_displacement_rms": rms_dose,
                             "effect_per_robust_input_rms": ratio_per_dose,
+                            "robust_input_displacement_median_abs": median_abs_dose,
+                            "effect_per_robust_input_median_abs": ratio_per_median_abs_dose,
                             "bootstrap_ci95_lower": ci_lower,
                             "bootstrap_ci95_upper": ci_upper,
                             "bootstrap_unit": "equilibrium_files",
@@ -664,7 +695,7 @@ def _ladder_rows(
 
 
 def _support_rows(
-    support: RobustPCASupport,
+    support: ScaledPCASupport,
     specs: list[PerturbationSpec],
     panel: InferenceData,
     metadata: dict[str, np.ndarray],
@@ -844,13 +875,18 @@ def _compact_ladder_summary(
         selected: list[dict[str, Any]],
     ) -> dict[str, Any]:
         top = [row for row in selected if row["member_id"] in top_ids]
-        all_members = selected if len({row["member_id"] for row in selected}) == 100 else []
+        selected_member_count = len({row["member_id"] for row in selected})
+        expanded_members = (
+            selected if selected_member_count > len({row["member_id"] for row in top}) else []
+        )
 
         def quantile(values: list[float], probability: float) -> float | str:
             return float(np.quantile(values, probability)) if values else ""
 
         top_effect = [float(row["rms_change_over_residual_std"]) for row in top]
-        all_effect = [float(row["rms_change_over_residual_std"]) for row in all_members]
+        expanded_effect = [
+            float(row["rms_change_over_residual_std"]) for row in expanded_members
+        ]
         dose_comparable = section in (
             "fourier_full_attenuation",
             "channel_replacement",
@@ -860,6 +896,13 @@ def _compact_ladder_summary(
             if dose_comparable
             else []
         )
+        median_normalized = (
+            [float(row["effect_per_robust_input_median_abs"]) for row in top]
+            if dose_comparable
+            else []
+        )
+        bootstrap_lower = [float(row["bootstrap_ci95_lower"]) for row in top]
+        bootstrap_upper = [float(row["bootstrap_ci95_upper"]) for row in top]
         return {
             "section": section,
             "item": item,
@@ -870,19 +913,44 @@ def _compact_ladder_summary(
                         [float(row["robust_input_displacement_rms"]) for row in top]
                     )
                 )
-                if dose_comparable
+                if dose_comparable and top
                 else ""
             ),
             "robust_dose_comparison_scope": (
-                "within_section_only" if dose_comparable else "not_cross_family_comparable"
+                "within_section_sensitivity_analysis"
+                if dose_comparable and top
+                else "not_cross_family_comparable"
+            ),
+            "robust_input_displacement_median_abs": (
+                float(
+                    np.median(
+                        [
+                            float(row["robust_input_displacement_median_abs"])
+                            for row in top
+                        ]
+                    )
+                )
+                if dose_comparable and top
+                else ""
             ),
             "top10_q10": quantile(top_effect, 0.1),
             "top10_median": quantile(top_effect, 0.5),
             "top10_q90": quantile(top_effect, 0.9),
+            "top10_range_kind": "member_spread_not_sampling_uncertainty",
+            "top10_member_bootstrap_ci95_lower_median": quantile(
+                bootstrap_lower, 0.5
+            ),
+            "top10_member_bootstrap_ci95_upper_median": quantile(
+                bootstrap_upper, 0.5
+            ),
             "top10_median_effect_per_robust_input_rms": quantile(normalized, 0.5),
-            "all100_q10": quantile(all_effect, 0.1),
-            "all100_median": quantile(all_effect, 0.5),
-            "all100_q90": quantile(all_effect, 0.9),
+            "top10_median_effect_per_robust_input_median_abs": quantile(
+                median_normalized, 0.5
+            ),
+            "expanded_member_count": selected_member_count if expanded_members else "",
+            "expanded_cohort_q10": quantile(expanded_effect, 0.1),
+            "expanded_cohort_median": quantile(expanded_effect, 0.5),
+            "expanded_cohort_q90": quantile(expanded_effect, 0.9),
         }
 
     output: list[dict[str, Any]] = []
@@ -989,14 +1057,14 @@ def _contrast_summary_rows(
             "joint_permutation",
             None,
             "random_joint_shift",
-            "registered_matched_control",
+            "exact_symmetry_diagnostic_not_effect_size_control",
         ),
         (
             "independent_shift_minus_random_joint_shift",
             "independent_shift",
             None,
             "random_joint_shift",
-            "registered_matched_control",
+            "exact_symmetry_diagnostic_not_effect_size_control",
         ),
         (
             "channel_phase_minus_common_phase",
@@ -1018,7 +1086,7 @@ def _contrast_summary_rows(
                 "block_permutation",
                 f"block_length={length}",
                 "random_joint_shift",
-                "registered_matched_control",
+                "exact_symmetry_diagnostic_not_effect_size_control",
             )
             for length in (2, 4, 8, 16, 32)
         ),
@@ -1072,29 +1140,6 @@ def _contrast_summary_rows(
                 }
             )
     return output
-
-
-def _plot_overview(path: Path, rows: list[dict[str, Any]], top_ids: set[str]) -> None:
-    selected = [
-        row for row in rows
-        if row["member_id"] in top_ids
-        and row["function"] == "invariant_tilde_f"
-        and row["gradient_set"] == "varied"
-        and row["stratum"] == "all"
-        and row["replicate"] == 0
-        and row["dose"] == 1.0
-    ]
-    families = sorted({str(row["family"]) for row in selected})
-    medians = [np.median([float(row["rms_change_over_residual_std"]) for row in selected if row["family"] == family]) for family in families]
-    order = np.argsort(medians)
-    figure, axis = plt.subplots(figsize=(8.4, 5.8))
-    axis.barh(np.asarray(families)[order], np.asarray(medians)[order], color="#4477AA")
-    axis.axvline(1, color="black", linestyle="--", linewidth=1)
-    axis.set_xlabel("Median top-10 RMS change / panel member residual std")
-    axis.set_title("S03 canonical tilde_f ladder (varied panel, replicate 0)")
-    figure.tight_layout()
-    figure.savefig(path, dpi=180)
-    plt.close(figure)
 
 
 def _plot_dose(path: Path, rows: list[dict[str, Any]], top_ids: set[str]) -> None:
@@ -1169,7 +1214,7 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
     split = int(len(support_varied.geometry) * float(resolved["support_fit_fraction"]))
     if not 2 <= split < len(support_varied.geometry):
         raise ValueError("support_fit_fraction leaves an empty fit or held-out set")
-    support = RobustPCASupport.fit(
+    support = ScaledPCASupport.fit(
         support_varied.geometry[:split].numpy(),
         support_varied.geometry[split:].numpy(),
         components=int(resolved["support_components"]),
@@ -1206,11 +1251,18 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
     if set(member_ids).difference(index_by_id):
         raise RuntimeError("registered member IDs are absent from checkpoint")
     specs = _specs(resolved)
+    if "families" in resolved:
+        requested_families = set(resolved["families"])
+        available_families = {spec.family for spec in specs}
+        unknown = requested_families.difference(available_families)
+        if unknown:
+            raise ValueError(f"unknown perturbation families: {sorted(unknown)}")
+        specs = [spec for spec in specs if spec.family in requested_families]
     masks = _analysis_masks(
         panel, metadata, float(resolved["stable_threshold_log_Q"])
     )
     channel_scales = _channel_robust_scales(Path(resolved["s01_channel_scales"]))
-    input_displacements: dict[tuple[str, str, str], float] = {}
+    input_displacements: dict[tuple[str, str, str], dict[str, float]] = {}
     endpoint_hashes: dict[str, str] = {}
     deterministic_specs: dict[str, bool] = {}
     for spec in specs:
@@ -1334,21 +1386,47 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
         resolved,
     )
     spec_index_by_name = {spec.name: index + 1 for index, spec in enumerate(specs)}
-    exact_names = ["joint_shift_32"] + [
+    exact_names = (["joint_shift_32"] if "joint_shift_32" in spec_index_by_name else []) + [
         spec.name for spec in specs if spec.family == "random_joint_shift"
     ]
     exact_errors: dict[str, float] = {}
+    exact_allclose: dict[str, bool] = {}
+    exact_atol = float(resolved["exact_atol"])
+    exact_rtol = float(resolved["exact_rtol"])
     for name in exact_names:
         index = spec_index_by_name[name]
         applicable = np.isfinite(predictions[:, 1, index]).all(axis=1)
-        exact_errors[f"invariant_tilde_f:{name}"] = float(
-            np.max(np.abs(predictions[applicable, 1, index] - predictions[applicable, 1, 0]))
+        key = f"invariant_tilde_f:{name}"
+        endpoint_values = predictions[applicable, 1, index]
+        reference_values = predictions[applicable, 1, 0]
+        exact_errors[key] = float(
+            np.max(np.abs(endpoint_values - reference_values))
         )
-    index = spec_index_by_name["joint_shift_32"]
-    exact_errors["original_f:joint_shift_32"] = float(
-        np.max(np.abs(predictions[:, 0, index] - predictions[:, 0, 0]))
-    )
-    exact_passed = all(value <= float(resolved["exact_atol"]) for value in exact_errors.values())
+        exact_allclose[key] = bool(
+            np.allclose(
+                endpoint_values,
+                reference_values,
+                atol=exact_atol,
+                rtol=exact_rtol,
+            )
+        )
+    if "joint_shift_32" in spec_index_by_name:
+        index = spec_index_by_name["joint_shift_32"]
+        key = "original_f:joint_shift_32"
+        endpoint_values = predictions[:, 0, index]
+        reference_values = predictions[:, 0, 0]
+        exact_errors[key] = float(
+            np.max(np.abs(endpoint_values - reference_values))
+        )
+        exact_allclose[key] = bool(
+            np.allclose(
+                endpoint_values,
+                reference_values,
+                atol=exact_atol,
+                rtol=exact_rtol,
+            )
+        )
+    exact_passed = all(exact_allclose.values())
     if not exact_passed:
         raise RuntimeError(
             f"registered exact-symmetry checks failed: {exact_errors}"
@@ -1378,13 +1456,16 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
         "estimand": "native max(log Q, -2)",
         "available": {
             "robust_constant": "per-channel reference median expanded over z",
-            "matched_observed": "observed row matched on model gradients within equilibrium class; source row excluded",
-            "nearest_neighbour": "robustly scaled gradient nearest neighbour within equilibrium class",
+            "matched_observed": "observed robust-gradient nearest neighbour within equilibrium class; source row excluded",
             "medoid": "observed geometry nearest the robust profile center, optionally within class",
-            "low_pass_input": "input-specific rFFT truncation retaining DC through registered cutoff",
+            "low_pass": "rFFT truncation of the supplied analysed or background input, retaining DC through the registered cutoff",
             "conditional_channel_profile": "pointwise median profile of nearest class/gradient-matched observed rows; tied gradients reduce explicitly to class-only matching",
         },
-        "support_warning": "robust per-channel scaling + PCA + held-out nearest-neighbour distance; two-sided tails; not proof of physical validity",
+        "production_real_data_usage": {
+            "conditional_channel_profile": "used for S03 channel replacement",
+            "robust_constant_matched_observed_medoid_low_pass": "API-only in S03; first real consumers are downstream steps",
+        },
+        "support_warning": "robust per-channel scaling + ordinary SVD PCA + held-out nearest-neighbour distance; PCA components remain outlier-sensitive; two-sided tails; not proof of physical validity",
         "cyclic_anchor": "argmax joint robust-standardized energy across all channels",
         "panel_equilibrium_overlap": 0,
         "support_fit_rows": split,
@@ -1428,6 +1509,7 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
             "toy_controls": toy_checks,
             "toy_gate_timing": "before_real_member_inference",
             "exact_symmetry_max_absolute_errors": exact_errors,
+            "exact_symmetry_allclose_atol_rtol": exact_allclose,
             "exact_symmetry_passed": exact_passed,
             "deterministic_seeded_operators": bool(all(deterministic_specs.values())),
             "full_batch_repeat_by_spec": deterministic_specs,
@@ -1452,7 +1534,7 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
         "normalization": {
             "point_estimate": "same frozen S01 panel and matching member/function/flux stratum",
             "comparison_only": "S02 full-reference residual std retained as a separate ladder.csv column",
-            "input_dose": "S01 IQR/1.349 channel scales; replacement dose uses only the edited channel",
+            "input_dose": "S01 IQR/1.349 channel scales followed by both RMS and median-absolute aggregation; replacement dose uses only the edited channel; normalized rankings are sensitivity analyses",
         },
         "support": baseline_registry,
     }
@@ -1484,11 +1566,8 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
         calibration_nearest=support.calibration_nearest,
     )
     artifacts.register_existing(support_model_path.name)
-    overview_path = output_dir / "ladder_overview.png"
     dose_path = output_dir / "dose_response.png"
-    _plot_overview(overview_path, ladder_rows, top_ids)
     _plot_dose(dose_path, ladder_rows, top_ids)
-    artifacts.register_existing(overview_path.name)
     artifacts.register_existing(dose_path.name)
     failure_path = output_dir / "failure.json"
     if failure_path.exists():
@@ -1513,7 +1592,6 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
                 baseline_path,
                 summary_path,
                 endpoint_hash_path,
-                overview_path,
                 dose_path,
             ],
             Path(resolved["published_dir"]),

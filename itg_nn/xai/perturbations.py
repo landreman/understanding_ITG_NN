@@ -362,7 +362,10 @@ def phase_scramble(
 
     spectrum = torch.fft.rfft(geometry, dim=1)
     generator = torch.Generator(device="cpu").manual_seed(int(seed))
-    channel_count = geometry.shape[2] if independent_channels else 1
+    # Draw the same full phase tensor for both variants.  The common-phase
+    # endpoint uses column zero for every channel, so a shared seed gives a
+    # genuinely matched realization rather than merely the same seed integer.
+    channel_count = geometry.shape[2]
     phases = 2 * torch.pi * torch.rand(
         (len(geometry), spectrum.shape[1], channel_count), generator=generator
     )
@@ -370,12 +373,9 @@ def phase_scramble(
     if geometry.shape[1] % 2 == 0:
         phases[:, -1, :] = 0
     if not independent_channels:
-        phases = phases.expand(-1, -1, geometry.shape[2])
+        phases = phases[:, :, :1].expand(-1, -1, geometry.shape[2])
     rotations = torch.polar(torch.ones_like(phases), phases)
-    if independent_channels:
-        scrambled = spectrum.abs() * rotations
-    else:
-        scrambled = spectrum * rotations
+    scrambled = spectrum * rotations
     # DC and Nyquist are real; retaining their signed values preserves means and
     # the full marginal amplitude spectrum exactly.
     scrambled[:, 0, :] = spectrum[:, 0, :]
@@ -426,8 +426,8 @@ def replace_channel(
 
 
 @dataclass
-class RobustPCASupport:
-    """Robustly scaled PCA with held-out nearest-neighbour calibration.
+class ScaledPCASupport:
+    """Robustly scaled ordinary PCA with held-out nearest-neighbour calibration.
 
     This is deliberately only a data-support warning.  The fit uses per-channel
     median/IQR scaling before an ordinary SVD.  Scores report reconstruction
@@ -481,7 +481,7 @@ class RobustPCASupport:
         heldout_geometry: np.ndarray,
         *,
         components: int = 24,
-    ) -> "RobustPCASupport":
+    ) -> "ScaledPCASupport":
         fit_raw = np.asarray(fit_geometry, dtype=np.float64)
         heldout_raw = np.asarray(heldout_geometry, dtype=np.float64)
         if (
@@ -570,3 +570,8 @@ class RobustPCASupport:
             "nearest_percentile": nearest_percentile,
             "warning_score": np.maximum(reconstruction_warning, nearest_warning),
         }
+
+
+# Compatibility alias for artifacts and external callers from before the class
+# name was corrected.  Scaling is robust; the ordinary SVD estimator is not.
+RobustPCASupport = ScaledPCASupport

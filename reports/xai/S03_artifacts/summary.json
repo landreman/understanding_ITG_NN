@@ -107,11 +107,16 @@
     "panel_varied": 1000,
     "top_validation_members": 10
   },
+  "derived_review3": {
+    "fixed_gradient_interpretations": "withdrawn",
+    "matched_phase_run": "/Users/mattland/understanding_ITG_NN/understanding_ITG_NN/output/xai/S03/phase-matched-top10-all100-varied1000-review3b/manifest.json",
+    "published_artifact_manifest": "/Users/mattland/understanding_ITG_NN/understanding_ITG_NN/reports/xai/S03_artifacts/review3_manifest.json"
+  },
   "estimand": "native max(log Q, -2)",
   "mode": "production",
   "normalization": {
     "comparison_only": "S02 full-reference residual std retained as a separate ladder.csv column",
-    "input_dose": "S01 IQR/1.349 channel scales; replacement dose uses only the edited channel",
+    "input_dose": "S01 IQR/1.349 channel scales followed by both RMS and median-absolute aggregation; replacement dose uses only the edited channel; normalized rankings are sensitivity analyses",
     "point_estimate": "same frozen S01 panel and matching member/function/flux stratum"
   },
   "spec_count": 56,
@@ -119,19 +124,22 @@
     "all_zero_default_forbidden": true,
     "available": {
       "conditional_channel_profile": "pointwise median profile of nearest class/gradient-matched observed rows; tied gradients reduce explicitly to class-only matching",
-      "low_pass_input": "input-specific rFFT truncation retaining DC through registered cutoff",
-      "matched_observed": "observed row matched on model gradients within equilibrium class; source row excluded",
+      "low_pass": "rFFT truncation of the supplied analysed or background input, retaining DC through the registered cutoff",
+      "matched_observed": "observed robust-gradient nearest neighbour within equilibrium class; source row excluded",
       "medoid": "observed geometry nearest the robust profile center, optionally within class",
-      "nearest_neighbour": "robustly scaled gradient nearest neighbour within equilibrium class",
       "robust_constant": "per-channel reference median expanded over z"
     },
     "cyclic_anchor": "argmax joint robust-standardized energy across all channels",
     "estimand": "native max(log Q, -2)",
     "panel_equilibrium_overlap": 0,
+    "production_real_data_usage": {
+      "conditional_channel_profile": "used for S03 channel replacement",
+      "robust_constant_matched_observed_medoid_low_pass": "API-only in S03; first real consumers are downstream steps"
+    },
     "support_components": 24,
     "support_fit_rows": 1536,
     "support_heldout_rows": 512,
-    "support_warning": "robust per-channel scaling + PCA + held-out nearest-neighbour distance; two-sided tails; not proof of physical validity"
+    "support_warning": "robust per-channel scaling + ordinary SVD PCA + held-out nearest-neighbour distance; PCA components remain outlier-sensitive; two-sided tails; not proof of physical validity"
   },
   "top10_canonical_varied_all_family_summary": {
     "amplitude_scaling": {

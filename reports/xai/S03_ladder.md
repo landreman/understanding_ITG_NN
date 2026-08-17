@@ -2,7 +2,7 @@
 
 ## Status and headline result
 
-Complete, including both external-review rounds. Every retained result explains the
+Complete, including three external-review rounds. Every retained result explains the
 trained native output `max(log Q, -2)`, never `Q` or `exp(prediction)`. The
 primary estimand is S02's exactly shift-invariant canonical member function
 `tilde_f_m = MLP_m(mean_z rho_m, a/L_T, a/L_n)`; the original `f_m` is retained
@@ -26,24 +26,23 @@ input displacement, so the result supports sensitivity to both parallel order
 and cross-channel co-location, but the off-manifold probes do not form an
 additive decomposition.
 
-The corrected common-phase operator rotates each channel's existing Fourier
-coefficient by the same random phase and therefore preserves cross-channel phase
-differences. Across three replicates, common-phase versus per-channel effects are
-2.801/2.984, 2.652/3.114, and 2.672/3.491 panel residual SD. The paired
-per-member channel-minus-common median is positive in every replicate
-(0.402/0.617/0.584; 8/10, 8/10, and 9/10 members positive). This is consistent
-directional evidence that cross-channel phase alignment contributes to the
-ordering signal, but independent operator realizations and the one or two member
-exceptions preclude a component-size interpretation. The earlier negative
-conclusion and the incorrect 4.47-versus-4.05 comparison are withdrawn.
+The phase comparison was rerun with a genuinely matched random tensor: each
+channel receives an independent random phase rotation, while the common endpoint
+uses that same tensor's channel-0 rotation for every channel. Across three
+replicates, common/per-channel effects are 2.771/3.298, 3.030/3.013, and
+2.690/3.161 panel residual SD. Paired per-member channel-minus-common medians are
+0.364/0.287/0.548, with 8/10, 6/10, and 9/10 members positive; the 10th member
+percentile is negative in the first two replicates. This is suggestive but not
+robust member-level evidence that cross-channel phase alignment contributes.
+No component-size or dominant-mechanism claim is made.
 
-The ignored corrected production run is
+The original manifest-backed production run is
 `output/xai/S03/ladder-top10-all100-varied1000-paired2000-reviewfix/`. It took
-2,809 s (46.8 minutes) on CPU for the uncached inference pass. The final
-post-commit cached validation pass refreshed the manifest from a clean tracked
-tree without rerunning inference. The manifest hashes the full signed prediction
-tensor, full member/function/stratum table, generated compact table, support
-paths, figures, operator endpoints, protected checkpoint, and external dataset.
+2,809 s (46.8 minutes) on CPU. The six corrected phase entries have a second
+targeted production manifest at
+`output/xai/S03/phase-matched-top10-all100-varied1000-review3b/manifest.json`.
+The two run manifests hash their signed predictions, tables, endpoints,
+checkpoint, dataset, configuration, and source fingerprints.
 The committed generated headline table is
 [`S03_artifacts/ladder_summary.csv`](S03_artifacts/ladder_summary.csv), with
 machine-readable checks in [`S03_artifacts/summary.json`](S03_artifacts/summary.json).
@@ -51,6 +50,11 @@ Review-derived, source-hash-verified quantities are in
 [`S03_artifacts/review2_summary.json`](S03_artifacts/review2_summary.json), and
 registered paired control contrasts are in
 [`S03_artifacts/contrasts.csv`](S03_artifacts/contrasts.csv).
+[`S03_artifacts/review3_manifest.json`](S03_artifacts/review3_manifest.json)
+verifies both source manifests and hashes all five derived published files. The
+old full-run `--resume` command is intentionally no longer documented because
+HEAD's source fingerprint differs; reproducibility now follows this explicit
+two-manifest derivation rather than pretending the old cache is resumable.
 
 ## Registered cohort, functions, normalization, and uncertainty
 
@@ -78,19 +82,25 @@ bootstrap draw recomputes both the perturbation RMS numerator and the panel
 residual-standard-deviation denominator, so denominator uncertainty is included.
 Because RMS is nonnegative by construction, whether its interval excludes zero
 is not an informative test. Instead, signed paired member contrasts compare each
-operator to its registered control. Joint permutation exceeds independent shift
+operator to an informative comparison. Joint permutation exceeds independent shift
 for all 10 members in all three replicates; paired difference medians are 0.883,
-0.910, and 0.938 panel residual SD. Joint permutation and independent shift also
-exceed the random-joint-shift control for 10/10 members in every replicate. Full
-quantiles are retained in `contrasts.csv`.
+0.910, and 0.938 panel residual SD. Contrasts against random joint shift are
+retained only as exact-symmetry diagnostics: because that control is null by
+construction, they are not statistical or effect-size evidence. Full quantiles
+are retained in `contrasts.csv`.
 
-Every edit also reports an input displacement after division by S01's registered
-per-channel IQR/1.349 scales. The scalar dose is RMS over edited channels and
-positions; single-channel replacement uses only the edited channel. It is
-comparable within the Fourier attenuation family and within the channel-
-replacement family, not across operator families: an exact cyclic shift can
-have a larger raw RMS dose than a destructive edit because this metric does not
-align cyclic phase first.
+Parenthetical 10th–90th ranges in this report are explicitly **member spread**,
+not sampling uncertainty. The compact table now also commits, for every headline
+row, the median lower and upper endpoints of the ten member-level 95% grouped-
+bootstrap intervals. For example, joint permutation is 3.26 with member spread
+3.00–3.54, while the median member interval is 2.88–3.69.
+
+Every edit reports input displacement after division by S01's registered
+per-channel IQR/1.349 scales using both RMS and median absolute aggregation over
+edited cells. Single-channel replacement uses only the edited channel. Neither
+reduction is a canonical effect-size denominator: RMS is tail-sensitive, while
+the median can ignore sparse but consequential edits. Normalized rankings are
+therefore reported only as sensitivity analyses, never as headline rankings.
 
 ## Perturbation and baseline API
 
@@ -98,9 +108,9 @@ align cyclic phase first.
 the reusable baseline family required downstream:
 
 - per-channel robust constant profiles using the pooled reference median;
-- observed backgrounds matched on `(a/L_T, a/L_n)` within equilibrium class;
-- nearest-neighbour and observed medoid backgrounds;
-- input-specific periodic low-pass backgrounds;
+- observed nearest-neighbour backgrounds matched on `(a/L_T, a/L_n)` within
+  equilibrium class, plus observed medoids;
+- periodic low-pass transforms applicable to analysed or background input;
 - equilibrium-class/gradient-conditional channel profiles;
 - hard wrapped windows with no truncation at index 0, tied to grid scales and
   every member's S02 receptive fields; and
@@ -125,15 +135,21 @@ contiguous blocks, and roll back. Identity and every cyclic rotation of the
 block order are rejected, so every endpoint actually destroys block order
 rather than reducing to an exact joint shift. Common phase scrambling multiplies
 the original spectrum by a shared random unit complex number at each non-DC,
-non-Nyquist frequency; independent scrambling replaces each channel's phase
-separately. Both preserve each marginal amplitude spectrum, while only the
-common rotation preserves relative cross-channel phase.
+non-Nyquist frequency; independent scrambling rotates each channel by its own
+phase from the same full random tensor. Both preserve each marginal amplitude
+spectrum, while only the common rotation preserves relative cross-channel phase.
 All seeded random operators now transform the 1,000 unique geometries once and
 tile the endpoints, so registered varied/fixed twins receive bit-identical
 realizations. The earlier production varied endpoints remain unchanged; only the
 now-withdrawn fixed endpoints differed. On the same 64-row registered pilot,
 every varied prediction was bit-identical before and after this change (maximum
 absolute difference 0), while the fixed predictions changed as expected.
+
+Only the conditional channel profile is exercised on real member inputs in S03.
+Robust constants, matched observed rows/medoids, and low-pass baseline paths are
+implemented and toy-tested API for their first downstream real-data consumers;
+the registry no longer presents the nearest-neighbour selection underlying
+`matched_observed` as a separate sixth family.
 
 ## Exact and near-exact controls
 
@@ -154,8 +170,8 @@ only approximately in observed data.
 
 The larger structure tests agree across functions. Original `f` gives medians
 3.16 for joint permutation and 2.35 for independent shifts, versus 3.26 and
-2.41 for `tilde_f`. Corrected common/per-channel phase values are 2.85/3.04 for
-`f` and 2.80/2.98 for `tilde_f`.
+2.41 for `tilde_f`. Matched common/per-channel phase values are 2.67/3.10 for
+`f` and 2.77/3.30 for `tilde_f` in replicate zero.
 
 ## Ordering, co-location, and length scale
 
@@ -166,13 +182,13 @@ member distributions agree:
 | --- | ---: | ---: |
 | Joint permutation | 3.26 (3.00–3.54) | 3.19 (2.86–3.55) |
 | Independent channel shifts | 2.41 (2.23–2.59) | 2.25 (2.08–2.49) |
-| Common relative-phase-preserving rotation | 2.80 (1.93–4.74) | 2.36 (1.73–3.56) |
-| Per-channel phase scramble | 2.98 (2.32–4.88) | 2.69 (2.28–3.73) |
+| Common relative-phase-preserving rotation | 2.77 (1.81–3.95) | 2.37 (1.69–3.54) |
+| Per-channel phase rotation | 3.30 (2.40–4.33) | 2.79 (2.29–3.95) |
 
 Joint permutation preserves every pointwise channel vector but destroys its
 parallel order, directly rejecting a multiset-only description. Median signed
 changes are -0.682 clipped-log units for joint permutation, -0.201 for
-independent shifts, -0.050 for common phase rotation, and -0.228 for per-channel
+independent shifts, -0.060 for common phase rotation, and -0.237 for per-channel
 scrambling. Signed member values remain in the full table.
 
 With exact cyclic block orders excluded, the interpretable length-scale spectrum
@@ -200,20 +216,16 @@ they are not an order-of-magnitude discrepancy signaling an operator bug.
 ![Phase-preserving Fourier dose response](S03_artifacts/dose_response.png)
 
 Raw full-attenuation effects are 3.85, 1.22, and 0.099 panel residual SD for
-low (bins 1–4), mid (5–16), and high (17–48) bands. Those edits remove unequal
-robust input RMS of 2.64, 2.59, and 0.371. Effect per robust input RMS is therefore
-1.46, 0.472, and 0.268. The low band remains 3.1 times more effective than the
-mid band and 5.4 times more effective than the high band after explicit dose
-normalization; unlike the old raw ranking, this supports prioritizing low
-frequency within the registered Fourier attenuation family in later attribution
-work. It does not compare Fourier efficiency with permutations, shifts, or other
-operator families.
-
-The conclusion is consistent across doses. At doses 0.25/0.5/0.75/1, low-band
-effect per robust input RMS is 2.81/2.28/1.84/1.46, mid is
-0.649/0.583/0.518/0.472, and high is 0.309/0.324/0.297/0.268. Declining efficiency
-with dose shows nonlinearity and is retained rather than summarized as a single
-linear sensitivity.
+low (bins 1–4), mid (5–16), and high (17–48) bands. The corresponding robust-
+scaled RMS doses are 2.64, 2.59, and 0.371, giving sensitivities 1.46, 0.472,
+and 0.268. But median-absolute doses are 0.438, 0.142, and 0.00971, giving
+sensitivities 8.78, 8.62, and 10.25. Thus the earlier 3.1×/5.4× normalized
+low-frequency multiplier is withdrawn: its magnitude and even the efficiency
+ordering depend on how a heavy-tailed edit is reduced. The defensible result is
+the raw finite-edit ordering, supported independently by the block ladder:
+removing the low band changes the network much more than removing the mid or
+high band. Later attribution should examine broad structure, but not because one
+dose normalization establishes a universal efficiency rank.
 
 Uniform attenuation of every non-DC amplitude is the registered control that
 changes marginal power while preserving all relative phases. At doses
@@ -223,40 +235,45 @@ with robust input RMS 0.930/1.859/2.789/3.719. Efficiency declines
 marginal spectral power alone matters substantially; the decreasing efficiency
 again warns against treating these finite edits as a linear decomposition.
 
-Conditional single-channel replacement gives a different ranking once actual
-edit size is shown:
+Conditional single-channel replacement exposes the reduction sensitivity
+directly:
 
-| Channel | Output RMS / panel residual SD | Input displacement (robust RMS) | Effect per robust input RMS |
-| --- | ---: | ---: | ---: |
-| `gbdrift0_over_shat` | 1.82 | 1.10 | 1.65 |
-| `gbdrift` | 2.18 | 2.00 | 1.09 |
-| `gds22_over_shat_squared` | 2.02 | 2.06 | 0.976 |
-| `cvdrift` | 1.14 | 1.99 | 0.573 |
-| `gds21_over_shat` | 1.27 | 2.33 | 0.547 |
-| `bmag` | 0.670 | 1.33 | 0.504 |
-| `gds2` | 1.99 | 10.84 | 0.183 |
+| Channel | Output effect | RMS dose | Effect/RMS | Median-abs dose | Effect/median |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| `bmag` | 0.670 | 1.33 | 0.504 | 0.610 | 1.10 |
+| `gbdrift` | 2.18 | 2.00 | 1.09 | 0.696 | 3.13 |
+| `cvdrift` | 1.14 | 1.99 | 0.573 | 0.696 | 1.64 |
+| `gbdrift0_over_shat` | 1.82 | 1.10 | 1.65 | 0.701 | 2.60 |
+| `gds2` | 1.99 | 10.84 | 0.183 | 0.692 | 2.87 |
+| `gds21_over_shat` | 1.27 | 2.33 | 0.547 | 0.784 | 1.62 |
+| `gds22_over_shat_squared` | 2.02 | 2.06 | 0.976 | 0.660 | 3.05 |
 
-Displacements span 9.8-fold, so the old raw-output ranking was not a fair
-cross-channel comparison and is withdrawn. Even the normalized result is only a
-coarse prioritization diagnostic: channel correlations, the channel-0/channel-6
-target identity, and off-manifold replacement paths prevent causal or
-independent-channel interpretation.
-
-![Canonical structure-destroying ladder](S03_artifacts/ladder_overview.png)
+The 9.8-fold RMS-dose spread collapses to 1.29-fold under median-absolute dose;
+`gds2`'s top 1% cells dominate its RMS. Consequently both the withdrawn raw rank
+and the former RMS-normalized rank are sensitivity views, not fair or unique
+channel-importance estimates. Channel correlations, the channel-0/channel-6
+target identity, heavy tails, and off-manifold paths preclude a causal ranking.
+The heterogeneous family-pooled overview figure was removed; the parameter-
+resolved table is the authoritative display.
 
 ## Drive dependence and support warnings
 
 Stable/near-floor and unstable varied rows are never pooled. Top-10 canonical
 medians for joint permutation are 0.996 panel residual SD on stable rows and
 3.54 on unstable rows; independent shifts are 1.20 and 2.61; common phase
-rotation is 1.31 and 3.01; per-channel phase scrambling is 1.72 and 3.19. Fixed
+rotation is 1.28 and 2.97; per-channel phase rotation is 1.44 and 3.57. The
+stable/unstable ratios are descriptive, not clean drive-effect estimates: both
+the perturbation numerator and residual-standard-deviation denominator are
+compressed near the clipped `-2` floor. Fixed
 twins are not reported because their shared `a/L_T=-3` input saturates the
 checkpoint rather than representing its trained constant-drive convention.
 
 The support fit uses 1,536 equilibrium-unique reference rows and calibrates on
 512 held-out equilibria. All 2,048 support/background equilibria are disjoint
 from the panel; the old selection leaked 78 sibling tubes and is withdrawn.
-Per-channel median/IQR scaling precedes a 24-component PCA. Cyclic phase is
+Per-channel median/IQR scaling precedes an ordinary 24-component SVD PCA; the
+scaling is robust but the PCA estimator and its leading components remain
+sensitive to large `gds2` excursions. Cyclic phase is
 anchored at the largest joint robust-standardized seven-channel excursion, so a
 constant channel 0 cannot create a degenerate anchor.
 
@@ -269,9 +286,10 @@ Tail fractions, rather than raw warning medians, show the useful departures:
 complete non-DC removal is 82.1% outside, full low-band attenuation 36.9%, and
 full mid-band attenuation 26.5%.
 
-An important negative check remains: this coarse PCA warning does not reliably
+An important negative check remains: this coarse scaled-PCA warning does not reliably
 identify ordering edits. Joint permutation has 10.5% outside and independent
-shifts 6.9%. Low warning values are not evidence of physical realizability.
+shifts 6.9%. Outlier-sensitive components are a plausible mechanical contributor
+to that failure. Low warning values are not evidence of physical realizability.
 
 ## Toy controls, determinism, and reproducibility
 
@@ -279,15 +297,15 @@ The registered toy gate now runs before any real-member inference and covers all
 12 operator families. The permutation toy is invariant to joint and block
 permutations and joint shifts but changes under independent shifts. The
 co-location toy is invariant to joint/block permutations, joint shifts, and the
-correct common phase rotation (RMS 1.78e-8), while independent phase scrambling
-changes it by 0.142. The Fourier toy's relevant-band effect is 24.0 versus
+correct common phase rotation (RMS 2.09e-8), while independent phase scrambling
+changes it by 0.127. The Fourier toy's relevant-band effect is 24.0 versus
 5.72e-6 for its high-band control; amplitude scaling changes it by 18.0. Parity
 and reversal round trips are exact, replacement touches only its registered
-channel, phase scrambling preserves amplitudes to 3.81e-6, and wrapped windows
+channel, phase scrambling preserves amplitudes to 5.72e-6, and wrapped windows
 retain constant support across index 0.
 
-Every full-batch production endpoint is generated twice before inference and
-compared bit-for-bit, including channel replacement. Endpoint SHA-256 values are
+Every full-batch endpoint is generated twice before inference and compared
+bit-for-bit, including channel replacement. Endpoint SHA-256 values are
 manifest-hashed in
 [`S03_artifacts/operator_endpoint_hashes.json`](S03_artifacts/operator_endpoint_hashes.json).
 Two independent fresh-process pilot runs produced byte-identical 46-entry
@@ -306,10 +324,13 @@ Both were read only.
 `predictions.h5` retains `(member, function, perturbation, sample)` axes with
 signed native outputs. Resume validates dataset, checkpoint, row IDs, member
 IDs, perturbation registry, config, cohort and robust-scale fingerprints, and
-code hashes. `ladder_summary.csv` is generated from `ladder.csv` by the
-registered CLI and both are manifest-hashed; only the compact table is committed.
+code hashes. The original full run and corrected phase run remain immutable.
+`xai_s03_review2_artifacts.py` verifies their manifests, replaces only the six
+phase rows, deterministically regenerates robust dose summaries, and hashes the
+five committed outputs in `review3_manifest.json`. No published JSON or CSV is
+hand-edited.
 
-Pilot, production, and resume commands:
+Pilot, fresh targeted phase reproduction, and artifact-derivation commands:
 
 ```bash
 MPLCONFIGDIR=/private/tmp/mpl-s03 .venv-xai/bin/python \
@@ -317,14 +338,15 @@ MPLCONFIGDIR=/private/tmp/mpl-s03 .venv-xai/bin/python \
   --pilot --no-publish
 
 MPLCONFIGDIR=/private/tmp/mpl-s03 .venv-xai/bin/python \
-  scripts/xai_s03_ladder.py --config configs/xai/S03_ladder.json
-
-MPLCONFIGDIR=/private/tmp/mpl-s03 .venv-xai/bin/python \
-  scripts/xai_s03_ladder.py --config configs/xai/S03_ladder.json --resume
+  scripts/xai_s03_ladder.py --config configs/xai/S03_ladder.json \
+  --families common_phase_scramble,channel_phase_scramble \
+  --output-dir output/xai/S03/phase-matched-review3-reproduction \
+  --no-publish
 
 MPLCONFIGDIR=/private/tmp/mpl-s03 .venv-xai/bin/python \
   scripts/xai_s03_review2_artifacts.py \
-  --source-run output/xai/S03/ladder-top10-all100-varied1000-paired2000-reviewfix
+  --source-run output/xai/S03/ladder-top10-all100-varied1000-paired2000-reviewfix \
+  --phase-run output/xai/S03/phase-matched-top10-all100-varied1000-review3b
 ```
 
 The pilot uses a deterministic proportional sample across equilibrium class ×
@@ -340,10 +362,10 @@ All 14 findings in `review_step03_01.md` were accepted; none was rejected.
    and co-location controls enforce the intended invariant.
 2. Block permutations reject identity and all cyclic block rotations; L=32 was
    rerun on the full cohort.
-3. Every ladder row now carries robust input RMS and effect per robust input RMS;
-   the spectral conclusion was re-derived on that axis.
-4. Channel replacement reports the same robust dose columns and the report ranks
-   dose-normalized effects.
+3. Every ladder row gained robust input RMS; the third review later added a
+   median-absolute sensitivity view and withdrew a unique normalized rank.
+4. Channel replacement reports explicit dose columns; its initial RMS-normalized
+   rank is retained only as a sensitivity analysis after the third review.
 5. Headline denominators now come from the panel; the S02 reference value remains
    comparison-only, and bootstrap draws recompute the denominator.
 6. Support/background selection excludes panel `equilibrium_files`, with a hard
@@ -400,11 +422,54 @@ were still added.
 15. The CLI no longer publishes the full ignored `ladder.csv` under reports;
     that table remains only in the manifest-hashed run directory.
 
+### Third review (`review_step03_03.md`)
+
+Findings 1–6 and 8–14 were accepted. Finding 7 was rejected as a defect, with
+the registered common-random-number design made explicit.
+
+1. The five derived published artifacts are now generated rather than
+   hand-edited and hashed by `review3_manifest.json`, which verifies both the
+   original full-run and corrected phase-run manifests. The stale full-run
+   resume command was removed.
+2. Input dose now carries robust-scaled RMS and median-absolute reductions. The
+   RMS-normalized channel rank and Fourier multipliers are withdrawn; both
+   reductions are reported as sensitivity analyses.
+3. Common and per-channel phase edits now consume one full shared random phase
+   tensor. The six affected registered entries were rerun for top 10/all 100 as
+   originally scoped.
+4. Random-joint-shift contrasts are labeled exact-symmetry diagnostics, not
+   effect-size controls or statistical evidence.
+5. The compact committed table now distinguishes member spread from uncertainty
+   and includes the median endpoints of member-level grouped-bootstrap 95%
+   intervals.
+6. The heterogeneous family-pooled overview figure was removed in favor of the
+   parameter-resolved table.
+7. Rejected: block lengths deliberately share a common random-number stream
+   within each replicate so length-scale differences have less realization
+   noise. `dose` is irrelevant to the deterministic Fourier operators. The
+   coupling is now documented; phase families are separately special-cased for
+   their required matched tensor.
+8. Exact-symmetry gates now call `allclose` with both registered `atol` and
+   `rtol`; maximum absolute error remains reported as a diagnostic.
+9. `ScaledPCASupport` and the report now say robust scaling followed by ordinary
+   SVD PCA, and document component sensitivity to `gds2` outliers. The old class
+   name remains only as a compatibility alias.
+10. The registry combines nearest-neighbour selection with `matched_observed`,
+    states that low-pass accepts analysed or background input, and records which
+    paths were API-only versus exercised on real S03 inputs.
+11. Stable/unstable ratios now carry an explicit clipped-floor numerator and
+    denominator caveat.
+12. Compact expanded-cohort columns now report the actual selected member count
+    and work under `--members` caps instead of silently requiring exactly 100.
+13. The executive summary is corrected and committed.
+14. The review-artifact script supports both direct execution and package import,
+    with a regression test.
+
 ## Acceptance criteria
 
 | Criterion | Evidence | Status |
 | --- | --- | --- |
-| Deterministic fixed-seed methods | Full-batch repeats, hashes, two byte-identical fresh pilots | Pass |
+| Deterministic fixed-seed methods | Full-batch repeats, hashes, matched phase tensor, fresh pilot | Pass |
 | Wrapped windows have no boundary artifact | Shifted wraparound support equality | Pass |
 | Toy relevant features outrank controls | Pre-inference checks for all 12 families | Pass |
 | Exact symmetries null within S02 tolerance | Maximum absolute error 9.54e-6 < 2e-5 | Pass |
@@ -412,8 +477,9 @@ were still added.
 | Every retained varied endpoint strength has support | 56 entries × five path doses on the unique varied geometries | Pass |
 | Top-10 full varied ladder | Both `f` and `tilde_f`, stable/unstable separately | Pass |
 | Cheap entries cover all 100 members | 13 entries; signed member predictions retained | Pass |
-| Baseline API avoids all-zero default | Six registered API families; conditional profile used on varied rows | Pass |
-| Member-level grouped uncertainty | 1,000 equilibrium-file draws with joint denominator resampling | Pass |
+| Baseline API avoids all-zero default | Five distinct API paths; real-data usage disclosed | Pass |
+| Member-level grouped uncertainty | 1,000 equilibrium-file draws; interval summaries committed | Pass |
+| Committed conclusions reproduce from manifests | Two verified run manifests plus derived-output manifest | Pass |
 
 Verification commands:
 
