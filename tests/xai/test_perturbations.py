@@ -13,6 +13,7 @@ from itg_nn.xai.perturbations import (
     joint_permutation,
     low_pass,
     phase_scramble,
+    random_joint_shift,
     replace_channel,
     robust_constant_profile,
     wrapped_window_mask,
@@ -52,6 +53,36 @@ def test_seeded_random_operators_are_deterministic_and_preserve_registered_margi
         rtol=2e-5,
         atol=2e-5,
     )
+
+
+@pytest.mark.parametrize(
+    "operator",
+    (
+        lambda value: joint_permutation(value, seed=19, paired_halves=True),
+        lambda value: block_permutation(value, 8, seed=19, paired_halves=True),
+        lambda value: random_joint_shift(value, seed=19, paired_halves=True),
+        lambda value: independent_channel_shifts(value, seed=19, paired_halves=True),
+        lambda value: phase_scramble(
+            value, seed=19, independent_channels=False, paired_halves=True
+        ),
+        lambda value: phase_scramble(
+            value, seed=19, independent_channels=True, paired_halves=True
+        ),
+    ),
+)
+def test_random_operators_apply_identical_realizations_to_registered_twins(
+    operator,
+) -> None:
+    unique = _geometry(7)
+    paired = torch.cat((unique, unique))
+    endpoint = operator(paired)
+    torch.testing.assert_close(endpoint[:7], endpoint[7:], rtol=0, atol=0)
+
+
+def test_paired_random_operator_rejects_nonidentical_halves() -> None:
+    paired = torch.cat((_geometry(3), _geometry(3) + 1))
+    with pytest.raises(ValueError, match="bit-identical"):
+        joint_permutation(paired, seed=4, paired_halves=True)
 
 
 def test_common_phase_rotation_preserves_cross_channel_relative_phase() -> None:
@@ -155,6 +186,23 @@ def test_reference_backgrounds_are_nonzero_matched_and_channel_local() -> None:
     torch.testing.assert_close(replaced[:, :, :4], geometry[:2, :, :4])
     torch.testing.assert_close(replaced[:, :, 5:], geometry[:2, :, 5:])
     assert not torch.equal(replaced[:, :, 4], geometry[:2, :, 4])
+
+
+def test_conditional_profile_rejects_an_empty_candidate_set() -> None:
+    geometry = _geometry(1)
+    backgrounds = ReferenceBackgrounds(
+        geometry,
+        np.asarray([[3.0, 1.0]]),
+        np.asarray([2]),
+        np.asarray([17]),
+    )
+    with pytest.raises(ValueError, match="no eligible conditional profile"):
+        backgrounds.conditional_channel_profile(
+            0,
+            np.asarray([[3.0, 1.0]]),
+            np.asarray([2]),
+            source_row_ids=np.asarray([17]),
+        )
 
 
 def test_low_pass_and_support_score_behave_analytically() -> None:

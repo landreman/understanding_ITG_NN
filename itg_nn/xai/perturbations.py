@@ -209,6 +209,10 @@ class ReferenceBackgrounds:
             candidates = np.flatnonzero(self.equilibrium_class == class_value)
             if source is not None:
                 candidates = candidates[self.row_ids[candidates] != source[index]]
+            if not len(candidates):
+                raise ValueError(
+                    f"no eligible conditional profile for equilibrium class {class_value}"
+                )
             distance = np.sum(np.square(scaled_reference[candidates] - point), axis=1)
             nearest = candidates[np.argsort(distance, kind="stable")[:neighbours]]
             output[index] = self.geometry[torch.as_tensor(nearest), :, channel].median(dim=0).values
@@ -218,8 +222,28 @@ class ReferenceBackgrounds:
         return low_pass(self.geometry, maximum_frequency)
 
 
-def joint_permutation(geometry: torch.Tensor, *, seed: int) -> torch.Tensor:
+def _paired_prefix(geometry: torch.Tensor, paired_halves: bool) -> torch.Tensor | None:
+    """Return the unique half of a registered varied/fixed twin tensor."""
+
+    if not paired_halves:
+        return None
+    if len(geometry) % 2:
+        raise ValueError("paired geometry must contain two equal-size halves")
+    count = len(geometry) // 2
+    if not torch.equal(geometry[:count], geometry[count:]):
+        raise ValueError("paired geometry halves must be bit-identical")
+    return geometry[:count]
+
+
+def joint_permutation(
+    geometry: torch.Tensor, *, seed: int, paired_halves: bool = False
+) -> torch.Tensor:
     """Permute pointwise seven-channel vectors jointly for every sample."""
+
+    paired = _paired_prefix(geometry, paired_halves)
+    if paired is not None:
+        endpoint = joint_permutation(paired, seed=seed)
+        return torch.cat((endpoint, endpoint))
 
     generator = torch.Generator(device="cpu").manual_seed(int(seed))
     output = torch.empty_like(geometry)
@@ -230,7 +254,11 @@ def joint_permutation(geometry: torch.Tensor, *, seed: int) -> torch.Tensor:
 
 
 def block_permutation(
-    geometry: torch.Tensor, block_length: int, *, seed: int
+    geometry: torch.Tensor,
+    block_length: int,
+    *,
+    seed: int,
+    paired_halves: bool = False,
 ) -> torch.Tensor:
     """Jointly reorder contiguous blocks, excluding exact cyclic shifts.
 
@@ -238,6 +266,11 @@ def block_permutation(
     is an exact symmetry of the canonical S03 estimand.  Such orders are rejected
     so every sampled endpoint actually destroys block order.
     """
+
+    paired = _paired_prefix(geometry, paired_halves)
+    if paired is not None:
+        endpoint = block_permutation(paired, block_length, seed=seed)
+        return torch.cat((endpoint, endpoint))
 
     grid_size = geometry.shape[1]
     if block_length < 1 or grid_size % block_length:
@@ -265,8 +298,15 @@ def block_permutation(
     return output
 
 
-def random_joint_shift(geometry: torch.Tensor, *, seed: int) -> torch.Tensor:
+def random_joint_shift(
+    geometry: torch.Tensor, *, seed: int, paired_halves: bool = False
+) -> torch.Tensor:
     """Apply one random circular shift to all channels of each sample."""
+
+    paired = _paired_prefix(geometry, paired_halves)
+    if paired is not None:
+        endpoint = random_joint_shift(paired, seed=seed)
+        return torch.cat((endpoint, endpoint))
 
     generator = torch.Generator(device="cpu").manual_seed(int(seed))
     shifts = torch.randint(0, geometry.shape[1], (len(geometry),), generator=generator)
@@ -276,8 +316,15 @@ def random_joint_shift(geometry: torch.Tensor, *, seed: int) -> torch.Tensor:
     return output
 
 
-def independent_channel_shifts(geometry: torch.Tensor, *, seed: int) -> torch.Tensor:
+def independent_channel_shifts(
+    geometry: torch.Tensor, *, seed: int, paired_halves: bool = False
+) -> torch.Tensor:
     """Independently rotate every sample/channel, destroying co-location."""
+
+    paired = _paired_prefix(geometry, paired_halves)
+    if paired is not None:
+        endpoint = independent_channel_shifts(paired, seed=seed)
+        return torch.cat((endpoint, endpoint))
 
     generator = torch.Generator(device="cpu").manual_seed(int(seed))
     shifts = torch.randint(
@@ -293,7 +340,11 @@ def independent_channel_shifts(geometry: torch.Tensor, *, seed: int) -> torch.Te
 
 
 def phase_scramble(
-    geometry: torch.Tensor, *, seed: int, independent_channels: bool
+    geometry: torch.Tensor,
+    *,
+    seed: int,
+    independent_channels: bool,
+    paired_halves: bool = False,
 ) -> torch.Tensor:
     """Scramble non-DC Fourier phase while preserving marginal amplitudes.
 
@@ -301,6 +352,13 @@ def phase_scramble(
     scrambling instead rotates every channel coefficient by the same random
     phase at each frequency, preserving all cross-channel phase differences.
     """
+
+    paired = _paired_prefix(geometry, paired_halves)
+    if paired is not None:
+        endpoint = phase_scramble(
+            paired, seed=seed, independent_channels=independent_channels
+        )
+        return torch.cat((endpoint, endpoint))
 
     spectrum = torch.fft.rfft(geometry, dim=1)
     generator = torch.Generator(device="cpu").manual_seed(int(seed))

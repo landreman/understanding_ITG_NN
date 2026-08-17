@@ -170,6 +170,8 @@ def _load_panel(
             leftover = varied_count - int(allocation.sum())
             order = np.argsort(-(ideal - np.floor(ideal)), kind="stable")
             allocation[order[:leftover]] += 1
+        if np.any(allocation > counts) or int(allocation.sum()) != varied_count:
+            raise RuntimeError("stratified pilot allocation exceeded stratum capacity")
         selected: list[int] = []
         for label, quota in zip(unique, allocation):
             candidates = np.flatnonzero(labels == label)
@@ -347,22 +349,36 @@ def _transform(
     if spec.family == "joint_shift":
         return torch.roll(geometry, shifts=32, dims=1)
     if spec.family == "random_joint_shift":
-        return random_joint_shift(geometry, seed=seed)
+        return random_joint_shift(geometry, seed=seed, paired_halves=True)
     if spec.family == "parity":
         return stellarator_parity(geometry)
     if spec.family == "wrong_parity":
         return reverse_parallel(geometry)
     if spec.family == "joint_permutation":
-        return joint_permutation(geometry, seed=seed)
+        return joint_permutation(geometry, seed=seed, paired_halves=True)
     if spec.family == "block_permutation":
         length = int(spec.parameter.split("=")[1])
-        return block_permutation(geometry, length, seed=seed)
+        return block_permutation(
+            geometry, length, seed=seed, paired_halves=True
+        )
     if spec.family == "independent_shift":
-        return independent_channel_shifts(geometry, seed=seed)
+        return independent_channel_shifts(
+            geometry, seed=seed, paired_halves=True
+        )
     if spec.family == "common_phase_scramble":
-        return phase_scramble(geometry, seed=seed, independent_channels=False)
+        return phase_scramble(
+            geometry,
+            seed=seed,
+            independent_channels=False,
+            paired_halves=True,
+        )
     if spec.family == "channel_phase_scramble":
-        return phase_scramble(geometry, seed=seed, independent_channels=True)
+        return phase_scramble(
+            geometry,
+            seed=seed,
+            independent_channels=True,
+            paired_halves=True,
+        )
     if spec.family == "band_attenuation":
         band = spec.parameter.split(";")[0].split("=")[1]
         minimum, maximum = FOURIER_BANDS[band]
@@ -596,10 +612,10 @@ def _ladder_rows(
                     dose = input_displacements[(spec.name, gradient_set, stratum)]
                     ratio_per_dose: float | str = ""
                     if gradient_set == "varied":
-                        residual = reference[member_index, function_index].astype(
+                        varied_residual = reference[member_index, function_index].astype(
                             np.float64
                         ) - actual
-                        normalization = float(np.std(residual[mask], ddof=1))
+                        normalization = float(np.std(varied_residual[mask], ddof=1))
                         reference_normalization = reference_residual_scales[
                             (member_id, function_name, stratum)
                         ]
@@ -610,7 +626,9 @@ def _ladder_rows(
                     if member_id in top_ids and len(selected):
                         samples = np.sqrt(np.mean(np.square(difference[draws[(gradient_set, stratum)]]), axis=1))
                         if gradient_set == "varied":
-                            sampled_residual = residual[draws[(gradient_set, stratum)]]
+                            sampled_residual = varied_residual[
+                                draws[(gradient_set, stratum)]
+                            ]
                             sampled_denominator = np.std(sampled_residual, axis=1, ddof=1)
                             samples /= sampled_denominator
                         ci_lower, ci_upper = [float(value) for value in np.quantile(samples, (0.025, 0.975))]
@@ -833,13 +851,30 @@ def _compact_ladder_summary(
 
         top_effect = [float(row["rms_change_over_residual_std"]) for row in top]
         all_effect = [float(row["rms_change_over_residual_std"]) for row in all_members]
-        normalized = [float(row["effect_per_robust_input_rms"]) for row in top]
+        dose_comparable = section in (
+            "fourier_full_attenuation",
+            "channel_replacement",
+        )
+        normalized = (
+            [float(row["effect_per_robust_input_rms"]) for row in top]
+            if dose_comparable
+            else []
+        )
         return {
             "section": section,
             "item": item,
             "parameter": parameter,
-            "robust_input_displacement_rms": float(
-                np.median([float(row["robust_input_displacement_rms"]) for row in top])
+            "robust_input_displacement_rms": (
+                float(
+                    np.median(
+                        [float(row["robust_input_displacement_rms"]) for row in top]
+                    )
+                )
+                if dose_comparable
+                else ""
+            ),
+            "robust_dose_comparison_scope": (
+                "within_section_only" if dose_comparable else "not_cross_family_comparable"
             ),
             "top10_q10": quantile(top_effect, 0.1),
             "top10_median": quantile(top_effect, 0.5),
@@ -872,9 +907,17 @@ def _compact_ladder_summary(
     for length in (2, 4, 8, 16, 32):
         output.append(
             summarize(
-                "block_length",
+                (
+                    "three_block_reversal_control"
+                    if length == 32
+                    else "block_length_spectrum"
+                ),
                 f"L{length}",
-                "replicate=0;non_cyclic_orders_only",
+                (
+                    "replicate=0;three_blocks;reversal_rotation_class"
+                    if length == 32
+                    else "replicate=0;non_cyclic_orders_only"
+                ),
                 [
                     row
                     for row in canonical
@@ -912,6 +955,122 @@ def _compact_ladder_summary(
                 ],
             )
         )
+    return output
+
+
+def _contrast_summary_rows(
+    rows: list[dict[str, Any]], top_ids: set[str]
+) -> list[dict[str, Any]]:
+    """Summarize signed paired member contrasts between registered controls."""
+
+    canonical = [
+        row
+        for row in rows
+        if row["member_id"] in top_ids
+        and row["function"] == "invariant_tilde_f"
+        and row["gradient_set"] == "varied"
+        and row["stratum"] == "all"
+    ]
+
+    def by_member(
+        family: str, replicate: int, parameter: str | None = None
+    ) -> dict[str, float]:
+        return {
+            str(row["member_id"]): float(row["rms_change_over_residual_std"])
+            for row in canonical
+            if row["family"] == family
+            and int(row["replicate"]) == replicate
+            and (parameter is None or row["parameter"] == parameter)
+        }
+
+    registered = (
+        (
+            "joint_permutation_minus_random_joint_shift",
+            "joint_permutation",
+            None,
+            "random_joint_shift",
+            "registered_matched_control",
+        ),
+        (
+            "independent_shift_minus_random_joint_shift",
+            "independent_shift",
+            None,
+            "random_joint_shift",
+            "registered_matched_control",
+        ),
+        (
+            "channel_phase_minus_common_phase",
+            "channel_phase_scramble",
+            None,
+            "common_phase_scramble",
+            "registered_matched_control",
+        ),
+        (
+            "joint_permutation_minus_independent_shift",
+            "joint_permutation",
+            None,
+            "independent_shift",
+            "ordering_vs_colocation_comparison",
+        ),
+        *(
+            (
+                f"block_permutation_L{length}_minus_random_joint_shift",
+                "block_permutation",
+                f"block_length={length}",
+                "random_joint_shift",
+                "registered_matched_control",
+            )
+            for length in (2, 4, 8, 16, 32)
+        ),
+        (
+            "wrong_parity_minus_stellarator_parity",
+            "wrong_parity",
+            None,
+            "parity",
+            "registered_matched_control",
+        ),
+    )
+    output: list[dict[str, Any]] = []
+    for replicate in sorted({int(row["replicate"]) for row in canonical}):
+        for (
+            name,
+            treatment_family,
+            treatment_parameter,
+            control_family,
+            contrast_type,
+        ) in registered:
+            treatment = by_member(
+                treatment_family, replicate, treatment_parameter
+            )
+            control = by_member(control_family, replicate)
+            members = sorted(set(treatment).intersection(control))
+            if not members:
+                continue
+            differences = np.asarray(
+                [treatment[member] - control[member] for member in members]
+            )
+            output.append(
+                {
+                    "contrast": name,
+                    "contrast_type": contrast_type,
+                    "replicate": replicate,
+                    "members": len(members),
+                    "treatment_family": treatment_family,
+                    "treatment_parameter": treatment_parameter or "",
+                    "control_family": control_family,
+                    "treatment_member_median": float(
+                        np.median([treatment[member] for member in members])
+                    ),
+                    "control_member_median": float(
+                        np.median([control[member] for member in members])
+                    ),
+                    "paired_difference_q10": float(np.quantile(differences, 0.1)),
+                    "paired_difference_median": float(np.median(differences)),
+                    "paired_difference_q90": float(np.quantile(differences, 0.9)),
+                    "members_positive": int(np.sum(differences > 0)),
+                    "units": "panel_member_residual_standard_deviations",
+                }
+            )
     return output
 
 
@@ -1223,7 +1382,7 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
             "nearest_neighbour": "robustly scaled gradient nearest neighbour within equilibrium class",
             "medoid": "observed geometry nearest the robust profile center, optionally within class",
             "low_pass_input": "input-specific rFFT truncation retaining DC through registered cutoff",
-            "conditional_channel_profile": "pointwise median profile of nearest class/gradient-matched observed rows",
+            "conditional_channel_profile": "pointwise median profile of nearest class/gradient-matched observed rows; tied gradients reduce explicitly to class-only matching",
         },
         "support_warning": "robust per-channel scaling + PCA + held-out nearest-neighbour distance; two-sided tails; not proof of physical validity",
         "cyclic_anchor": "argmax joint robust-standardized energy across all channels",
@@ -1302,6 +1461,9 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
     ladder_summary_path = artifacts.write_text(
         "ladder_summary.csv", _csv_text(_compact_ladder_summary(ladder_rows, top_ids))
     )
+    contrast_rows = _contrast_summary_rows(ladder_rows, top_ids)
+    contrast_path = artifacts.write_text("contrasts.csv", _csv_text(contrast_rows))
+    summary["checks"]["registered_control_contrast_rows"] = len(contrast_rows)
     support_path = artifacts.write_text("support.csv", _csv_text(support_rows))
     receptive_path = artifacts.write_text("window_registry.csv", _csv_text(receptive_rows))
     baseline_path = artifacts.write_json("baseline_registry.json", baseline_registry)
@@ -1344,8 +1506,8 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
     if not args.pilot and not args.no_publish:
         _publish(
             [
-                ladder_path,
                 ladder_summary_path,
+                contrast_path,
                 support_path,
                 receptive_path,
                 baseline_path,

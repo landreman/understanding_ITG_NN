@@ -227,5 +227,4 @@ output/*.npz
 output/xai/
 # Full S03 member/function/stratum table is manifest-hashed under output/xai;
 # commit only its compact summary to keep the repository small.
-reports/xai/S03_artifacts/ladder.csv
 tmp/

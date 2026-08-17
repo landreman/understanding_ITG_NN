@@ -1,7 +1,7 @@
 {
   "all_zero_default_forbidden": true,
   "available": {
-    "conditional_channel_profile": "pointwise median profile of nearest class/gradient-matched observed rows",
+    "conditional_channel_profile": "pointwise median profile of nearest class/gradient-matched observed rows; tied gradients reduce explicitly to class-only matching",
     "low_pass_input": "input-specific rFFT truncation retaining DC through registered cutoff",
     "matched_observed": "observed row matched on model gradients within equilibrium class; source row excluded",
     "medoid": "observed geometry nearest the robust profile center, optionally within class",
