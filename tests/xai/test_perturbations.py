@@ -54,6 +54,35 @@ def test_seeded_random_operators_are_deterministic_and_preserve_registered_margi
     )
 
 
+def test_common_phase_rotation_preserves_cross_channel_relative_phase() -> None:
+    geometry = _geometry(12)
+    rotated = phase_scramble(geometry, seed=17, independent_channels=False)
+    original_spectrum = torch.fft.rfft(geometry, dim=1)
+    rotated_spectrum = torch.fft.rfft(rotated, dim=1)
+    original_cross = original_spectrum[:, :, 1] * original_spectrum[:, :, 5].conj()
+    rotated_cross = rotated_spectrum[:, :, 1] * rotated_spectrum[:, :, 5].conj()
+    torch.testing.assert_close(rotated_cross, original_cross, rtol=3e-5, atol=3e-4)
+
+    gradients = torch.zeros(len(geometry))
+    toy = ColocationToy()
+    torch.testing.assert_close(
+        toy(rotated, gradients, gradients),
+        toy(geometry, gradients, gradients),
+        rtol=2e-5,
+        atol=2e-5,
+    )
+
+
+def test_block_permutation_never_returns_an_exact_cyclic_shift() -> None:
+    geometry = _geometry(32)
+    blocked = block_permutation(geometry, 32, seed=23)
+    for sample in range(len(geometry)):
+        assert not any(
+            torch.equal(blocked[sample], torch.roll(geometry[sample], shift, dims=0))
+            for shift in range(96)
+        )
+
+
 def test_toys_rank_relevant_structure_above_matched_controls() -> None:
     geometry = _geometry(24)
     gradients = torch.zeros(len(geometry))
@@ -149,6 +178,24 @@ def test_low_pass_and_support_score_behave_analytically() -> None:
         rtol=1e-12, atol=1e-12,
     )
 
+    constant_channel_zero = geometry[32:36].copy()
+    constant_channel_zero[:, :, 0] = 1.25
+    shifted_constant = np.roll(constant_channel_zero, shift=29, axis=1)
+    constant_score = support.score(constant_channel_zero)
+    shifted_constant_score = support.score(shifted_constant)
+    np.testing.assert_allclose(
+        constant_score["reconstruction_rms"],
+        shifted_constant_score["reconstruction_rms"],
+        rtol=1e-12,
+        atol=1e-12,
+    )
+    np.testing.assert_allclose(
+        constant_score["nearest_distance"],
+        shifted_constant_score["nearest_distance"],
+        rtol=1e-12,
+        atol=1e-12,
+    )
+
     values = torch.zeros(1, 96, 7)
     z = torch.arange(96)
     values[0, :, 0] = torch.sin(2 * torch.pi * 2 * z / 96)
@@ -162,6 +209,8 @@ def test_invalid_operator_arguments_fail_loudly() -> None:
     geometry = _geometry(2)
     with pytest.raises(ValueError):
         block_permutation(geometry, 5, seed=1)
+    with pytest.raises(ValueError):
+        block_permutation(geometry, 48, seed=1)
     with pytest.raises(ValueError):
         wrapped_window_mask(96, start=0, length=97)
     with pytest.raises(ValueError):

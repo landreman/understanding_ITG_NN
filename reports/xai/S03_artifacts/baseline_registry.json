@@ -8,9 +8,11 @@
     "nearest_neighbour": "robustly scaled gradient nearest neighbour within equilibrium class",
     "robust_constant": "per-channel reference median expanded over z"
   },
+  "cyclic_anchor": "argmax joint robust-standardized energy across all channels",
   "estimand": "native max(log Q, -2)",
+  "panel_equilibrium_overlap": 0,
   "support_components": 24,
   "support_fit_rows": 1536,
   "support_heldout_rows": 512,
-  "support_warning": "robust per-channel scaling + PCA + held-out nearest-neighbour distance; not proof of physical validity"
+  "support_warning": "robust per-channel scaling + PCA + held-out nearest-neighbour distance; two-sided tails; not proof of physical validity"
 }

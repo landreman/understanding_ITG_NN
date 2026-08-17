@@ -232,12 +232,19 @@ def joint_permutation(geometry: torch.Tensor, *, seed: int) -> torch.Tensor:
 def block_permutation(
     geometry: torch.Tensor, block_length: int, *, seed: int
 ) -> torch.Tensor:
-    """Jointly permute contiguous blocks while preserving order inside blocks."""
+    """Jointly reorder contiguous blocks, excluding exact cyclic shifts.
+
+    A cyclic rotation of the block labels is only a joint circular shift, which
+    is an exact symmetry of the canonical S03 estimand.  Such orders are rejected
+    so every sampled endpoint actually destroys block order.
+    """
 
     grid_size = geometry.shape[1]
     if block_length < 1 or grid_size % block_length:
         raise ValueError("block_length must divide the periodic grid")
     block_count = grid_size // block_length
+    if block_count < 3:
+        raise ValueError("at least three blocks are required for a non-cyclic order")
     generator = torch.Generator(device="cpu").manual_seed(int(seed))
     output = torch.empty_like(geometry)
     for sample in range(len(geometry)):
@@ -247,7 +254,12 @@ def block_permutation(
         origin = int(torch.randint(0, grid_size, (1,), generator=generator))
         shifted = torch.roll(geometry[sample], shifts=-origin, dims=0)
         reshaped = shifted.reshape(block_count, block_length, geometry.shape[2])
-        order = torch.randperm(block_count, generator=generator)
+        while True:
+            order = torch.randperm(block_count, generator=generator)
+            # Every adjacent label differs by +1 modulo block_count exactly for
+            # a cyclic rotation of the identity order.
+            if not torch.all(torch.remainder(order[1:] - order[:-1], block_count) == 1):
+                break
         permuted = reshaped[order].reshape(grid_size, geometry.shape[2])
         output[sample] = torch.roll(permuted, shifts=origin, dims=0)
     return output
@@ -283,7 +295,12 @@ def independent_channel_shifts(geometry: torch.Tensor, *, seed: int) -> torch.Te
 def phase_scramble(
     geometry: torch.Tensor, *, seed: int, independent_channels: bool
 ) -> torch.Tensor:
-    """Scramble non-DC Fourier phase while preserving every marginal amplitude."""
+    """Scramble non-DC Fourier phase while preserving marginal amplitudes.
+
+    Independent scrambling replaces each channel phase separately.  Common
+    scrambling instead rotates every channel coefficient by the same random
+    phase at each frequency, preserving all cross-channel phase differences.
+    """
 
     spectrum = torch.fft.rfft(geometry, dim=1)
     generator = torch.Generator(device="cpu").manual_seed(int(seed))
@@ -296,7 +313,11 @@ def phase_scramble(
         phases[:, -1, :] = 0
     if not independent_channels:
         phases = phases.expand(-1, -1, geometry.shape[2])
-    scrambled = spectrum.abs() * torch.polar(torch.ones_like(phases), phases)
+    rotations = torch.polar(torch.ones_like(phases), phases)
+    if independent_channels:
+        scrambled = spectrum.abs() * rotations
+    else:
+        scrambled = spectrum * rotations
     # DC and Nyquist are real; retaining their signed values preserves means and
     # the full marginal amplitude spectrum exactly.
     scrambled[:, 0, :] = spectrum[:, 0, :]
@@ -365,17 +386,25 @@ class RobustPCASupport:
     calibration_nearest: np.ndarray
 
     @staticmethod
-    def _canonicalize(values: np.ndarray) -> np.ndarray:
-        """Fix cyclic phase at channel-0's maximum before support scoring.
+    def _canonicalize(
+        values: np.ndarray,
+        channel_center: np.ndarray,
+        channel_scale: np.ndarray,
+    ) -> np.ndarray:
+        """Fix cyclic phase at the strongest joint standardized excursion.
 
         The canonical anchor makes exact joint shifts receive the same endpoint
         score.  It does not make interpolation paths to a shifted copy exact:
-        intermediate linear mixtures can still leave observed support.
+        intermediate linear mixtures can still leave observed support.  A joint
+        seven-channel anchor remains defined when channel 0 is replaced by a
+        constant; if every channel is constant, rolling is immaterial.
         """
 
         array = np.asarray(values, dtype=np.float64)
         output = np.empty_like(array)
-        anchors = np.argmax(array[:, :, 0], axis=1)
+        standardized = (array - channel_center) / channel_scale
+        anchor_strength = np.sum(np.square(standardized), axis=2)
+        anchors = np.argmax(anchor_strength, axis=1)
         for index, anchor in enumerate(anchors):
             output[index] = np.roll(array[index], shift=-int(anchor), axis=0)
         return output
@@ -395,11 +424,17 @@ class RobustPCASupport:
         *,
         components: int = 24,
     ) -> "RobustPCASupport":
-        fit = cls._canonicalize(np.asarray(fit_geometry, dtype=np.float64))
-        heldout = cls._canonicalize(np.asarray(heldout_geometry, dtype=np.float64))
-        if fit.ndim != 3 or heldout.shape[1:] != fit.shape[1:] or len(heldout) < 1:
+        fit_raw = np.asarray(fit_geometry, dtype=np.float64)
+        heldout_raw = np.asarray(heldout_geometry, dtype=np.float64)
+        if (
+            fit_raw.ndim != 3
+            or heldout_raw.shape[1:] != fit_raw.shape[1:]
+            or len(heldout_raw) < 1
+        ):
             raise ValueError("support fit/heldout arrays have incompatible shapes")
-        channel_center, channel_scale = cls._channel_statistics(fit)
+        channel_center, channel_scale = cls._channel_statistics(fit_raw)
+        fit = cls._canonicalize(fit_raw, channel_center, channel_scale)
+        heldout = cls._canonicalize(heldout_raw, channel_center, channel_scale)
         scaled = ((fit - channel_center) / channel_scale).reshape(len(fit), -1)
         feature_center = np.median(scaled, axis=0)
         centered = scaled - feature_center
@@ -422,7 +457,11 @@ class RobustPCASupport:
         return temporary
 
     def _standardized(self, geometry: np.ndarray) -> np.ndarray:
-        values = self._canonicalize(np.asarray(geometry, dtype=np.float64))
+        values = self._canonicalize(
+            np.asarray(geometry, dtype=np.float64),
+            self.channel_center,
+            self.channel_scale,
+        )
         return ((values - self.channel_center) / self.channel_scale).reshape(len(values), -1) - self.feature_center
 
     @staticmethod

@@ -1,6 +1,6 @@
 {
   "step": "S03",
-  "run_id": "ladder-top10-all100-panel2000-wrappedblocks",
+  "run_id": "ladder-top10-all100-varied1000-paired2000-reviewfix",
   "seed": 20260816,
   "device": "cpu",
   "batch_size": 64,
@@ -11,7 +11,7 @@
   "support_path_doses": [0.0, 0.25, 0.5, 0.75, 1.0],
   "random_replicates": 3,
   "fourier_doses": [0.25, 0.5, 0.75, 1.0],
-  "bootstrap_replicates": 200,
+  "bootstrap_replicates": 1000,
   "stable_threshold_log_Q": -1.9,
   "exact_atol": 0.00002,
   "exact_rtol": 0.00002,
@@ -20,14 +20,15 @@
   "checkpoint": "models/cyclic_ensemble_pre2.pt",
   "cohorts": "reports/xai/S01_artifacts/cohorts.json",
   "s02_accuracy": "reports/xai/S02_artifacts/accuracy.csv",
+  "s01_channel_scales": "reports/xai/S01_artifacts/channel_robust_scales.csv",
   "published_dir": "reports/xai/S03_artifacts",
   "pilot": {
-    "run_id": "pilot-top1-panel128-wrappedblocks",
+    "run_id": "pilot-top1-varied64-paired128-reviewfix",
     "members": 1,
     "panel_varied_rows": 64,
     "support_reference_rows": 256,
     "support_components": 8,
     "random_replicates": 2,
-    "bootstrap_replicates": 30
+    "bootstrap_replicates": 200
   }
 }

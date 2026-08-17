@@ -128,12 +128,56 @@ def _resolve(config: dict[str, Any], args: argparse.Namespace) -> dict[str, Any]
 
 
 def _load_panel(
-    dataset: Path, cohorts: dict[str, Any], varied_count: int
+    dataset: Path,
+    cohorts: dict[str, Any],
+    varied_count: int,
+    stable_threshold: float,
 ) -> tuple[InferenceData, dict[str, np.ndarray]]:
     registered = np.asarray(cohorts["interpretation_panel"]["varied_row_ids"], dtype=np.int64)
     if not 1 <= varied_count <= len(registered):
         raise ValueError("panel_varied_rows exceeds the frozen S01 panel")
-    rows = registered[:varied_count]
+    if varied_count == len(registered):
+        rows = registered
+    else:
+        # A pilot must rehearse the registered panel strata rather than take the
+        # lowest sorted dataset indices.  Allocate proportionally across
+        # equilibrium class x stable/unstable strata, then sample evenly within
+        # each stratum without introducing a new random selection.
+        registered_data = load_hdf5_rows(
+            dataset, registered, gradient_set="varied", include_targets=True
+        )
+        with h5py.File(dataset, "r") as h5_file:
+            registered_class = _h5_take(
+                h5_file["equilibrium_class"], registered
+            ).astype(np.int16)
+        registered_stable = (
+            registered_data.actual_log_heat_flux.numpy() <= float(stable_threshold)
+        ).astype(np.int8)
+        labels = np.asarray(
+            [f"{class_value}:{stable}" for class_value, stable in zip(
+                registered_class, registered_stable
+            )]
+        )
+        unique, counts = np.unique(labels, return_counts=True)
+        if varied_count < len(unique):
+            raise ValueError("pilot rows are insufficient to cover every panel stratum")
+        allocation = np.ones(len(unique), dtype=np.int64)
+        remaining = varied_count - len(unique)
+        capacity = counts - 1
+        if remaining:
+            ideal = remaining * capacity / capacity.sum()
+            allocation += np.floor(ideal).astype(np.int64)
+            leftover = varied_count - int(allocation.sum())
+            order = np.argsort(-(ideal - np.floor(ideal)), kind="stable")
+            allocation[order[:leftover]] += 1
+        selected: list[int] = []
+        for label, quota in zip(unique, allocation):
+            candidates = np.flatnonzero(labels == label)
+            positions = np.floor(
+                (np.arange(quota, dtype=np.float64) + 0.5) * len(candidates) / quota
+            ).astype(np.int64)
+            selected.extend(candidates[positions].tolist())
+        rows = np.sort(registered[np.asarray(selected, dtype=np.int64)])
     varied = load_hdf5_rows(dataset, rows, gradient_set="varied", include_targets=True)
     fixed = load_hdf5_rows(dataset, rows, gradient_set="fixed", include_targets=True)
     target = torch.cat((varied.actual_log_heat_flux, fixed.actual_log_heat_flux))
@@ -151,6 +195,10 @@ def _load_panel(
         "equilibrium_class": np.concatenate((equilibrium_class, equilibrium_class)),
         "equilibrium_file": np.concatenate((equilibrium_file, equilibrium_file)),
         "gradient_set": np.asarray(["varied"] * varied_count + ["fixed"] * varied_count),
+        "panel_selection": np.asarray(
+            ["full_registered_panel" if varied_count == len(registered) else "proportional_class_x_stability"]
+            * (2 * varied_count)
+        ),
     }
     return panel, metadata
 
@@ -166,15 +214,18 @@ def _load_support_reference(
     with h5py.File(dataset, "r") as h5_file:
         equilibrium_file = _decode(_h5_take(h5_file["equilibrium_files"], registered))
         equilibrium_class = _h5_take(h5_file["equilibrium_class"], registered).astype(np.int16)
+        panel_equilibrium_file = _decode(
+            _h5_take(h5_file["equilibrium_files"], np.asarray(panel_rows, dtype=np.int64))
+        )
     generator = np.random.default_rng(seed)
     candidates = generator.permutation(len(registered))
     selected: list[int] = []
     seen: set[str] = set()
-    panel_set = set(np.asarray(panel_rows, dtype=np.int64).tolist())
+    panel_groups = set(panel_equilibrium_file.tolist())
     for index in candidates:
         row = int(registered[index])
         group = str(equilibrium_file[index])
-        if row not in panel_set and group not in seen:
+        if group not in panel_groups and group not in seen:
             selected.append(int(index))
             seen.add(group)
         if len(selected) == count:
@@ -435,6 +486,66 @@ def _residual_scales(path: Path) -> dict[tuple[str, str, str], float]:
     return result
 
 
+def _channel_robust_scales(path: Path) -> np.ndarray:
+    """Load S01's registered IQR/1.349 scales in network-channel order."""
+
+    rows: list[tuple[int, float]] = []
+    with path.open(newline="", encoding="utf-8") as handle:
+        for row in csv.DictReader(handle):
+            rows.append((int(row["channel"]), float(row["robust_sigma_iqr"])))
+    rows.sort()
+    if [channel for channel, _ in rows] != list(range(len(CHANNEL_NAMES))):
+        raise ValueError("S01 channel scale registry does not cover channels 0..6")
+    scales = np.asarray([scale for _, scale in rows], dtype=np.float64)
+    if not np.all(np.isfinite(scales) & (scales > 0)):
+        raise ValueError("S01 channel robust scales must be finite and positive")
+    return scales
+
+
+def _analysis_masks(
+    panel: InferenceData,
+    metadata: dict[str, np.ndarray],
+    stable_threshold: float,
+) -> dict[tuple[str, str], np.ndarray]:
+    actual = panel.actual_log_heat_flux.numpy()
+    masks: dict[tuple[str, str], np.ndarray] = {}
+    for gradient_set in ("varied", "fixed"):
+        gradient_mask = metadata["gradient_set"] == gradient_set
+        masks[(gradient_set, "all")] = gradient_mask
+        masks[(gradient_set, "stable_near_floor")] = gradient_mask & (
+            actual <= stable_threshold
+        )
+        masks[(gradient_set, "unstable")] = gradient_mask & (
+            actual > stable_threshold
+        )
+    return masks
+
+
+def _robust_input_displacements(
+    original: torch.Tensor,
+    endpoint: torch.Tensor,
+    spec: PerturbationSpec,
+    masks: dict[tuple[str, str], np.ndarray],
+    channel_scales: np.ndarray,
+) -> dict[tuple[str, str, str], float]:
+    """RMS input dose after S01 robust scaling, using only edited channels."""
+
+    if spec.family == "channel_replacement":
+        channels = [int(spec.parameter.split(";")[0].split("=")[1])]
+    else:
+        channels = list(range(original.shape[2]))
+    difference = endpoint[:, :, channels].numpy().astype(np.float64) - original[
+        :, :, channels
+    ].numpy().astype(np.float64)
+    difference /= channel_scales[np.asarray(channels)][None, None, :]
+    return {
+        (spec.name, gradient_set, stratum): float(
+            np.sqrt(np.mean(np.square(difference[mask])))
+        )
+        for (gradient_set, stratum), mask in masks.items()
+    }
+
+
 def _bootstrap_draws(mask: np.ndarray, replicates: int, seed: int) -> np.ndarray:
     indices = np.flatnonzero(mask)
     if not len(indices):
@@ -450,20 +561,18 @@ def _ladder_rows(
     specs: list[PerturbationSpec],
     panel: InferenceData,
     metadata: dict[str, np.ndarray],
-    residual_scales: dict[tuple[str, str, str], float],
+    reference_residual_scales: dict[tuple[str, str, str], float],
+    input_displacements: dict[tuple[str, str, str], float],
     config: dict[str, Any],
 ) -> list[dict[str, Any]]:
     actual = panel.actual_log_heat_flux.numpy()
-    masks: dict[tuple[str, str], np.ndarray] = {}
-    for gradient_set in ("varied", "fixed"):
-        gradient_mask = metadata["gradient_set"] == gradient_set
-        masks[(gradient_set, "all")] = gradient_mask
-        masks[(gradient_set, "stable_near_floor")] = gradient_mask & (
-            actual <= float(config["stable_threshold_log_Q"])
-        )
-        masks[(gradient_set, "unstable")] = gradient_mask & (
-            actual > float(config["stable_threshold_log_Q"])
-        )
+    masks = _analysis_masks(
+        panel, metadata, float(config["stable_threshold_log_Q"])
+    )
+    for mask in masks.values():
+        groups = metadata["equilibrium_file"][mask]
+        if len(np.unique(groups)) != len(groups):
+            raise RuntimeError("S03 bootstrap masks must contain one row per equilibrium_file")
     draws = {
         key: _bootstrap_draws(mask, int(config["bootstrap_replicates"]), int(config["seed"]) + index)
         for index, (key, mask) in enumerate(masks.items())
@@ -482,16 +591,28 @@ def _ladder_rows(
                     selected = difference[mask]
                     rms = float(np.sqrt(np.mean(np.square(selected))))
                     normalization: float | str = ""
+                    reference_normalization: float | str = ""
                     ratio: float | str = ""
+                    dose = input_displacements[(spec.name, gradient_set, stratum)]
+                    ratio_per_dose: float | str = ""
                     if gradient_set == "varied":
-                        normalization = residual_scales[(member_id, function_name, stratum)]
+                        residual = reference[member_index, function_index].astype(
+                            np.float64
+                        ) - actual
+                        normalization = float(np.std(residual[mask], ddof=1))
+                        reference_normalization = reference_residual_scales[
+                            (member_id, function_name, stratum)
+                        ]
                         ratio = rms / float(normalization)
+                        ratio_per_dose = float(ratio) / dose if dose > 0 else ""
                     ci_lower: float | str = ""
                     ci_upper: float | str = ""
                     if member_id in top_ids and len(selected):
                         samples = np.sqrt(np.mean(np.square(difference[draws[(gradient_set, stratum)]]), axis=1))
                         if gradient_set == "varied":
-                            samples /= float(normalization)
+                            sampled_residual = residual[draws[(gradient_set, stratum)]]
+                            sampled_denominator = np.std(sampled_residual, axis=1, ddof=1)
+                            samples /= sampled_denominator
                         ci_lower, ci_upper = [float(value) for value in np.quantile(samples, (0.025, 0.975))]
                     rows.append(
                         {
@@ -511,8 +632,11 @@ def _ladder_rows(
                             "mean_signed_change": float(np.mean(selected)),
                             "mean_absolute_change": float(np.mean(np.abs(selected))),
                             "rms_change": rms,
-                            "reference_residual_std": normalization,
+                            "panel_residual_std": normalization,
+                            "s02_reference_residual_std": reference_normalization,
                             "rms_change_over_residual_std": ratio,
+                            "robust_input_displacement_rms": dose,
+                            "effect_per_robust_input_rms": ratio_per_dose,
                             "bootstrap_ci95_lower": ci_lower,
                             "bootstrap_ci95_upper": ci_upper,
                             "bootstrap_unit": "equilibrium_files",
@@ -556,7 +680,11 @@ def _support_rows(
                     "nearest_distance_median": float(np.median(scores["nearest_distance"])),
                     "warning_score_median": float(np.median(scores["warning_score"])),
                     "warning_score_q90": float(np.quantile(scores["warning_score"], 0.9)),
-                    "fraction_above_heldout_95pct": float(np.mean(scores["warning_score"] > 0.95)),
+                    "fraction_outside_heldout_central_95pct": float(
+                        np.mean(scores["warning_score"] > 0.95)
+                    ),
+                    "warning_tail_definition": "two_sided_p_below_0.025_or_above_0.975",
+                    "cyclic_anchor": "argmax_joint_robust_standardized_energy",
                     "interpretation": "warning_only_not_physical_validity",
                 }
             )
@@ -568,15 +696,29 @@ def _toy_checks(seed: int) -> dict[str, Any]:
     geometry = torch.randn(32, 96, 7, generator=generator)
     gradients = torch.zeros(len(geometry))
     joint = joint_permutation(geometry, seed=seed + 1)
+    blocked = block_permutation(geometry, 8, seed=seed + 1)
+    shifted = random_joint_shift(geometry, seed=seed + 1)
     independent = independent_channel_shifts(geometry, seed=seed + 1)
+    common_phase = phase_scramble(
+        geometry, seed=seed + 1, independent_channels=False
+    )
+    channel_phase = phase_scramble(
+        geometry, seed=seed + 1, independent_channels=True
+    )
     permutation_toy = PeriodicPermutationToy()
     reference = permutation_toy(geometry, gradients, gradients)
     joint_change = float(torch.sqrt(torch.mean(torch.square(permutation_toy(joint, gradients, gradients) - reference))))
+    block_change = float(torch.sqrt(torch.mean(torch.square(permutation_toy(blocked, gradients, gradients) - reference))))
+    shift_change = float(torch.sqrt(torch.mean(torch.square(permutation_toy(shifted, gradients, gradients) - reference))))
     independent_change = float(torch.sqrt(torch.mean(torch.square(permutation_toy(independent, gradients, gradients) - reference))))
     colocation = ColocationToy()
     coloc_reference = colocation(geometry, gradients, gradients)
     coloc_joint = float(torch.sqrt(torch.mean(torch.square(colocation(joint, gradients, gradients) - coloc_reference))))
+    coloc_block = float(torch.sqrt(torch.mean(torch.square(colocation(blocked, gradients, gradients) - coloc_reference))))
+    coloc_shift = float(torch.sqrt(torch.mean(torch.square(colocation(shifted, gradients, gradients) - coloc_reference))))
     coloc_independent = float(torch.sqrt(torch.mean(torch.square(colocation(independent, gradients, gradients) - coloc_reference))))
+    coloc_common_phase = float(torch.sqrt(torch.mean(torch.square(colocation(common_phase, gradients, gradients) - coloc_reference))))
+    coloc_channel_phase = float(torch.sqrt(torch.mean(torch.square(colocation(channel_phase, gradients, gradients) - coloc_reference))))
     signal_geometry = torch.zeros(4, 96, 7)
     signal_geometry[:, :, 4] = torch.sin(2 * torch.pi * 3 * torch.arange(96) / 96)
     fourier = FourierBandToy(channel=4, band=3)
@@ -591,15 +733,51 @@ def _toy_checks(seed: int) -> dict[str, Any]:
     )
     relevant_change = float(torch.mean(torch.abs(band_relevant - band_reference)))
     control_change = float(torch.mean(torch.abs(band_control - band_reference)))
+    amplitude_scaled = fourier(
+        scale_non_dc_amplitude(signal_geometry, factor=0.5),
+        torch.zeros(4),
+        torch.zeros(4),
+    )
+    amplitude_change = float(torch.mean(torch.abs(amplitude_scaled - band_reference)))
+    phase_magnitude_error = float(
+        torch.max(
+            torch.abs(
+                torch.fft.rfft(channel_phase, dim=1).abs()
+                - torch.fft.rfft(geometry, dim=1).abs()
+            )
+        )
+    )
+    replacement_profile = geometry[:, :, 4].roll(shifts=13, dims=1)
+    replaced = replace_channel(geometry, 4, replacement_profile)
+    replacement_untouched_error = float(
+        torch.max(torch.abs(replaced[:, :, [0, 1, 2, 3, 5, 6]] - geometry[:, :, [0, 1, 2, 3, 5, 6]]))
+    )
+    parity_roundtrip_error = float(
+        torch.max(torch.abs(stellarator_parity(stellarator_parity(geometry)) - geometry))
+    )
+    reversal_roundtrip_error = float(
+        torch.max(torch.abs(reverse_parallel(reverse_parallel(geometry)) - geometry))
+    )
     first_mask = wrapped_window_mask(96, start=92, length=11)
     shifted_mask = wrapped_window_mask(96, start=3, length=11)
     checks = {
         "permutation_toy_joint_rms": joint_change,
+        "permutation_toy_block_rms": block_change,
+        "permutation_toy_joint_shift_rms": shift_change,
         "permutation_toy_independent_rms": independent_change,
         "colocation_toy_joint_rms": coloc_joint,
+        "colocation_toy_block_rms": coloc_block,
+        "colocation_toy_joint_shift_rms": coloc_shift,
         "colocation_toy_independent_rms": coloc_independent,
+        "colocation_toy_common_phase_rms": coloc_common_phase,
+        "colocation_toy_channel_phase_rms": coloc_channel_phase,
         "fourier_toy_relevant_change": relevant_change,
         "fourier_toy_control_change": control_change,
+        "fourier_toy_amplitude_scaling_change": amplitude_change,
+        "phase_scramble_amplitude_max_error": phase_magnitude_error,
+        "replacement_untouched_channel_max_error": replacement_untouched_error,
+        "stellarator_parity_roundtrip_max_error": parity_roundtrip_error,
+        "wrong_parity_roundtrip_max_error": reversal_roundtrip_error,
         "wrapped_window_no_boundary_artifact": bool(
             first_mask.sum() == shifted_mask.sum() == 11
             and torch.equal(torch.roll(first_mask, shifts=7), shifted_mask)
@@ -607,13 +785,134 @@ def _toy_checks(seed: int) -> dict[str, Any]:
     }
     checks["passed"] = bool(
         joint_change < 1e-5
+        and block_change < 1e-5
+        and shift_change < 1e-5
         and independent_change > 0.1
         and coloc_joint < 1e-5
+        and coloc_block < 1e-5
+        and coloc_shift < 1e-5
         and coloc_independent > 0.1
+        and coloc_common_phase < 1e-5
+        and coloc_channel_phase > 0.05
         and relevant_change > control_change + 1
+        and amplitude_change > control_change + 1
+        and phase_magnitude_error < 2e-4
+        and replacement_untouched_error == 0
+        and parity_roundtrip_error == 0
+        and reversal_roundtrip_error == 0
         and checks["wrapped_window_no_boundary_artifact"]
     )
     return checks
+
+
+def _compact_ladder_summary(
+    rows: list[dict[str, Any]], top_ids: set[str]
+) -> list[dict[str, Any]]:
+    """Generate the committed headline table directly from manifest-hashed rows."""
+
+    canonical = [
+        row
+        for row in rows
+        if row["function"] == "invariant_tilde_f"
+        and row["gradient_set"] == "varied"
+        and row["stratum"] == "all"
+        and row["replicate"] == 0
+    ]
+
+    def summarize(
+        section: str,
+        item: str,
+        parameter: str,
+        selected: list[dict[str, Any]],
+    ) -> dict[str, Any]:
+        top = [row for row in selected if row["member_id"] in top_ids]
+        all_members = selected if len({row["member_id"] for row in selected}) == 100 else []
+
+        def quantile(values: list[float], probability: float) -> float | str:
+            return float(np.quantile(values, probability)) if values else ""
+
+        top_effect = [float(row["rms_change_over_residual_std"]) for row in top]
+        all_effect = [float(row["rms_change_over_residual_std"]) for row in all_members]
+        normalized = [float(row["effect_per_robust_input_rms"]) for row in top]
+        return {
+            "section": section,
+            "item": item,
+            "parameter": parameter,
+            "robust_input_displacement_rms": float(
+                np.median([float(row["robust_input_displacement_rms"]) for row in top])
+            ),
+            "top10_q10": quantile(top_effect, 0.1),
+            "top10_median": quantile(top_effect, 0.5),
+            "top10_q90": quantile(top_effect, 0.9),
+            "top10_median_effect_per_robust_input_rms": quantile(normalized, 0.5),
+            "all100_q10": quantile(all_effect, 0.1),
+            "all100_median": quantile(all_effect, 0.5),
+            "all100_q90": quantile(all_effect, 0.9),
+        }
+
+    output: list[dict[str, Any]] = []
+    for family in (
+        "joint_shift",
+        "random_joint_shift",
+        "parity",
+        "wrong_parity",
+        "joint_permutation",
+        "independent_shift",
+        "common_phase_scramble",
+        "channel_phase_scramble",
+    ):
+        output.append(
+            summarize(
+                "ladder",
+                family,
+                "replicate=0",
+                [row for row in canonical if row["family"] == family],
+            )
+        )
+    for length in (2, 4, 8, 16, 32):
+        output.append(
+            summarize(
+                "block_length",
+                f"L{length}",
+                "replicate=0;non_cyclic_orders_only",
+                [
+                    row
+                    for row in canonical
+                    if row["family"] == "block_permutation"
+                    and row["parameter"] == f"block_length={length}"
+                ],
+            )
+        )
+    for band in FOURIER_BANDS:
+        output.append(
+            summarize(
+                "fourier_full_attenuation",
+                band,
+                "dose=1",
+                [
+                    row
+                    for row in canonical
+                    if row["family"] == "band_attenuation"
+                    and str(row["parameter"]).startswith(f"band={band};")
+                    and float(row["dose"]) == 1.0
+                ],
+            )
+        )
+    for channel, name in enumerate(CHANNEL_NAMES):
+        output.append(
+            summarize(
+                "channel_replacement",
+                name,
+                f"channel={channel}",
+                [
+                    row
+                    for row in canonical
+                    if row["family"] == "channel_replacement"
+                    and str(row["parameter"]).startswith(f"channel={channel};")
+                ],
+            )
+        )
+    return output
 
 
 def _plot_overview(path: Path, rows: list[dict[str, Any]], top_ids: set[str]) -> None:
@@ -632,7 +931,7 @@ def _plot_overview(path: Path, rows: list[dict[str, Any]], top_ids: set[str]) ->
     figure, axis = plt.subplots(figsize=(8.4, 5.8))
     axis.barh(np.asarray(families)[order], np.asarray(medians)[order], color="#4477AA")
     axis.axvline(1, color="black", linestyle="--", linewidth=1)
-    axis.set_xlabel("Median top-10 RMS change / member residual std")
+    axis.set_xlabel("Median top-10 RMS change / panel member residual std")
     axis.set_title("S03 canonical tilde_f ladder (varied panel, replicate 0)")
     figure.tight_layout()
     figure.savefig(path, dpi=180)
@@ -666,7 +965,7 @@ def _plot_dose(path: Path, rows: list[dict[str, Any]], top_ids: set[str]) -> Non
             medians = [np.median([float(row["rms_change_over_residual_std"]) for row in values if float(row["dose"]) == dose]) for dose in doses]
             axis.plot(doses, medians, marker="o", label=parameter)
     axis.set_xlabel("Registered attenuation dose")
-    axis.set_ylabel("Median top-10 RMS change / residual std")
+    axis.set_ylabel("Median top-10 RMS change / panel residual std")
     axis.set_title("Phase-preserving Fourier dose response")
     axis.legend(frameon=False, fontsize=8)
     figure.tight_layout()
@@ -691,7 +990,12 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
     cohorts = json.loads(cohorts_path.read_text(encoding="utf-8"))
     output_dir = (args.output_dir or Path("output/xai/S03") / str(resolved["run_id"])).resolve()
     artifacts = RunArtifacts(output_dir)
-    panel, metadata = _load_panel(dataset, cohorts, int(resolved["panel_varied_rows"]))
+    panel, metadata = _load_panel(
+        dataset,
+        cohorts,
+        int(resolved["panel_varied_rows"]),
+        float(resolved["stable_threshold_log_Q"]),
+    )
     support_varied, support_fixed, support_metadata = _load_support_reference(
         dataset,
         cohorts,
@@ -699,6 +1003,10 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
         int(resolved["support_reference_rows"]),
         int(resolved["seed"]) + 41,
     )
+    panel_groups = set(metadata["equilibrium_file"])
+    support_groups = set(support_metadata["equilibrium_file"])
+    if panel_groups.intersection(support_groups):
+        raise RuntimeError("support/background equilibria overlap the analysis panel")
     split = int(len(support_varied.geometry) * float(resolved["support_fit_fraction"]))
     if not 2 <= split < len(support_varied.geometry):
         raise ValueError("support_fit_fraction leaves an empty fit or held-out set")
@@ -722,6 +1030,11 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
         support_fixed.row_indices,
     )
 
+    # PLAN S03 requires analytic controls before any real-member inference.
+    toy_checks = _toy_checks(int(resolved["seed"]) + 99)
+    if not toy_checks["passed"]:
+        raise RuntimeError(f"pre-inference toy gate failed: {toy_checks}")
+
     ensemble = load_ensemble(checkpoint, device=str(resolved["device"]))
     registered_all = tuple(cohorts["member_cohorts"]["all_100"])
     registered_top = tuple(cohorts["member_cohorts"]["stored_validation_top_10"])
@@ -734,6 +1047,43 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
     if set(member_ids).difference(index_by_id):
         raise RuntimeError("registered member IDs are absent from checkpoint")
     specs = _specs(resolved)
+    masks = _analysis_masks(
+        panel, metadata, float(resolved["stable_threshold_log_Q"])
+    )
+    channel_scales = _channel_robust_scales(Path(resolved["s01_channel_scales"]))
+    input_displacements: dict[tuple[str, str, str], float] = {}
+    endpoint_hashes: dict[str, str] = {}
+    deterministic_specs: dict[str, bool] = {}
+    for spec in specs:
+        endpoint = _transform(
+            spec,
+            panel.geometry,
+            panel,
+            metadata,
+            varied_backgrounds,
+            fixed_backgrounds,
+            resolved,
+        )
+        repeated = _transform(
+            spec,
+            panel.geometry,
+            panel,
+            metadata,
+            varied_backgrounds,
+            fixed_backgrounds,
+            resolved,
+        )
+        deterministic_specs[spec.name] = bool(torch.equal(endpoint, repeated))
+        if not deterministic_specs[spec.name]:
+            raise RuntimeError(f"full-batch fixed-seed repeat failed: {spec.name}")
+        endpoint_hashes[spec.name] = hashlib.sha256(
+            np.ascontiguousarray(endpoint.numpy()).tobytes()
+        ).hexdigest()
+        input_displacements.update(
+            _robust_input_displacements(
+                panel.geometry, endpoint, spec, masks, channel_scales
+            )
+        )
     experiment_payload = {
         "config": resolved,
         "specs": [
@@ -753,6 +1103,8 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
         "perturbations_sha256": sha256_file(
             Path(__file__).resolve().parents[1] / "itg_nn/xai/perturbations.py"
         ),
+        "cohorts_sha256": sha256_file(cohorts_path),
+        "channel_scales_sha256": sha256_file(Path(resolved["s01_channel_scales"])),
     }
     hashes = {
         "dataset": sha256_file(dataset),
@@ -783,25 +1135,6 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
             geometry = _transform(
                 spec, panel.geometry, panel, metadata, varied_backgrounds, fixed_backgrounds, resolved
             )
-            if not torch.equal(
-                geometry[: min(4, len(geometry))],
-                _transform(
-                    spec,
-                    panel.geometry[: min(4, len(panel.geometry))],
-                    InferenceData(
-                        geometry=panel.geometry[: min(4, len(panel.geometry))],
-                        a_over_lt=panel.a_over_lt[: min(4, len(panel.geometry))],
-                        a_over_ln=panel.a_over_ln[: min(4, len(panel.geometry))],
-                        row_indices=panel.row_indices[: min(4, len(panel.geometry))],
-                        actual_log_heat_flux=panel.actual_log_heat_flux[: min(4, len(panel.geometry))],
-                    ),
-                    {key: value[: min(4, len(value))] for key, value in metadata.items()},
-                    varied_backgrounds,
-                    fixed_backgrounds,
-                    resolved,
-                ),
-            ) if spec.family not in ("channel_replacement",) else False:
-                raise RuntimeError(f"operator is not deterministic: {spec.name}")
             applicable = [
                 index for index, member_id in enumerate(member_ids)
                 if spec.member_scope == "all100" or member_id in top_ids
@@ -829,11 +1162,18 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
     support_rows = _support_rows(
         support, specs, panel, metadata, varied_backgrounds, fixed_backgrounds, resolved
     )
-    residual_scales = _residual_scales(Path(resolved["s02_accuracy"]))
+    reference_residual_scales = _residual_scales(Path(resolved["s02_accuracy"]))
     ladder_rows = _ladder_rows(
-        predictions, member_ids, top_ids, specs, panel, metadata, residual_scales, resolved
+        predictions,
+        member_ids,
+        top_ids,
+        specs,
+        panel,
+        metadata,
+        reference_residual_scales,
+        input_displacements,
+        resolved,
     )
-    toy_checks = _toy_checks(int(resolved["seed"]) + 99)
     spec_index_by_name = {spec.name: index + 1 for index, spec in enumerate(specs)}
     exact_names = ["joint_shift_32"] + [
         spec.name for spec in specs if spec.family == "random_joint_shift"
@@ -850,9 +1190,9 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
         np.max(np.abs(predictions[:, 0, index] - predictions[:, 0, 0]))
     )
     exact_passed = all(value <= float(resolved["exact_atol"]) for value in exact_errors.values())
-    if not toy_checks["passed"] or not exact_passed:
+    if not exact_passed:
         raise RuntimeError(
-            f"registered checks failed: toys={toy_checks['passed']}, exact={exact_errors}"
+            f"registered exact-symmetry checks failed: {exact_errors}"
         )
 
     # Receptive-field tied lengths are published for every selected member.
@@ -885,7 +1225,9 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
             "low_pass_input": "input-specific rFFT truncation retaining DC through registered cutoff",
             "conditional_channel_profile": "pointwise median profile of nearest class/gradient-matched observed rows",
         },
-        "support_warning": "robust per-channel scaling + PCA + held-out nearest-neighbour distance; not proof of physical validity",
+        "support_warning": "robust per-channel scaling + PCA + held-out nearest-neighbour distance; two-sided tails; not proof of physical validity",
+        "cyclic_anchor": "argmax joint robust-standardized energy across all channels",
+        "panel_equilibrium_overlap": 0,
         "support_fit_rows": split,
         "support_heldout_rows": len(support_varied.geometry) - split,
         "support_components": int(resolved["support_components"]),
@@ -925,9 +1267,11 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
         "all100_spec_count": int(sum(spec.member_scope == "all100" for spec in specs)),
         "checks": {
             "toy_controls": toy_checks,
+            "toy_gate_timing": "before_real_member_inference",
             "exact_symmetry_max_absolute_errors": exact_errors,
             "exact_symmetry_passed": exact_passed,
-            "deterministic_seeded_operators": True,
+            "deterministic_seeded_operators": bool(all(deterministic_specs.values())),
+            "full_batch_repeat_by_spec": deterministic_specs,
             "every_spec_has_validity_tag": all(bool(spec.validity.value) for spec in specs),
             "support_at_every_spec_and_path_dose": len(support_rows)
             == len(specs) * len(resolved["support_path_doses"]),
@@ -944,16 +1288,27 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
         "bootstrap": {
             "unit": "equilibrium_files",
             "replicates": int(resolved["bootstrap_replicates"]),
-            "scope": "member-level intervals for registered stored-validation top cohort",
+            "scope": "member-level intervals for registered stored-validation top cohort; numerator and panel residual denominator recomputed together",
+        },
+        "normalization": {
+            "point_estimate": "same frozen S01 panel and matching member/function/flux stratum",
+            "comparison_only": "S02 full-reference residual std retained as a separate ladder.csv column",
+            "input_dose": "S01 IQR/1.349 channel scales; replacement dose uses only the edited channel",
         },
         "support": baseline_registry,
     }
 
     ladder_path = artifacts.write_text("ladder.csv", _csv_text(ladder_rows))
+    ladder_summary_path = artifacts.write_text(
+        "ladder_summary.csv", _csv_text(_compact_ladder_summary(ladder_rows, top_ids))
+    )
     support_path = artifacts.write_text("support.csv", _csv_text(support_rows))
     receptive_path = artifacts.write_text("window_registry.csv", _csv_text(receptive_rows))
     baseline_path = artifacts.write_json("baseline_registry.json", baseline_registry)
     summary_path = artifacts.write_json("summary.json", summary)
+    endpoint_hash_path = artifacts.write_json(
+        "operator_endpoint_hashes.json", endpoint_hashes
+    )
     artifacts.register_existing("predictions.h5")
     support_model_path = output_dir / "support_model.npz"
     np.savez_compressed(
@@ -988,7 +1343,17 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
     )
     if not args.pilot and not args.no_publish:
         _publish(
-            [ladder_path, support_path, receptive_path, baseline_path, summary_path, overview_path, dose_path],
+            [
+                ladder_path,
+                ladder_summary_path,
+                support_path,
+                receptive_path,
+                baseline_path,
+                summary_path,
+                endpoint_hash_path,
+                overview_path,
+                dose_path,
+            ],
             Path(resolved["published_dir"]),
         )
     print(json.dumps(summary, indent=2), flush=True)
