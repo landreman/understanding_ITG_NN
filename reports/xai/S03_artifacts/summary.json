@@ -1,0 +1,109 @@
+{
+  "all100_spec_count": 13,
+  "bootstrap": {
+    "replicates": 200,
+    "scope": "member-level intervals for registered stored-validation top cohort",
+    "unit": "equilibrium_files"
+  },
+  "canonical_function": "invariant_tilde_f",
+  "checks": {
+    "deterministic_seeded_operators": true,
+    "every_spec_has_validity_tag": true,
+    "exact_symmetry_max_absolute_errors": {
+      "invariant_tilde_f:joint_shift_32": 7.62939453125e-06,
+      "invariant_tilde_f:random_joint_shift_r0": 7.62939453125e-06,
+      "invariant_tilde_f:random_joint_shift_r1": 5.7220458984375e-06,
+      "invariant_tilde_f:random_joint_shift_r2": 5.7220458984375e-06,
+      "original_f:joint_shift_32": 9.5367431640625e-06
+    },
+    "exact_symmetry_passed": true,
+    "prediction_completeness": true,
+    "support_at_every_spec_and_path_dose": true,
+    "toy_controls": {
+      "colocation_toy_independent_rms": 0.13040325045585632,
+      "colocation_toy_joint_rms": 1.287582218623129e-08,
+      "fourier_toy_control_change": 5.7220458984375e-06,
+      "fourier_toy_relevant_change": 23.999998092651367,
+      "passed": true,
+      "permutation_toy_independent_rms": 0.13427403569221497,
+      "permutation_toy_joint_rms": 6.40923190076137e-08,
+      "wrapped_window_no_boundary_artifact": true
+    }
+  },
+  "cohort": {
+    "equilibrium_unique_per_gradient_set": 1000,
+    "members": 100,
+    "panel_fixed_paired": 1000,
+    "panel_varied": 1000,
+    "top_validation_members": 10
+  },
+  "estimand": "native max(log Q, -2)",
+  "mode": "production",
+  "spec_count": 56,
+  "support": {
+    "all_zero_default_forbidden": true,
+    "available": {
+      "conditional_channel_profile": "pointwise median profile of nearest class/gradient-matched observed rows",
+      "low_pass_input": "input-specific rFFT truncation retaining DC through registered cutoff",
+      "matched_observed": "observed row matched on model gradients within equilibrium class; source row excluded",
+      "medoid": "observed geometry nearest the robust profile center, optionally within class",
+      "nearest_neighbour": "robustly scaled gradient nearest neighbour within equilibrium class",
+      "robust_constant": "per-channel reference median expanded over z"
+    },
+    "estimand": "native max(log Q, -2)",
+    "support_components": 24,
+    "support_fit_rows": 1536,
+    "support_heldout_rows": 512,
+    "support_warning": "robust per-channel scaling + PCA + held-out nearest-neighbour distance; not proof of physical validity"
+  },
+  "top10_canonical_varied_all_family_summary": {
+    "amplitude_scaling": {
+      "median_rms_over_residual_std": 4.737239314372613,
+      "members_x_entries": 40
+    },
+    "band_attenuation": {
+      "median_rms_over_residual_std": 1.1616918881078517,
+      "members_x_entries": 120
+    },
+    "block_permutation": {
+      "median_rms_over_residual_std": 2.530440486031684,
+      "members_x_entries": 50
+    },
+    "channel_phase_scramble": {
+      "median_rms_over_residual_std": 4.0484256341394556,
+      "members_x_entries": 10
+    },
+    "channel_replacement": {
+      "median_rms_over_residual_std": 2.4596668541638023,
+      "members_x_entries": 70
+    },
+    "common_phase_scramble": {
+      "median_rms_over_residual_std": 4.466290584369193,
+      "members_x_entries": 10
+    },
+    "independent_shift": {
+      "median_rms_over_residual_std": 3.349673733662274,
+      "members_x_entries": 10
+    },
+    "joint_permutation": {
+      "median_rms_over_residual_std": 4.535554778454069,
+      "members_x_entries": 10
+    },
+    "joint_shift": {
+      "median_rms_over_residual_std": 1.135679703324244e-06,
+      "members_x_entries": 10
+    },
+    "parity": {
+      "median_rms_over_residual_std": 0.19298885594297432,
+      "members_x_entries": 10
+    },
+    "random_joint_shift": {
+      "median_rms_over_residual_std": 1.0405187279936534e-06,
+      "members_x_entries": 10
+    },
+    "wrong_parity": {
+      "median_rms_over_residual_std": 1.7516762483631214,
+      "members_x_entries": 10
+    }
+  }
+}
