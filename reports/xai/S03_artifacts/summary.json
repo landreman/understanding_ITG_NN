@@ -1,0 +1,194 @@
+{
+  "all100_spec_count": 13,
+  "bootstrap": {
+    "replicates": 1000,
+    "scope": "member-level intervals for registered stored-validation top cohort; numerator and panel residual denominator recomputed together",
+    "unit": "equilibrium_files"
+  },
+  "canonical_function": "invariant_tilde_f",
+  "checks": {
+    "deterministic_seeded_operators": true,
+    "every_spec_has_validity_tag": true,
+    "exact_symmetry_max_absolute_errors": {
+      "invariant_tilde_f:joint_shift_32": 7.62939453125e-06,
+      "invariant_tilde_f:random_joint_shift_r0": 7.62939453125e-06,
+      "invariant_tilde_f:random_joint_shift_r1": 5.7220458984375e-06,
+      "invariant_tilde_f:random_joint_shift_r2": 5.7220458984375e-06,
+      "original_f:joint_shift_32": 9.5367431640625e-06
+    },
+    "exact_symmetry_passed": true,
+    "full_batch_repeat_by_spec": {
+      "attenuate_high_d0.25": true,
+      "attenuate_high_d0.5": true,
+      "attenuate_high_d0.75": true,
+      "attenuate_high_d1": true,
+      "attenuate_low_d0.25": true,
+      "attenuate_low_d0.5": true,
+      "attenuate_low_d0.75": true,
+      "attenuate_low_d1": true,
+      "attenuate_mid_d0.25": true,
+      "attenuate_mid_d0.5": true,
+      "attenuate_mid_d0.75": true,
+      "attenuate_mid_d1": true,
+      "block_permutation_L16_r0": true,
+      "block_permutation_L16_r1": true,
+      "block_permutation_L16_r2": true,
+      "block_permutation_L2_r0": true,
+      "block_permutation_L2_r1": true,
+      "block_permutation_L2_r2": true,
+      "block_permutation_L32_r0": true,
+      "block_permutation_L32_r1": true,
+      "block_permutation_L32_r2": true,
+      "block_permutation_L4_r0": true,
+      "block_permutation_L4_r1": true,
+      "block_permutation_L4_r2": true,
+      "block_permutation_L8_r0": true,
+      "block_permutation_L8_r1": true,
+      "block_permutation_L8_r2": true,
+      "channel_phase_scramble_r0": true,
+      "channel_phase_scramble_r1": true,
+      "channel_phase_scramble_r2": true,
+      "common_phase_scramble_r0": true,
+      "common_phase_scramble_r1": true,
+      "common_phase_scramble_r2": true,
+      "independent_channel_shift_r0": true,
+      "independent_channel_shift_r1": true,
+      "independent_channel_shift_r2": true,
+      "joint_permutation_r0": true,
+      "joint_permutation_r1": true,
+      "joint_permutation_r2": true,
+      "joint_shift_32": true,
+      "random_joint_shift_r0": true,
+      "random_joint_shift_r1": true,
+      "random_joint_shift_r2": true,
+      "replace_channel_0_bmag": true,
+      "replace_channel_1_gbdrift": true,
+      "replace_channel_2_cvdrift": true,
+      "replace_channel_3_gbdrift0_over_shat": true,
+      "replace_channel_4_gds2": true,
+      "replace_channel_5_gds21_over_shat": true,
+      "replace_channel_6_gds22_over_shat_squared": true,
+      "scale_non_dc_d0.25": true,
+      "scale_non_dc_d0.5": true,
+      "scale_non_dc_d0.75": true,
+      "scale_non_dc_d1": true,
+      "stellarator_parity": true,
+      "wrong_parity": true
+    },
+    "prediction_completeness": true,
+    "support_at_every_spec_and_path_dose": true,
+    "toy_controls": {
+      "colocation_toy_block_rms": 7.945399005393483e-09,
+      "colocation_toy_channel_phase_rms": 0.14209148287773132,
+      "colocation_toy_common_phase_rms": 1.775697455741465e-08,
+      "colocation_toy_independent_rms": 0.13040325045585632,
+      "colocation_toy_joint_rms": 1.287582218623129e-08,
+      "colocation_toy_joint_shift_rms": 1.1204502214923195e-08,
+      "fourier_toy_amplitude_scaling_change": 17.999998092651367,
+      "fourier_toy_control_change": 5.7220458984375e-06,
+      "fourier_toy_relevant_change": 23.999998092651367,
+      "passed": true,
+      "permutation_toy_block_rms": 2.78775207362969e-08,
+      "permutation_toy_independent_rms": 0.13427403569221497,
+      "permutation_toy_joint_rms": 6.40923190076137e-08,
+      "permutation_toy_joint_shift_rms": 6.580174272130535e-08,
+      "phase_scramble_amplitude_max_error": 3.814697265625e-06,
+      "replacement_untouched_channel_max_error": 0.0,
+      "stellarator_parity_roundtrip_max_error": 0.0,
+      "wrapped_window_no_boundary_artifact": true,
+      "wrong_parity_roundtrip_max_error": 0.0
+    },
+    "toy_gate_timing": "before_real_member_inference"
+  },
+  "cohort": {
+    "equilibrium_unique_per_gradient_set": 1000,
+    "members": 100,
+    "panel_fixed_paired": 1000,
+    "panel_varied": 1000,
+    "top_validation_members": 10
+  },
+  "derived_review3": {
+    "fixed_gradient_interpretations": "withdrawn",
+    "matched_phase_run": "/Users/mattland/understanding_ITG_NN/understanding_ITG_NN/output/xai/S03/phase-matched-top10-all100-varied1000-review3b/manifest.json",
+    "published_artifact_manifest": "/Users/mattland/understanding_ITG_NN/understanding_ITG_NN/reports/xai/S03_artifacts/review3_manifest.json"
+  },
+  "estimand": "native max(log Q, -2)",
+  "mode": "production",
+  "normalization": {
+    "comparison_only": "S02 full-reference residual std retained as a separate ladder.csv column",
+    "input_dose": "S01 IQR/1.349 channel scales followed by both RMS and median-absolute aggregation; replacement dose uses only the edited channel; normalized rankings are sensitivity analyses",
+    "point_estimate": "same frozen S01 panel and matching member/function/flux stratum"
+  },
+  "spec_count": 56,
+  "support": {
+    "all_zero_default_forbidden": true,
+    "available": {
+      "conditional_channel_profile": "pointwise median profile of nearest class/gradient-matched observed rows; tied gradients reduce explicitly to class-only matching",
+      "low_pass": "rFFT truncation of the supplied analysed or background input, retaining DC through the registered cutoff",
+      "matched_observed": "observed robust-gradient nearest neighbour within equilibrium class; source row excluded",
+      "medoid": "observed geometry nearest the robust profile center, optionally within class",
+      "robust_constant": "per-channel reference median expanded over z"
+    },
+    "cyclic_anchor": "argmax joint robust-standardized energy across all channels",
+    "estimand": "native max(log Q, -2)",
+    "panel_equilibrium_overlap": 0,
+    "production_real_data_usage": {
+      "conditional_channel_profile": "used for S03 channel replacement",
+      "robust_constant_matched_observed_medoid_low_pass": "API-only in S03; first real consumers are downstream steps"
+    },
+    "support_components": 24,
+    "support_fit_rows": 1536,
+    "support_heldout_rows": 512,
+    "support_warning": "robust per-channel scaling + ordinary SVD PCA + held-out nearest-neighbour distance; PCA components remain outlier-sensitive; two-sided tails; not proof of physical validity"
+  },
+  "top10_canonical_varied_all_family_summary": {
+    "amplitude_scaling": {
+      "median_rms_over_residual_std": 3.4257550678034336,
+      "members_x_entries": 40
+    },
+    "band_attenuation": {
+      "median_rms_over_residual_std": 0.834073373279281,
+      "members_x_entries": 120
+    },
+    "block_permutation": {
+      "median_rms_over_residual_std": 1.8280615795408912,
+      "members_x_entries": 50
+    },
+    "channel_phase_scramble": {
+      "median_rms_over_residual_std": 2.9840923274519735,
+      "members_x_entries": 10
+    },
+    "channel_replacement": {
+      "median_rms_over_residual_std": 1.7626011746465295,
+      "members_x_entries": 70
+    },
+    "common_phase_scramble": {
+      "median_rms_over_residual_std": 2.8007251109525098,
+      "members_x_entries": 10
+    },
+    "independent_shift": {
+      "median_rms_over_residual_std": 2.4131995623205214,
+      "members_x_entries": 10
+    },
+    "joint_permutation": {
+      "median_rms_over_residual_std": 3.257568316681833,
+      "members_x_entries": 10
+    },
+    "joint_shift": {
+      "median_rms_over_residual_std": 8.11065499099066e-07,
+      "members_x_entries": 10
+    },
+    "parity": {
+      "median_rms_over_residual_std": 0.13842903891413605,
+      "members_x_entries": 10
+    },
+    "random_joint_shift": {
+      "median_rms_over_residual_std": 7.431766475307656e-07,
+      "members_x_entries": 10
+    },
+    "wrong_parity": {
+      "median_rms_over_residual_std": 1.255533040894755,
+      "members_x_entries": 10
+    }
+  }
+}

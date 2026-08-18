@@ -1,0 +1,29 @@
+{
+  "dose_enrichment_input_hashes": {
+    "channel_scales": "aeb870f8fb3d47d786aaa06e27574f7a99c8ffd0e900958373445226e2d21c28",
+    "cohorts": "edde45002a709a92ddbee7d0cf8697b2d966d5a14110895e217b2898bf4263f6",
+    "dataset": "9d8fa52f93f2782ad9948a38bf46943c0cd6df78cd08b94a006dad4e06c1c8ad",
+    "ladder_code": "8478a33bbd8f876454175fa8f0f294facf5909a6c023f1711065563d0002ef04",
+    "perturbation_code": "33d41d4375f22ff1712c5e39d1b0e4703b0014f2e56b3ba898c6e55ee9097a84"
+  },
+  "generator": "/Users/mattland/understanding_ITG_NN/understanding_ITG_NN/scripts/xai_s03_review2_artifacts.py",
+  "generator_sha256": "9a99e55ddd6ed377652e30d0cf290ba2839f3d35227288a5fcfeb6aa92e5c7b5",
+  "phase_manifest": "/Users/mattland/understanding_ITG_NN/understanding_ITG_NN/output/xai/S03/phase-matched-top10-all100-varied1000-review3b/manifest.json",
+  "phase_manifest_sha256": "ca7ffd133f5b16187cc827c211f5148ce2e654e7f919775c3adf7659c2e77b8e",
+  "published_output_hashes": {
+    "baseline_registry.json": "8e4c3f130825a811017eb4474bc89c8d90195844f0e7bae7ac3686ff37ade074",
+    "contrasts.csv": "195df1c4639b7e49b56c5c9fc4ca1dce5b7872fc8b0a2603fef482e559ebaa42",
+    "ladder_summary.csv": "c96b1a93d875a2924de38985762a406bade223282b41774e40a96999a723bd28",
+    "review2_summary.json": "e9c793a6b79a3f57dea600ecba9bc94df27cd86f2f77c1758653fef905861227",
+    "summary.json": "49308fc3631e67a286f17c74c56580078d71e80b36165a83efe1cff38b301885"
+  },
+  "source_manifest": "/Users/mattland/understanding_ITG_NN/understanding_ITG_NN/output/xai/S03/ladder-top10-all100-varied1000-paired2000-reviewfix/manifest.json",
+  "source_manifest_sha256": "6fc4edcde9a0c61df424c4fe61d0e651984997a48de8f04756fb5da77a2f52fc",
+  "verified_source_outputs": {
+    "matched_phase_ladder.csv": "597b53b0fac77988ae6d68cb6c42581e307e4e78149b3eae892f5dcf5b0a38d6",
+    "source_baseline_registry.json": "5a3f847dfa9bda8e6aa19cca0ec36c64186c0f643b00c9dbc23cf1ed25b82b27",
+    "source_ladder.csv": "97b9487017fd98fb72e2f39592204a815b4b0894afc51c613b2602910691c21d",
+    "source_summary.json": "6b928bd351e525624e50596353dbf8ea8e12f91b7b856100ea83f0e1bc30e18b",
+    "source_support.csv": "37f2c6ae1290c57093f69944eef4de172212a860cc8569c5bf487cc8b6d51288"
+  }
+}
