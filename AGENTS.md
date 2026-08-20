@@ -54,7 +54,12 @@ request. One step, one branch, one PR.
   or off-manifold. Model sensitivity to an off-manifold edit explains the network,
   not the plasma.
 - Write large output to `output/xai/<step>/<run_id>/` (git-ignored) with a
-  complete `manifest.json`; commit only small reports and figures.
+  complete `manifest.json`; commit only small reports and figures. **Commit a
+  verbatim copy of the registered run's `manifest.json` to
+  `reports/xai/SNN_artifacts/manifest.json`** — pass `published_dir=` to
+  `RunArtifacts.finalize`. It is a few kilobytes, and without it the reviewer
+  can only confirm that the code *would* write a complete manifest, never that
+  the run actually did. Pilot manifests stay git-ignored.
 - `tests/data/review_slice.h5` is a **verification artifact, not a development
   set**. The automated review recomputes reported numbers on it. Do not develop
   against it, tune explanation hyperparameters on it, select a method with it, or
@@ -66,6 +71,11 @@ request. One step, one branch, one PR.
   when a step deliberately changes the registered panel, with
   `scripts/build_review_slice.py`, and say so in the PR body.
 - Negative and contradictory results are kept, not dropped.
+- Every reported number must say which code path produced it when more than one
+  exists. Where an optional dependency selects the path — the Captum estimator
+  versus the in-repo fallback, say — record the method in the artifact column,
+  not only in prose, so a reviewer can tell which one it is holding.
+- Say what a reviewer cannot check. See `## Reviewer reproduction` below.
 
 ## Definition of done for a step
 
@@ -88,9 +98,38 @@ A step is done when all of the following hold. Not most of them.
   `manifest.json`, and every conclusion in the report traces to it.
 - `reports/xai/SNN_<name>.md` and `reports/xai/SNN_executive_summary.md` are
   committed, with negative results, failed checks, and interpretation limits kept,
-  and a `## Deferred` section that says what was dropped or says "nothing".
+  a `## Deferred` section that says what was dropped or says "nothing", and a
+  `## Reviewer reproduction` section as specified below.
+- `reports/xai/SNN_artifacts/manifest.json` is committed and is the registered
+  production run's manifest, matching the `run_id` the report quotes.
 - `git status --short` is clean of unrelated files, no large generated artifact is
   staged, and the model file, the external dataset, and `paper/` are untouched.
+
+## Reviewer reproduction
+
+The automated review runs on a GitHub runner with no external dataset and no
+`.venv-xai`. It has the checkout, `pytest`, `tests/data/review_slice.h5`, and
+captum, scipy and pandas. Anything outside that it cannot check, and the review's
+"what I could not check" list is a standing cost of the workflow, not a
+formality. Shrink it deliberately.
+
+Every step report carries a `## Reviewer reproduction` section with three lists:
+
+- **Recomputable on the slice.** Headline numbers whose rows are inside the
+  2,000-row slice, each with the artifact column or the few-line calculation
+  that reproduces it. Say which rows, so the reviewer does not have to infer the
+  mapping. These are the numbers a reviewer is expected to reproduce exactly.
+- **Checkable from committed artifacts alone.** Numbers that live in a committed
+  CSV, `summary.json`, or `manifest.json` and need no dataset access.
+- **Not checkable off the researcher's machine, and why.** Claims resting on
+  rows outside the slice — the 9,785-row reference cohort, the full 100,705
+  rows — or on a run too expensive to repeat. Name the nearest proxy the
+  reviewer *can* compute on the slice and what agreement would mean, so an
+  unverifiable claim still gets a partial check instead of a shrug.
+
+If a headline number lands in the third list and could have landed in the first
+by publishing one more small artifact, publish the artifact. A number reachable
+only from a git-ignored run directory is not traceable, whatever the report says.
 
 ## Git and pull requests
 
