@@ -1,0 +1,226 @@
+{
+  "acceptance_criteria": {
+    "ablation_and_shapley_rankings_compared": {
+      "artifact": "rank_comparison.csv",
+      "median_spearman": 0.8900640606732055
+    },
+    "encoded_and_used_are_separate": {
+      "artifact": "encoded_vs_used.csv",
+      "columns": [
+        "encoded_*_grouped_cv_r2",
+        "used_direction_removal_rms_delta"
+      ]
+    },
+    "random_direction_controls_included": {
+      "artifact": "interventions_top10.h5",
+      "directions_per_top_member": 16
+    },
+    "shapley_exact_or_sampling_error_reported": {
+      "exact_members": 1,
+      "maximum_mean_feature_sampling_se": 0.028218708010415868,
+      "sampled_members_with_standard_errors": 9
+    }
+  },
+  "artifacts": {
+    "bottleneck_arrays": "bottlenecks.h5",
+    "decodability": "decodability.csv",
+    "encoded_vs_used": "encoded_vs_used.csv",
+    "global_shapley": "shapley_global.csv",
+    "grouped_uncertainty": "grouped_uncertainty.csv",
+    "head_fidelity": "head_fidelity.csv",
+    "intervention_graph_source": "intervention_summary.csv",
+    "pdp_ice_atlas": "pdp_ice_atlas.h5",
+    "per_sample_shapley": "shapley.h5",
+    "rank_comparison": "rank_comparison.csv",
+    "top10_signed_interventions": "interventions_top10.h5"
+  },
+  "checks": {
+    "all_shapley_efficiency_within_2e-5": true,
+    "bootstrap_unit": "equilibrium_files",
+    "canonical_function": "invariant_tilde_f",
+    "decoder_split_unit": "equilibrium_files",
+    "fixed_gradient_rows_used": false,
+    "hidden_intervention_validity_tag": "deliberately_off_manifold_diagnostic",
+    "label_permutation_controls": true,
+    "member_level_signed_arrays_retained": true,
+    "random_direction_controls": 16,
+    "registered_FSA_grad_x_max_log_difference": 2.8614219604872204e-07,
+    "review_slice_used": false,
+    "shapley_efficiency_max_absolute_error": 8.344650268554688e-07,
+    "stable_unstable_separate": true,
+    "toy_gate_before_real_inference": {
+      "analytic_cyclic_shift_error": 2.384185791015625e-07,
+      "efficiency_max_error": 3.390014171600342e-07,
+      "exact_shapley_max_error": 2.384185791015625e-07,
+      "ignored_unit_intervention_max": 0.0,
+      "native_output_has_negative_drive_contribution": true,
+      "passed": true
+    }
+  },
+  "cohort": {
+    "gradient_set": "varied",
+    "members": 100,
+    "panel_rows": 1000,
+    "shapley_and_atlas_members": 10,
+    "stable_or_near_floor": 240,
+    "unique_equilibrium_files": 1000,
+    "unstable": 760
+  },
+  "decoders": {
+    "all100_median_r2": {
+      "aspect": {
+        "linear": 0.28252075491160306,
+        "nonlinear": 0.3152323024459448
+      },
+      "f_stab": {
+        "linear": 0.7848459734874365,
+        "nonlinear": 0.8003084441618837
+      },
+      "log_FSA_grad_x": {
+        "linear": 0.8275073608520583,
+        "nonlinear": 0.8480703728145118
+      },
+      "log_f_Q": {
+        "linear": 0.8818867551587486,
+        "nonlinear": 0.8906347524746142
+      },
+      "nfp": {
+        "linear": 0.4532768577261035,
+        "nonlinear": 0.49667206277094905
+      },
+      "shat": {
+        "linear": 0.3715349818517628,
+        "nonlinear": 0.40066238116530806
+      }
+    },
+    "all100_minimum_r2": {
+      "aspect": {
+        "linear": 0.19047819574900093,
+        "nonlinear": 0.05783049442357968
+      },
+      "f_stab": {
+        "linear": 0.6435221255543613,
+        "nonlinear": 0.6790378554026462
+      },
+      "log_FSA_grad_x": {
+        "linear": 0.7119628690716786,
+        "nonlinear": 0.5850246688789167
+      },
+      "log_f_Q": {
+        "linear": 0.8470638333995588,
+        "nonlinear": 0.8612241797750635
+      },
+      "nfp": {
+        "linear": 0.1852346148137567,
+        "nonlinear": 0.3764242047847597
+      },
+      "shat": {
+        "linear": 0.12511580066645045,
+        "nonlinear": 0.19958392234308242
+      }
+    },
+    "folds": 5,
+    "maximum_label_permutation_r2": 0.11020154157691742,
+    "median_label_permutation_r2": -0.05001121455357649,
+    "minimum_active_fraction_per_training_fold": 0.01,
+    "types": [
+      "linear ridge",
+      "32-fixed-ReLU-feature nonlinear ridge"
+    ]
+  },
+  "deferred": "nothing",
+  "encoded_vs_used": {
+    "aspect": {
+      "median_encoded_linear_r2": 0.29026014531492633,
+      "median_encoded_nonlinear_r2": 0.309976421801724,
+      "median_random_direction_rms": 0.1504846553132006,
+      "median_used_direction_removal_rms": 0.14306977701477697
+    },
+    "f_stab": {
+      "median_encoded_linear_r2": 0.7632933182609032,
+      "median_encoded_nonlinear_r2": 0.7844305012198544,
+      "median_random_direction_rms": 0.1504846553132006,
+      "median_used_direction_removal_rms": 0.40265787562592437
+    },
+    "log_FSA_grad_x": {
+      "median_encoded_linear_r2": 0.8425879402798169,
+      "median_encoded_nonlinear_r2": 0.8524595925810509,
+      "median_random_direction_rms": 0.1504846553132006,
+      "median_used_direction_removal_rms": 0.29539861133716927
+    },
+    "log_f_Q": {
+      "median_encoded_linear_r2": 0.8909037166900649,
+      "median_encoded_nonlinear_r2": 0.8918341458969132,
+      "median_random_direction_rms": 0.1504846553132006,
+      "median_used_direction_removal_rms": 0.6678830690431261
+    },
+    "nfp": {
+      "median_encoded_linear_r2": 0.49611695584778137,
+      "median_encoded_nonlinear_r2": 0.5155913097821846,
+      "median_random_direction_rms": 0.1504846553132006,
+      "median_used_direction_removal_rms": 0.08686311428090684
+    },
+    "shat": {
+      "median_encoded_linear_r2": 0.3717838016275795,
+      "median_encoded_nonlinear_r2": 0.4016190309699146,
+      "median_random_direction_rms": 0.1504846553132006,
+      "median_used_direction_removal_rms": 0.09018295570605783
+    }
+  },
+  "estimand": "member-level invariant_tilde_f in native max(log Q, -2) units",
+  "head_anatomy": {
+    "geometry_variance_share_range": [
+      0.18800479479825769,
+      0.20388931827436135
+    ],
+    "live_top10_units": 229,
+    "mean_replacement_pair_interaction_rms": {
+      "maximum": 0.282283462159236,
+      "median": 0.01121076548142642,
+      "q90": 0.043513953730725495,
+      "q99": 0.10234196307977535
+    },
+    "median_geometry_fraction_of_total_mean_absolute_shapley": 0.3123460563574708,
+    "median_geometry_variance_share": 0.1953030513899064,
+    "present_top10_units": 248
+  },
+  "head_fidelity": {
+    "median_linear_r2": 0.7991742905337702,
+    "median_nonlinear_increment": 0.011608157937878227,
+    "median_nonlinear_r2": 0.8111278308861849,
+    "nonlinear_increment_range": [
+      0.0019495688080323204,
+      0.05401150686911671
+    ]
+  },
+  "mode": "production",
+  "negative_results": [
+    "The head is drive-dominated: geometry carries only about 20% of output variance on the panel.",
+    "Head nonlinearity adds only about 0.012 median grouped-CV R2 beyond the linear decoder.",
+    "nfp, shat, and aspect are decodable but their direction-removal effects are no larger than the median random-direction control.",
+    "Most pair interactions are small (median RMS about 0.011 native units), although a sparse tail reaches about 0.28."
+  ],
+  "ranking": {
+    "median_spearman": 0.8900640606732055,
+    "member_spearman_values": [
+      0.8909090909090909,
+      0.8892190304373201,
+      0.9020161290322583,
+      0.8955645161290322,
+      0.8487903225806454,
+      0.8980514337214358,
+      0.8316021834760846,
+      0.8223076923076923,
+      0.832112332112332,
+      0.966033705925564
+    ]
+  },
+  "shapley": {
+    "exact_members": 1,
+    "maximum_reported_sampling_se": 0.14035330712795258,
+    "reference": "frozen varied-panel mean for bottleneck units and both drives",
+    "sampled_members": 9,
+    "sampled_permutations": 256
+  },
+  "step": "S04"
+}
