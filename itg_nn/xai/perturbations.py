@@ -9,14 +9,14 @@ trained function rather than the plasma.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from enum import StrEnum
+from enum import Enum
 from typing import Sequence
 
 import numpy as np
 import torch
 
 
-class ValidityTag(StrEnum):
+class ValidityTag(str, Enum):
     """Registered intervention-validity taxonomy from PLAN.md."""
 
     EXACT_SYMMETRY = "exact_symmetry"
