@@ -108,7 +108,7 @@ def test_captum_sampled_shapley_contract_is_executed(monkeypatch: pytest.MonkeyP
         def attribute(self, inputs: torch.Tensor, **kwargs: object) -> torch.Tensor:
             calls.append(int(kwargs["n_samples"]))
             baseline = torch.as_tensor(kwargs["baselines"], dtype=inputs.dtype)
-            return inputs - baseline
+            return inputs - baseline + 0.01 * len(calls)
 
     captum = types.ModuleType("captum")
     captum_attr = types.ModuleType("captum.attr")
@@ -129,8 +129,17 @@ def test_captum_sampled_shapley_contract_is_executed(monkeypatch: pytest.MonkeyP
     assert result.method == "captum_shapley_value_sampling"
     assert len(calls) == 8
     assert sum(calls) == 34
-    np.testing.assert_allclose(result.values, values.numpy())
-    np.testing.assert_allclose(result.standard_errors, 0.0, atol=1e-6)
+    weights = np.asarray(calls, dtype=np.float64) / sum(calls)
+    offsets = 0.01 * np.arange(1, len(calls) + 1)
+    expected_offset = float(weights @ offsets)
+    effective_blocks = 1.0 / np.square(weights).sum()
+    expected_se = np.sqrt(
+        np.sum(weights * np.square(offsets - expected_offset))
+        / (effective_blocks - 1.0)
+    )
+    np.testing.assert_allclose(result.values, values.numpy() + expected_offset, atol=1e-6)
+    np.testing.assert_allclose(result.standard_errors, expected_se, atol=1e-7)
+    assert expected_se > 0
 
 
 def test_variance_shares_sum_to_one_and_retain_signed_suppressors() -> None:
@@ -161,7 +170,21 @@ def test_interventions_keep_signed_member_sample_effects_and_null_unit() -> None
     assert result.pair_delta.shape == result.pair_interaction.shape == (3, 6, 15)
     assert result.random_direction_delta.shape == (3, 15)
     assert result.random_direction_edit_magnitude.shape == (3,)
-    assert np.all(result.random_direction_edit_magnitude > 0)
+    rng = np.random.default_rng(9)
+    for _ in range(values.shape[1]):
+        rng.permutation(len(values))
+    standardized = (values.numpy() - reference.numpy()) / values.numpy().std(axis=0)
+    expected_magnitudes = []
+    for _ in range(3):
+        direction = rng.normal(size=values.shape[1])
+        direction /= np.linalg.norm(direction)
+        expected_magnitudes.append(
+            np.sqrt(np.mean(np.square(standardized @ direction)))
+        )
+    np.testing.assert_allclose(
+        result.random_direction_edit_magnitude, expected_magnitudes, rtol=1e-6
+    )
+    assert not np.allclose(result.random_direction_edit_magnitude, 1.0)
     np.testing.assert_allclose(result.single_delta[:, 2:], 0.0, atol=1e-7)
     pair = np.flatnonzero(np.all(result.pair_indices == (0, 1), axis=1))[0]
     assert np.sqrt(np.mean(np.square(result.pair_interaction[1, pair]))) > 0.1
@@ -211,7 +234,9 @@ def test_grouped_decoder_does_not_amplify_near_dead_fold_features() -> None:
     training = np.setdiff1d(np.arange(len(groups)), held_out)
     rare_training = training[:8]  # 0.5% active in this fold: S02 near-dead.
     features[rare_training, 1] = 0.01
-    features[held_out[0], 1] = 2.0
+    # Active on enough held-out rows to look globally supported, but still only
+    # 0.5% active in this fold's training rows. A full-dataset support mask leaks.
+    features[held_out[:30], 1] = 2.0
     target = 0.75 * features[:, 0] + rng.normal(scale=0.05, size=2000)
     target[rare_training] += 5.0
     for kind in ("linear", "nonlinear"):
@@ -277,12 +302,14 @@ def test_runner_statistics_preserve_groups_strata_signs_and_95_percent_interval(
     assert lower == pytest.approx(np.quantile(draws, 0.025))
     assert upper == pytest.approx(np.quantile(draws, 0.975))
 
-    signed = np.asarray([[-2.0, 1.0], [-1.0, 0.5], [1.0, 0.0], [2.0, -0.5]])
+    suppressor = np.asarray([-2.0, -1.0, 1.0, 2.0])
+    prediction = np.asarray([4.0, 2.0, 0.0, 0.5])
+    signed = np.column_stack((prediction - suppressor, suppressor))
     shapley_result = ShapleyResult(
         values=signed,
         standard_errors=np.zeros_like(signed),
         baseline_output=np.zeros(4),
-        prediction=signed.sum(axis=1),
+        prediction=prediction,
         method="synthetic",
         evaluations=0,
         permutations=None,
@@ -290,13 +317,23 @@ def test_runner_statistics_preserve_groups_strata_signs_and_95_percent_interval(
     rows = _shapley_rows(
         "toy", ("toy:u000", "toy:u001"), shapley_result, _stratum_masks(np.arange(4), 1)
     )
-    suppressor = next(
+    suppressor_row = next(
         row
         for row in rows
         if row["stratum"] == "overall" and row["feature_id"] == "toy:u001"
     )
-    assert float(suppressor["variance_contribution"]) < 0
-    assert suppressor["validity_tag"] == HIDDEN_INTERVENTION_VALIDITY
+    expected_contribution = np.mean(
+        (suppressor - suppressor.mean()) * (prediction - prediction.mean())
+    )
+    absolute_contribution = np.mean(
+        (np.abs(suppressor) - np.abs(suppressor).mean())
+        * (prediction - prediction.mean())
+    )
+    assert expected_contribution < 0 < absolute_contribution
+    assert float(suppressor_row["variance_contribution"]) == pytest.approx(
+        expected_contribution
+    )
+    assert suppressor_row["validity_tag"] == HIDDEN_INTERVENTION_VALIDITY
 
 
 def test_runner_direction_delta_uses_edited_minus_original_sign_and_records_size() -> None:
@@ -306,14 +343,21 @@ def test_runner_direction_delta_uses_edited_minus_original_sign_and_records_size
         ) -> torch.Tensor:
             return bottleneck[:, 0] + 0.0 * (a_over_lt + a_over_ln)
 
-    bottleneck = np.asarray([[-2.0, 0.0], [-1.0, 1.0], [1.0, -1.0], [2.0, 0.0]])
+    bottleneck = np.asarray([[-2.0, -2.0], [-1.0, 0.0], [1.0, 0.0], [2.0, 2.0]])
     drives = np.zeros((4, 2))
+    direction = np.asarray([1.0, 1.0]) / np.sqrt(2.0)
     delta, magnitude = _direction_delta(
         LinearMember(),  # type: ignore[arg-type]
         bottleneck,
         drives,
-        np.asarray([1.0, 0.0]),
+        direction,
         torch.device("cpu"),
     )
-    np.testing.assert_allclose(delta, -bottleneck[:, 0])
-    assert magnitude == pytest.approx(1.0)
+    center = bottleneck.mean(axis=0)
+    scale = bottleneck.std(axis=0)
+    standardized = (bottleneck - center) / scale
+    projection = standardized @ direction
+    edited = (standardized - projection[:, None] * direction) * scale + center
+    np.testing.assert_allclose(delta, edited[:, 0] - bottleneck[:, 0])
+    assert magnitude == pytest.approx(np.sqrt(np.mean(np.square(projection))))
+    assert magnitude != pytest.approx(1.0)

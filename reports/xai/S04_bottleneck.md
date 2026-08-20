@@ -8,7 +8,9 @@ panel. Across the stored-validation top 10, bottleneck units contribute a median
 **19.5%** of output variance (member range 18.8%–20.4%) and 31.2% of total mean
 absolute Shapley magnitude. Mean-replacement ablation and Shapley unit rankings
 agree strongly (median member Spearman **0.890**, range 0.822–0.966), so the
-ranking is not an artifact of either one method.
+ranking is not an artifact of either one method. Nine members use sampled
+Shapley, so the range endpoints carry the reported Monte Carlo and package-version
+sensitivity; the median and grouped interval are the more stable summaries.
 
 The bottlenecks strongly encode the paper's geometric feature family. Across all
 100 members, median equilibrium-grouped out-of-fold linear/nonlinear decoder
@@ -93,7 +95,7 @@ small all-100 summaries are committed in
 [summary.json](S04_artifacts/summary.json): the strongest-unit RMS medians for
 zero/mean/resample edits are 0.693/0.406/0.582, with median strongest-unit MSE
 changes 0.487/0.168/0.346; the corresponding all-unit median MSE changes are
-0.00958/0.00598/0.01267. All interventions carry
+0.00958/0.00598/0.01267. All primary intervention artifacts carry
 `deliberately_off_manifold_diagnostic` in code and artifacts. The
 [interaction graph](S04_artifacts/interaction_graph.png) shows the top member's
 20 strongest mean-replacement edges.
@@ -172,6 +174,10 @@ interval 0.857–0.897. For $\log f_Q$, median nonlinear decodability is 0.892
 `nfp` the corresponding values are 0.516 (0.473–0.560) and 0.087
 (0.082–0.094). Member ranges remain descriptive member spread, not confidence
 intervals.
+
+The decoder $R^2$ bootstrap reweights the fixed out-of-fold predictions for
+evaluation; it covers equilibrium sampling variation in the evaluation panel,
+not variability from refitting the decoder inside every bootstrap replicate.
 
 No multiplicity correction is applied to the 7,200 decoder summary rows, 509
 grouped-bootstrap intervals, or 30,353 mean-mode overall pair interactions.
@@ -257,7 +263,8 @@ git diff --check
 `load_review_slice_index().slice_rows(registered_rows)`, and read those 1,000
 rows from `tests/data/review_slice.h5`. They are exactly the S04 panel, so the
 240/760 strata, $2.86\times10^{-7}$ invariant reconstruction error, top-member
-exact Shapley and ablation values, all-100 decoder scores, grouped intervals,
+exact Shapley and ablation values, sampled-Shapley method/efficiency/SE checks,
+all-100 decoder scores, grouped intervals,
 edit magnitudes, intervention-mode summaries, and direction controls can be
 recomputed. `shapley_global.csv` names `exact_enumeration` for the top member and
 `captum_shapley_value_sampling` for the other nine; the review environment now
