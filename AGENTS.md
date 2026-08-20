@@ -12,6 +12,12 @@ steps, and the acceptance criteria live in `PLAN.md`. The dispatch/review/merge
 process lives in `WORKFLOW.md`. Read both before starting a step, along with the
 merged reports in `reports/xai/` for the steps you depend on.
 
+Work is dispatched one `PLAN.md` step at a time. If you are implementing, the
+sequence is `.agents/skills/step/SKILL.md`, invoked as `/step SNN` or `/step next`.
+If you are reviewing, it is `.claude/commands/review-step.md`, which the
+`Claude Code Review` GitHub Actions workflow runs automatically on every pull
+request. One step, one branch, one PR.
+
 ## Environments
 
 - The conda environment `20240629-01-ML` has an editable install of this package
@@ -50,6 +56,62 @@ merged reports in `reports/xai/` for the steps you depend on.
 - Write large output to `output/xai/<step>/<run_id>/` (git-ignored) with a
   complete `manifest.json`; commit only small reports and figures.
 - Negative and contradictory results are kept, not dropped.
+
+## Definition of done for a step
+
+A step is done when all of the following hold. Not most of them.
+
+- Every acceptance criterion in the step's `PLAN.md` subsection is answered by a
+  number or a named artifact, one by one, in the report's `## Acceptance criteria`
+  section — not by a restatement of the method.
+- Tests were written before the implementation, and include an analytic cyclic toy
+  function with known relevant features and at least one control that must come
+  out null. They pass without the external HDF5 dataset, because CI and the
+  automated review both run without it; gate anything that truly needs the dataset
+  behind a skip on its absence.
+- The tests were shown to be able to fail. Two or three mutations that matter for
+  this step were applied, confirmed to turn the suite red, and reverted, and they
+  are named in the PR body. A mutation that does not turn the suite red is a
+  finding to report, not a mutation to quietly swap out.
+- `make test` is green locally and CI is green on the pushed branch.
+- The run directory under `output/xai/<step>/<run_id>/` carries a complete
+  `manifest.json`, and every conclusion in the report traces to it.
+- `reports/xai/SNN_<name>.md` and `reports/xai/SNN_executive_summary.md` are
+  committed, with negative results, failed checks, and interpretation limits kept,
+  and a `## Deferred` section that says what was dropped or says "nothing".
+- `git status --short` is clean of unrelated files, no large generated artifact is
+  staged, and the model file, the external dataset, and `paper/` are untouched.
+
+## Git and pull requests
+
+Branch from up-to-date `main`, one step per branch, named `codex/xai-sNN-name` or
+`claude/xai-sNN-name`. Commit code, tests, configs, and small report artifacts;
+never large output. Push, get CI green, then `gh pr create --fill` with the body
+structure the `step` skill specifies.
+
+Never merge your own step PR. Never `git reset --hard`, force-delete a branch, or
+delete recursively in a research worktree.
+
+## Responding to the automated review
+
+The `Claude Code Review` workflow posts a findings table on every push. Fix every
+finding marked **blocking** or **should-fix**, push, and iterate until it returns
+neither; **note** items are your judgement. Disagreeing is allowed and sometimes
+correct — reply on the PR with the artifact, line, or test that shows the finding
+is wrong. Silently ignoring a finding is not. When the table comes back clean,
+stop: do not merge, and do not start the next step.
+
+Never satisfy a review by relaxing a tolerance, narrowing the cohort, marking a
+test skipped, or dropping a control. If a finding can only be answered that way,
+it is a decision for the researcher.
+
+## Reviewing, when you are the reviewer rather than the implementer
+
+Follow `.claude/commands/review-step.md`. Assume the work is plausible,
+well-documented, and passing, and that if its conclusion is wrong its tests are
+wrong in the same direction. Do not edit code and do not merge. Say plainly when
+you find nothing blocking, and say plainly when a claim can only be checked by
+rerunning a dataset-backed calculation you cannot run here.
 
 ## When to stop and ask
 
