@@ -165,8 +165,13 @@ reproduce every number. Three sections are mandatory:
   the nearest slice-computable proxy and what agreement with it would mean.
 
 Add `reports/xai/SNN_executive_summary.md` in plain language for the researcher,
-following the tone of the existing S01–S03 summaries. Keep contradictory and
-negative results in both.
+following the tone of the existing summaries. 
+The summary should explain what the step was about, what its purpose was, and what the conclusions were.
+The executive summaries are intended for a researcher who is not an expert in 
+machine learning, so do not assume they know the jargon, and the executive summary
+should educate the reader on any necessary terms and concepts.
+
+Keep contradictory and negative results in both the report and executive summary.
 
 ## 8. Push and get CI green
 
