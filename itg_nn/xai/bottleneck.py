@@ -35,6 +35,7 @@ class InterventionResult:
     pair_delta: np.ndarray
     pair_interaction: np.ndarray
     random_direction_delta: np.ndarray
+    random_direction_edit_magnitude: np.ndarray
     validity_tag: str
 
 
@@ -355,6 +356,9 @@ def bottleneck_interventions(
         direction_effects = torch.empty(
             (random_directions, len(values)), dtype=values.dtype, device=values.device
         )
+        direction_magnitudes = torch.empty(
+            random_directions, dtype=values.dtype, device=values.device
+        )
         for direction_index in range(random_directions):
             direction = torch.as_tensor(
                 rng.normal(size=len(selected)), dtype=values.dtype, device=values.device
@@ -363,6 +367,9 @@ def bottleneck_interventions(
                 torch.finfo(values.dtype).eps
             )
             projection = standardized @ direction
+            direction_magnitudes[direction_index] = torch.sqrt(
+                torch.mean(projection.square())
+            )
             edited = values.clone()
             edited[:, selected] = (
                 standardized - projection[:, None] * direction[None, :]
@@ -377,6 +384,9 @@ def bottleneck_interventions(
         pair_delta=pair_delta.cpu().numpy().astype(np.float64),
         pair_interaction=pair_interaction.cpu().numpy().astype(np.float64),
         random_direction_delta=direction_effects.cpu().numpy().astype(np.float64),
+        random_direction_edit_magnitude=direction_magnitudes.cpu()
+        .numpy()
+        .astype(np.float64),
         validity_tag=HIDDEN_INTERVENTION_VALIDITY,
     )
 

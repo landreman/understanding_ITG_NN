@@ -1,17 +1,28 @@
 from __future__ import annotations
 
+import sys
+import types
+
 import numpy as np
 import pytest
 import torch
 
 from itg_nn.xai.bottleneck import (
     HIDDEN_INTERVENTION_VALIDITY,
+    ShapleyResult,
     bottleneck_interventions,
     exact_or_sampled_shapley,
     grouped_cv_predictions,
     grouped_folds,
     registered_invariants,
     variance_decomposition,
+)
+from scripts.xai_s04_bottleneck import (
+    _direction_delta,
+    _effect_interval,
+    _group_bootstrap_weights,
+    _shapley_rows,
+    _stratum_masks,
 )
 
 
@@ -87,6 +98,41 @@ def test_sampled_shapley_is_deterministic_reports_se_and_is_efficient() -> None:
     assert np.all(first.standard_errors >= 0)
 
 
+def test_captum_sampled_shapley_contract_is_executed(monkeypatch: pytest.MonkeyPatch) -> None:
+    calls: list[int] = []
+
+    class FakeShapleyValueSampling:
+        def __init__(self, forward_func: object) -> None:
+            self.forward_func = forward_func
+
+        def attribute(self, inputs: torch.Tensor, **kwargs: object) -> torch.Tensor:
+            calls.append(int(kwargs["n_samples"]))
+            baseline = torch.as_tensor(kwargs["baselines"], dtype=inputs.dtype)
+            return inputs - baseline
+
+    captum = types.ModuleType("captum")
+    captum_attr = types.ModuleType("captum.attr")
+    captum_attr.ShapleyValueSampling = FakeShapleyValueSampling  # type: ignore[attr-defined]
+    captum.attr = captum_attr  # type: ignore[attr-defined]
+    monkeypatch.setitem(sys.modules, "captum", captum)
+    monkeypatch.setitem(sys.modules, "captum.attr", captum_attr)
+
+    values = torch.arange(30, dtype=torch.float32).reshape(6, 5) / 10
+    result = exact_or_sampled_shapley(
+        lambda x: x.sum(1),
+        values,
+        torch.zeros(5),
+        exact_max_features=2,
+        permutations=34,
+        seed=3,
+    )
+    assert result.method == "captum_shapley_value_sampling"
+    assert len(calls) == 8
+    assert sum(calls) == 34
+    np.testing.assert_allclose(result.values, values.numpy())
+    np.testing.assert_allclose(result.standard_errors, 0.0, atol=1e-6)
+
+
 def test_variance_shares_sum_to_one_and_retain_signed_suppressors() -> None:
     shapley = np.asarray(
         [[-2.0, 1.0], [-1.0, 0.0], [1.0, 0.0], [2.0, -1.0]]
@@ -114,6 +160,8 @@ def test_interventions_keep_signed_member_sample_effects_and_null_unit() -> None
     assert result.single_delta.shape == (3, 4, 15)
     assert result.pair_delta.shape == result.pair_interaction.shape == (3, 6, 15)
     assert result.random_direction_delta.shape == (3, 15)
+    assert result.random_direction_edit_magnitude.shape == (3,)
+    assert np.all(result.random_direction_edit_magnitude > 0)
     np.testing.assert_allclose(result.single_delta[:, 2:], 0.0, atol=1e-7)
     pair = np.flatnonzero(np.all(result.pair_indices == (0, 1), axis=1))[0]
     assert np.sqrt(np.mean(np.square(result.pair_interaction[1, pair]))) > 0.1
@@ -203,3 +251,69 @@ def test_registered_invariants_match_closed_form_geometry() -> None:
     np.testing.assert_array_equal(result["shat"], scalar[:, 2])
     np.testing.assert_array_equal(result["nfp"], scalar[:, 0])
     np.testing.assert_array_equal(result["aspect"], scalar[:, 4])
+
+
+def test_runner_statistics_preserve_groups_strata_signs_and_95_percent_interval() -> None:
+    groups = np.asarray(["a", "a", "b", "b", "c", "c"])
+    weights, inverse = _group_bootstrap_weights(groups, replicates=200, seed=17)
+    assert weights.shape == (200, 6)
+    assert np.array_equal(inverse, np.asarray([0, 0, 1, 1, 2, 2]))
+    np.testing.assert_array_equal(weights[:, 0], weights[:, 1])
+    np.testing.assert_array_equal(weights[:, 2], weights[:, 3])
+    np.testing.assert_array_equal(weights[:, 4], weights[:, 5])
+
+    actual = np.asarray([-2.0, -1.9, -1.89, 0.0, 0.4, 1.0])
+    masks = _stratum_masks(actual, -1.9)
+    np.testing.assert_array_equal(
+        masks["stable_or_near_floor"], np.asarray([True, True, False, False, False, False])
+    )
+    assert not np.any(masks["stable_or_near_floor"] & masks["unstable"])
+    assert np.all(masks["stable_or_near_floor"] | masks["unstable"])
+
+    values = np.asarray([1.0, -2.0, 3.0, -4.0, 2.0, -1.0])
+    point, lower, upper = _effect_interval(values, weights, statistic="mean_absolute")
+    draws = weights @ np.abs(values) / weights.sum(axis=1)
+    assert point == pytest.approx(np.mean(np.abs(values)))
+    assert lower == pytest.approx(np.quantile(draws, 0.025))
+    assert upper == pytest.approx(np.quantile(draws, 0.975))
+
+    signed = np.asarray([[-2.0, 1.0], [-1.0, 0.5], [1.0, 0.0], [2.0, -0.5]])
+    shapley_result = ShapleyResult(
+        values=signed,
+        standard_errors=np.zeros_like(signed),
+        baseline_output=np.zeros(4),
+        prediction=signed.sum(axis=1),
+        method="synthetic",
+        evaluations=0,
+        permutations=None,
+    )
+    rows = _shapley_rows(
+        "toy", ("toy:u000", "toy:u001"), shapley_result, _stratum_masks(np.arange(4), 1)
+    )
+    suppressor = next(
+        row
+        for row in rows
+        if row["stratum"] == "overall" and row["feature_id"] == "toy:u001"
+    )
+    assert float(suppressor["variance_contribution"]) < 0
+    assert suppressor["validity_tag"] == HIDDEN_INTERVENTION_VALIDITY
+
+
+def test_runner_direction_delta_uses_edited_minus_original_sign_and_records_size() -> None:
+    class LinearMember:
+        def head(
+            self, bottleneck: torch.Tensor, a_over_lt: torch.Tensor, a_over_ln: torch.Tensor
+        ) -> torch.Tensor:
+            return bottleneck[:, 0] + 0.0 * (a_over_lt + a_over_ln)
+
+    bottleneck = np.asarray([[-2.0, 0.0], [-1.0, 1.0], [1.0, -1.0], [2.0, 0.0]])
+    drives = np.zeros((4, 2))
+    delta, magnitude = _direction_delta(
+        LinearMember(),  # type: ignore[arg-type]
+        bottleneck,
+        drives,
+        np.asarray([1.0, 0.0]),
+        torch.device("cpu"),
+    )
+    np.testing.assert_allclose(delta, -bottleneck[:, 0])
+    assert magnitude == pytest.approx(1.0)

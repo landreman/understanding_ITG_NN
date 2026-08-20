@@ -280,6 +280,8 @@ def _metric_rows(
                         "mse_change": float(edited_error - original_error),
                         "mean_signed_interaction": 0.0,
                         "rms_interaction": 0.0,
+                        "edit_magnitude_standardized_rms": "",
+                        "rms_delta_per_edit_sd": "",
                         "validity_tag": result.validity_tag,
                     }
                 )
@@ -309,6 +311,8 @@ def _metric_rows(
                         "rms_interaction": float(
                             np.sqrt(np.mean(np.square(interaction[mask])))
                         ),
+                        "edit_magnitude_standardized_rms": "",
+                        "rms_delta_per_edit_sd": "",
                         "validity_tag": result.validity_tag,
                     }
                 )
@@ -328,6 +332,13 @@ def _metric_rows(
                     "mse_change": float("nan"),
                     "mean_signed_interaction": 0.0,
                     "rms_interaction": 0.0,
+                    "edit_magnitude_standardized_rms": float(
+                        result.random_direction_edit_magnitude[direction]
+                    ),
+                    "rms_delta_per_edit_sd": float(
+                        np.sqrt(np.mean(np.square(delta[mask])))
+                        / result.random_direction_edit_magnitude[direction]
+                    ),
                     "validity_tag": result.validity_tag,
                 }
             )
@@ -364,6 +375,7 @@ def _shapley_rows(
                     "variance_share": float(share[feature]),
                     "mean_sampling_se": float(np.mean(result.standard_errors[mask, feature])),
                     "maximum_sampling_se": float(np.max(result.standard_errors[mask, feature])),
+                    "validity_tag": HIDDEN_INTERVENTION_VALIDITY,
                 }
             )
     return rows
@@ -397,6 +409,41 @@ def _effect_interval(
     else:
         raise ValueError(statistic)
     return point, float(np.quantile(draws, 0.025)), float(np.quantile(draws, 0.975))
+
+
+def _r2_draws(
+    actual: np.ndarray, predicted: np.ndarray, row_weights: np.ndarray
+) -> tuple[float, np.ndarray]:
+    """Return the ordinary R2 and grouped-bootstrap weighted R2 draws."""
+
+    y = np.asarray(actual, dtype=np.float64)
+    p = np.asarray(predicted, dtype=np.float64)
+    weights = np.asarray(row_weights, dtype=np.float64)
+    denominator = weights.sum(axis=1)
+    weighted_mean = weights @ y / denominator
+    total = np.sum(weights * np.square(y[None, :] - weighted_mean[:, None]), axis=1)
+    residual = weights @ np.square(y - p)
+    draws = np.full(len(weights), np.nan, dtype=np.float64)
+    valid = total > np.finfo(np.float64).tiny
+    draws[valid] = 1.0 - residual[valid] / total[valid]
+    return _r2(y, p), draws
+
+
+def _interval_from_draws(point: float, draws: np.ndarray) -> tuple[float, float, float]:
+    finite = np.asarray(draws, dtype=np.float64)
+    finite = finite[np.isfinite(finite)]
+    if not len(finite):
+        return point, float("nan"), float("nan")
+    return point, float(np.quantile(finite, 0.025)), float(np.quantile(finite, 0.975))
+
+
+def _rms_draws(values: np.ndarray, row_weights: np.ndarray) -> tuple[float, np.ndarray]:
+    values = np.asarray(values, dtype=np.float64)
+    weights = np.asarray(row_weights, dtype=np.float64)
+    draws = np.sqrt(
+        weights @ np.square(values) / np.maximum(weights.sum(axis=1), 1.0)
+    )
+    return float(np.sqrt(np.mean(np.square(values)))), draws
 
 
 def _decoder_rows(
@@ -467,12 +514,14 @@ def _direction_delta(
     drives: np.ndarray,
     direction: np.ndarray,
     device: torch.device,
-) -> np.ndarray:
+) -> tuple[np.ndarray, float]:
     center = bottleneck.mean(axis=0)
     scale = bottleneck.std(axis=0)
     scale[scale <= np.finfo(np.float64).eps] = 1.0
     standardized = (bottleneck - center) / scale
-    edited = (standardized - (standardized @ direction)[:, None] * direction) * scale + center
+    projection = standardized @ direction
+    edit_magnitude = float(np.sqrt(np.mean(np.square(projection))))
+    edited = (standardized - projection[:, None] * direction) * scale + center
     original_packed = torch.as_tensor(
         np.column_stack((bottleneck, drives)), dtype=torch.float32, device=device
     )
@@ -481,9 +530,8 @@ def _direction_delta(
     )
     head = _head_function(member, bottleneck.shape[1])
     with torch.inference_mode():
-        return (
-            (head(edited_packed) - head(original_packed)).cpu().numpy().astype(np.float64)
-        )
+        delta = (head(edited_packed) - head(original_packed)).cpu().numpy()
+    return delta.astype(np.float64), edit_magnitude
 
 
 def _dependence(
@@ -852,6 +900,7 @@ def run(args: argparse.Namespace) -> Path:
             "reference": "mean of each bottleneck unit and scalar drive on the frozen varied panel",
             "estimand": "native max(log Q, -2)",
             "exact_max_features": int(resolved["exact_max_features"]),
+            "validity_tag": HIDDEN_INTERVENTION_VALIDITY,
         },
         compression="gzip",
     )
@@ -876,6 +925,9 @@ def run(args: argparse.Namespace) -> Path:
         (top_count, int(resolved["random_directions"]), row_count),
         np.nan,
         dtype=np.float32,
+    )
+    top_random_magnitude = np.full(
+        (top_count, int(resolved["random_directions"])), np.nan, dtype=np.float32
     )
     intervention_rows: list[dict[str, Any]] = []
     intervention_results: dict[str, InterventionResult] = {}
@@ -907,6 +959,9 @@ def run(args: argparse.Namespace) -> Path:
                 np.float32
             )
             top_random[top_index] = result.random_direction_delta.astype(np.float32)
+            top_random_magnitude[top_index] = result.random_direction_edit_magnitude.astype(
+                np.float32
+            )
             intervention_results[member_id] = result
         print(
             f"interventions {member_index + 1}/{len(member_ids)} {member_id} "
@@ -921,6 +976,7 @@ def run(args: argparse.Namespace) -> Path:
             "pair_delta": top_pair_delta,
             "pair_interaction": top_pair_interaction,
             "random_direction_delta": top_random,
+            "random_direction_edit_magnitude": top_random_magnitude,
             "member_id": _strings(top_ids),
             "row_id": row_ids,
             "mode": _strings(INTERVENTION_MODES, width=16),
@@ -931,6 +987,7 @@ def run(args: argparse.Namespace) -> Path:
             "pair_delta": ("member", "mode", "pair", "sample"),
             "pair_interaction": ("member", "mode", "pair", "sample"),
             "random_direction_delta": ("member", "direction", "sample"),
+            "random_direction_edit_magnitude": ("member", "direction"),
             "member_id": ("member",),
             "row_id": ("sample",),
             "mode": ("mode",),
@@ -991,19 +1048,31 @@ def run(args: argparse.Namespace) -> Path:
                         "member_id": member_id,
                         "decoder": kind,
                         "stratum": stratum,
-                        "r2_to_member_native_output": _r2(target[mask], prediction[mask]),
+                        "r2_to_member_invariant_tilde_f": _r2(
+                            target[mask], prediction[mask]
+                        ),
                         "head_nonlinearity_residual_fraction": float(
                             np.mean(np.square(target[mask] - prediction[mask]))
                             / np.var(target[mask])
                         ),
                         "features": "invariant bottleneck + a_over_LT + a_over_Ln",
                         "fold_group": "equilibrium_files",
+                        "target_rationale": "isolates head nonlinearity; f differs from invariant_tilde_f by the S02 canonicalization residual",
                     }
                 )
     decoder_path = artifacts.write_text("decodability.csv", _csv_text(decoder_rows))
     fidelity_path = artifacts.write_text("head_fidelity.csv", _csv_text(fidelity_rows))
 
+    bootstrap_weights, _ = _group_bootstrap_weights(
+        equilibrium_files,
+        replicates=int(resolved["bootstrap_replicates"]),
+        seed=int(resolved["seed"]) + 600001,
+    )
     encoded_used_rows: list[dict[str, Any]] = []
+    concept_bootstrap: dict[str, dict[str, list[np.ndarray]]] = {
+        target_name: {"encoded_nonlinear_r2": [], "used_rms": []}
+        for target_name in invariant_targets
+    }
     for top_index, member_id in enumerate(top_ids):
         member_index = member_ids.index(member_id)
         width = widths[member_id]
@@ -1011,25 +1080,52 @@ def run(args: argparse.Namespace) -> Path:
         random_result = intervention_results[member_id]
         for target_name, target in invariant_targets.items():
             direction = _linear_direction(bottleneck, target, float(resolved["decoder_ridge"]))
-            delta = _direction_delta(
+            delta, direction_magnitude = _direction_delta(
                 models[member_id], bottleneck, drives, direction, ensemble.device
             )
             predictions = decoder_predictions[member_id]
             for stratum, mask in masks.items():
+                stratum_weights = bootstrap_weights[:, mask]
                 random_rms = np.sqrt(
                     np.mean(np.square(random_result.random_direction_delta[:, mask]), axis=1)
                 )
+                random_normalized_rms = (
+                    random_rms / random_result.random_direction_edit_magnitude
+                )
+                linear_point, linear_draws = _r2_draws(
+                    target[mask],
+                    predictions[(target_name, "linear", False)][mask],
+                    stratum_weights,
+                )
+                nonlinear_point, nonlinear_draws = _r2_draws(
+                    target[mask],
+                    predictions[(target_name, "nonlinear", False)][mask],
+                    stratum_weights,
+                )
+                used_point, used_draws = _rms_draws(delta[mask], stratum_weights)
+                _, linear_lower, linear_upper = _interval_from_draws(
+                    linear_point, linear_draws
+                )
+                _, nonlinear_lower, nonlinear_upper = _interval_from_draws(
+                    nonlinear_point, nonlinear_draws
+                )
+                _, used_lower, used_upper = _interval_from_draws(used_point, used_draws)
+                if stratum == "overall":
+                    concept_bootstrap[target_name]["encoded_nonlinear_r2"].append(
+                        nonlinear_draws
+                    )
+                    concept_bootstrap[target_name]["used_rms"].append(used_draws)
                 encoded_used_rows.append(
                     {
                         "member_id": member_id,
                         "target": target_name,
                         "stratum": stratum,
-                        "encoded_linear_grouped_cv_r2": _r2(
-                            target[mask], predictions[(target_name, "linear", False)][mask]
-                        ),
-                        "encoded_nonlinear_grouped_cv_r2": _r2(
-                            target[mask], predictions[(target_name, "nonlinear", False)][mask]
-                        ),
+                        "encoded_linear_grouped_cv_r2": linear_point,
+                        "encoded_linear_grouped_bootstrap_ci95_lower": linear_lower,
+                        "encoded_linear_grouped_bootstrap_ci95_upper": linear_upper,
+                        "encoded_nonlinear_grouped_cv_r2": nonlinear_point,
+                        "encoded_nonlinear_grouped_bootstrap_ci95_lower": nonlinear_lower,
+                        "encoded_nonlinear_grouped_bootstrap_ci95_upper": nonlinear_upper,
                         "label_permutation_linear_r2": _r2(
                             target[mask], predictions[(target_name, "linear", True)][mask]
                         ),
@@ -1037,11 +1133,23 @@ def run(args: argparse.Namespace) -> Path:
                             target[mask], predictions[(target_name, "nonlinear", True)][mask]
                         ),
                         "used_direction_removal_mean_signed_delta": float(np.mean(delta[mask])),
-                        "used_direction_removal_rms_delta": float(
-                            np.sqrt(np.mean(np.square(delta[mask])))
+                        "used_direction_removal_rms_delta": used_point,
+                        "used_grouped_bootstrap_ci95_lower": used_lower,
+                        "used_grouped_bootstrap_ci95_upper": used_upper,
+                        "direction_edit_magnitude_standardized_rms": direction_magnitude,
+                        "used_rms_per_edit_sd": (
+                            used_point / direction_magnitude
+                            if direction_magnitude > np.finfo(np.float64).eps
+                            else float("nan")
                         ),
                         "random_direction_control_median_rms": float(np.median(random_rms)),
                         "random_direction_control_q90_rms": float(np.quantile(random_rms, 0.9)),
+                        "random_direction_control_median_edit_magnitude_standardized_rms": float(
+                            np.median(random_result.random_direction_edit_magnitude)
+                        ),
+                        "random_direction_control_median_rms_per_edit_sd": float(
+                            np.median(random_normalized_rms)
+                        ),
                         "direction_intervention_validity": HIDDEN_INTERVENTION_VALIDITY,
                     }
                 )
@@ -1051,12 +1159,8 @@ def run(args: argparse.Namespace) -> Path:
 
     rank_rows: list[dict[str, Any]] = []
     uncertainty_rows: list[dict[str, Any]] = []
-    bootstrap_weights, _ = _group_bootstrap_weights(
-        equilibrium_files,
-        replicates=int(resolved["bootstrap_replicates"]),
-        seed=int(resolved["seed"]) + 600001,
-    )
     rank_correlations: list[float] = []
+    rank_bootstrap_draws: list[np.ndarray] = []
     for member_id in top_ids:
         width = widths[member_id]
         shapley = shapley_results[member_id].values[:, :width]
@@ -1067,6 +1171,15 @@ def run(args: argparse.Namespace) -> Path:
         ablation_rank = rankdata(ablation_score, descending=True)
         correlation = spearman_correlation(shapley_score, ablation_score)
         rank_correlations.append(correlation)
+        member_rank_draws = np.empty(len(bootstrap_weights), dtype=np.float64)
+        for replicate, weights in enumerate(bootstrap_weights):
+            denominator = max(float(weights.sum()), 1.0)
+            sampled_shapley = weights @ np.abs(shapley) / denominator
+            sampled_ablation = np.sqrt(weights @ np.square(mean_delta.T) / denominator)
+            member_rank_draws[replicate] = spearman_correlation(
+                sampled_shapley, sampled_ablation
+            )
+        rank_bootstrap_draws.append(member_rank_draws)
         for unit in range(width):
             rank_rows.append(
                 {
@@ -1101,6 +1214,55 @@ def run(args: argparse.Namespace) -> Path:
                         "replicates": int(resolved["bootstrap_replicates"]),
                     }
                 )
+    median_rank_draws = np.median(np.stack(rank_bootstrap_draws), axis=0)
+    median_rank_point = float(np.median(rank_correlations))
+    _, median_rank_lower, median_rank_upper = _interval_from_draws(
+        median_rank_point, median_rank_draws
+    )
+    uncertainty_rows.append(
+        {
+            "member_id": "top10_median",
+            "unit_id": "",
+            "effect": "shapley_ablation_spearman",
+            "point": median_rank_point,
+            "ci95_lower": median_rank_lower,
+            "ci95_upper": median_rank_upper,
+            "bootstrap_unit": "equilibrium_files",
+            "replicates": int(resolved["bootstrap_replicates"]),
+        }
+    )
+    concept_intervals: dict[str, dict[str, list[float]]] = {}
+    for target_name, metric_draws in concept_bootstrap.items():
+        concept_intervals[target_name] = {}
+        for metric, member_draws in metric_draws.items():
+            median_draws = np.median(np.stack(member_draws), axis=0)
+            if metric == "encoded_nonlinear_r2":
+                points = [
+                    float(row["encoded_nonlinear_grouped_cv_r2"])
+                    for row in encoded_used_rows
+                    if row["target"] == target_name and row["stratum"] == "overall"
+                ]
+            else:
+                points = [
+                    float(row["used_direction_removal_rms_delta"])
+                    for row in encoded_used_rows
+                    if row["target"] == target_name and row["stratum"] == "overall"
+                ]
+            point = float(np.median(points))
+            _, lower, upper = _interval_from_draws(point, median_draws)
+            concept_intervals[target_name][metric] = [point, lower, upper]
+            uncertainty_rows.append(
+                {
+                    "member_id": "top10_median",
+                    "unit_id": "",
+                    "effect": f"{target_name}:{metric}",
+                    "point": point,
+                    "ci95_lower": lower,
+                    "ci95_upper": upper,
+                    "bootstrap_unit": "equilibrium_files",
+                    "replicates": int(resolved["bootstrap_replicates"]),
+                }
+            )
     rank_path = artifacts.write_text("rank_comparison.csv", _csv_text(rank_rows))
     uncertainty_path = artifacts.write_text(
         "grouped_uncertainty.csv", _csv_text(uncertainty_rows)
@@ -1177,6 +1339,7 @@ def run(args: argparse.Namespace) -> Path:
             "estimand": "edited canonical head output minus original native clipped-log output",
             "live_definition": f"max absolute panel activation > {resolved['dead_tolerance']}",
             "unit_by_drive": "other bottleneck units and the other scalar drive remain sample-specific",
+            "validity_tag": HIDDEN_INTERVENTION_VALIDITY,
         },
         compression="gzip",
     )
@@ -1260,14 +1423,14 @@ def run(args: argparse.Namespace) -> Path:
     for row in overall_fidelity:
         fidelity_by_member.setdefault(str(row["member_id"]), {})[
             str(row["decoder"])
-        ] = float(row["r2_to_member_native_output"])
+        ] = float(row["r2_to_member_invariant_tilde_f"])
     fidelity_linear = [values["linear"] for values in fidelity_by_member.values()]
     fidelity_nonlinear = [values["nonlinear"] for values in fidelity_by_member.values()]
     fidelity_increments = [
         nonlinear - linear
         for nonlinear, linear in zip(fidelity_nonlinear, fidelity_linear)
     ]
-    concept_use: dict[str, dict[str, float]] = {}
+    concept_use: dict[str, dict[str, Any]] = {}
     for target_name in invariant_targets:
         concept_rows = [
             row
@@ -1293,6 +1456,26 @@ def run(args: argparse.Namespace) -> Path:
                     [float(row["random_direction_control_median_rms"]) for row in concept_rows]
                 )
             ),
+            "median_direction_edit_magnitude_standardized_rms": float(
+                np.median(
+                    [
+                        float(row["direction_edit_magnitude_standardized_rms"])
+                        for row in concept_rows
+                    ]
+                )
+            ),
+            "median_used_rms_per_edit_sd": float(
+                np.nanmedian([float(row["used_rms_per_edit_sd"]) for row in concept_rows])
+            ),
+            "median_random_direction_rms_per_edit_sd": float(
+                np.median(
+                    [
+                        float(row["random_direction_control_median_rms_per_edit_sd"])
+                        for row in concept_rows
+                    ]
+                )
+            ),
+            "grouped_bootstrap_ci95": concept_intervals[target_name],
         }
     mean_pair_interactions = [
         float(row["rms_interaction"])
@@ -1301,6 +1484,37 @@ def run(args: argparse.Namespace) -> Path:
         and row["mode"] == "mean"
         and row["stratum"] == "overall"
     ]
+    intervention_mode_summary: dict[str, dict[str, Any]] = {}
+    for mode in INTERVENTION_MODES:
+        mode_rows = [
+            row
+            for row in intervention_rows
+            if row["scope"] == "single_unit"
+            and row["mode"] == mode
+            and row["stratum"] == "overall"
+        ]
+        rows_by_member = {
+            member_id: [row for row in mode_rows if row["member_id"] == member_id]
+            for member_id in member_ids
+        }
+        strongest = [
+            max(member_rows, key=lambda row: float(row["rms_delta"]))
+            for member_rows in rows_by_member.values()
+        ]
+        strongest_rms = [float(row["rms_delta"]) for row in strongest]
+        intervention_mode_summary[mode] = {
+            "strongest_unit_rms_median": float(np.median(strongest_rms)),
+            "strongest_unit_rms_range": [
+                float(np.min(strongest_rms)),
+                float(np.max(strongest_rms)),
+            ],
+            "strongest_unit_mse_change_median": float(
+                np.median([float(row["mse_change"]) for row in strongest])
+            ),
+            "all_unit_mse_change_median": float(
+                np.median([float(row["mse_change"]) for row in mode_rows])
+            ),
+        }
     live_top_units = int(pdp_live.sum())
     present_top_units = int(sum(widths[member_id] for member_id in top_ids))
     summary = {
@@ -1326,6 +1540,12 @@ def run(args: argparse.Namespace) -> Path:
             "hidden_intervention_validity_tag": HIDDEN_INTERVENTION_VALIDITY,
             "random_direction_controls": int(resolved["random_directions"]),
             "label_permutation_controls": True,
+            "label_permutation_max_is_decoder_family_max_statistic_diagnostic": True,
+            "multiplicity_counts": {
+                "decoder_r2": len(decoder_rows),
+                "grouped_bootstrap_intervals": len(uncertainty_rows),
+                "mean_mode_overall_pair_interactions": len(mean_pair_interactions),
+            },
             "fixed_gradient_rows_used": False,
             "review_slice_used": False,
             "shapley_efficiency_max_absolute_error": efficiency_error,
@@ -1350,6 +1570,10 @@ def run(args: argparse.Namespace) -> Path:
         "ranking": {
             "member_spearman_values": rank_correlations,
             "median_spearman": float(np.median(rank_correlations)),
+            "median_grouped_bootstrap_ci95": [
+                median_rank_lower,
+                median_rank_upper,
+            ],
         },
         "head_anatomy": {
             "median_geometry_variance_share": float(
@@ -1371,6 +1595,7 @@ def run(args: argparse.Namespace) -> Path:
                 "maximum": float(np.max(mean_pair_interactions)),
             },
         },
+        "intervention_modes_all100": intervention_mode_summary,
         "decoders": {
             "types": ["linear ridge", "32-fixed-ReLU-feature nonlinear ridge"],
             "folds": int(resolved["decoder_folds"]),
@@ -1402,6 +1627,7 @@ def run(args: argparse.Namespace) -> Path:
             },
             "ablation_and_shapley_rankings_compared": {
                 "median_spearman": float(np.median(rank_correlations)),
+                "grouped_bootstrap_ci95": [median_rank_lower, median_rank_upper],
                 "artifact": "rank_comparison.csv",
             },
             "encoded_and_used_are_separate": {
@@ -1420,6 +1646,7 @@ def run(args: argparse.Namespace) -> Path:
             "bottleneck_arrays": bottleneck_path.name,
             "per_sample_shapley": shapley_path.name,
             "top10_signed_interventions": intervention_h5_path.name,
+            "all100_intervention_summary": intervention_summary_path.name,
             "pdp_ice_atlas": pdp_path.name,
             "global_shapley": shapley_global_path.name,
             "intervention_graph_source": intervention_summary_path.name,
@@ -1432,7 +1659,7 @@ def run(args: argparse.Namespace) -> Path:
         "negative_results": [
             "The head is drive-dominated: geometry carries only about 20% of output variance on the panel.",
             "Head nonlinearity adds only about 0.012 median grouped-CV R2 beyond the linear decoder.",
-            "nfp, shat, and aspect are decodable but their direction-removal effects are no larger than the median random-direction control.",
+            "After normalizing by hidden-state edit magnitude, nfp and shat remain below the random-direction control while aspect is near it.",
             "Most pair interactions are small (median RMS about 0.011 native units), although a sparse tail reaches about 0.28.",
         ],
         "deferred": "nothing" if resolved["mode"] == "production" else "production scaling",

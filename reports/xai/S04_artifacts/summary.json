@@ -2,6 +2,10 @@
   "acceptance_criteria": {
     "ablation_and_shapley_rankings_compared": {
       "artifact": "rank_comparison.csv",
+      "grouped_bootstrap_ci95": [
+        0.8569084494134898,
+        0.8971447523179861
+      ],
       "median_spearman": 0.8900640606732055
     },
     "encoded_and_used_are_separate": {
@@ -22,6 +26,7 @@
     }
   },
   "artifacts": {
+    "all100_intervention_summary": "intervention_summary.csv",
     "bottleneck_arrays": "bottlenecks.h5",
     "decodability": "decodability.csv",
     "encoded_vs_used": "encoded_vs_used.csv",
@@ -42,7 +47,13 @@
     "fixed_gradient_rows_used": false,
     "hidden_intervention_validity_tag": "deliberately_off_manifold_diagnostic",
     "label_permutation_controls": true,
+    "label_permutation_max_is_decoder_family_max_statistic_diagnostic": true,
     "member_level_signed_arrays_retained": true,
+    "multiplicity_counts": {
+      "decoder_r2": 7200,
+      "grouped_bootstrap_intervals": 509,
+      "mean_mode_overall_pair_interactions": 30353
+    },
     "random_direction_controls": 16,
     "registered_FSA_grad_x_max_log_difference": 2.8614219604872204e-07,
     "review_slice_used": false,
@@ -131,40 +142,130 @@
   "deferred": "nothing",
   "encoded_vs_used": {
     "aspect": {
+      "grouped_bootstrap_ci95": {
+        "encoded_nonlinear_r2": [
+          0.309976421801724,
+          0.2574377243323856,
+          0.35652327080413837
+        ],
+        "used_rms": [
+          0.14306977701477697,
+          0.13197374956503716,
+          0.15191831572675704
+        ]
+      },
+      "median_direction_edit_magnitude_standardized_rms": 0.7048423963992764,
       "median_encoded_linear_r2": 0.29026014531492633,
       "median_encoded_nonlinear_r2": 0.309976421801724,
       "median_random_direction_rms": 0.1504846553132006,
-      "median_used_direction_removal_rms": 0.14306977701477697
+      "median_random_direction_rms_per_edit_sd": 0.161711620165866,
+      "median_used_direction_removal_rms": 0.14306977701477697,
+      "median_used_rms_per_edit_sd": 0.1710373031611504
     },
     "f_stab": {
+      "grouped_bootstrap_ci95": {
+        "encoded_nonlinear_r2": [
+          0.7844305012198544,
+          0.7535469235690747,
+          0.8188128842119173
+        ],
+        "used_rms": [
+          0.40265787562592437,
+          0.3584003311014546,
+          0.4630892285780757
+        ]
+      },
+      "median_direction_edit_magnitude_standardized_rms": 0.962181810154572,
       "median_encoded_linear_r2": 0.7632933182609032,
       "median_encoded_nonlinear_r2": 0.7844305012198544,
       "median_random_direction_rms": 0.1504846553132006,
-      "median_used_direction_removal_rms": 0.40265787562592437
+      "median_random_direction_rms_per_edit_sd": 0.161711620165866,
+      "median_used_direction_removal_rms": 0.40265787562592437,
+      "median_used_rms_per_edit_sd": 0.3961221404061948
     },
     "log_FSA_grad_x": {
+      "grouped_bootstrap_ci95": {
+        "encoded_nonlinear_r2": [
+          0.8524595925810509,
+          0.8330050714047964,
+          0.8721682080371466
+        ],
+        "used_rms": [
+          0.29539861133716927,
+          0.2705991104995966,
+          0.3199307356054194
+        ]
+      },
+      "median_direction_edit_magnitude_standardized_rms": 1.1009194941055882,
       "median_encoded_linear_r2": 0.8425879402798169,
       "median_encoded_nonlinear_r2": 0.8524595925810509,
       "median_random_direction_rms": 0.1504846553132006,
-      "median_used_direction_removal_rms": 0.29539861133716927
+      "median_random_direction_rms_per_edit_sd": 0.161711620165866,
+      "median_used_direction_removal_rms": 0.29539861133716927,
+      "median_used_rms_per_edit_sd": 0.26929242679979354
     },
     "log_f_Q": {
+      "grouped_bootstrap_ci95": {
+        "encoded_nonlinear_r2": [
+          0.8918341458969132,
+          0.874686100139025,
+          0.9063190884226264
+        ],
+        "used_rms": [
+          0.6678830690431261,
+          0.6106425659615338,
+          0.7218028640327827
+        ]
+      },
+      "median_direction_edit_magnitude_standardized_rms": 1.4066313258942233,
       "median_encoded_linear_r2": 0.8909037166900649,
       "median_encoded_nonlinear_r2": 0.8918341458969132,
       "median_random_direction_rms": 0.1504846553132006,
-      "median_used_direction_removal_rms": 0.6678830690431261
+      "median_random_direction_rms_per_edit_sd": 0.161711620165866,
+      "median_used_direction_removal_rms": 0.6678830690431261,
+      "median_used_rms_per_edit_sd": 0.4786125210552754
     },
     "nfp": {
+      "grouped_bootstrap_ci95": {
+        "encoded_nonlinear_r2": [
+          0.5155913097821846,
+          0.47286053287196744,
+          0.5595794394624963
+        ],
+        "used_rms": [
+          0.08686311428090684,
+          0.0820685243857099,
+          0.09405467362597715
+        ]
+      },
+      "median_direction_edit_magnitude_standardized_rms": 0.6100179986096386,
       "median_encoded_linear_r2": 0.49611695584778137,
       "median_encoded_nonlinear_r2": 0.5155913097821846,
       "median_random_direction_rms": 0.1504846553132006,
-      "median_used_direction_removal_rms": 0.08686311428090684
+      "median_random_direction_rms_per_edit_sd": 0.161711620165866,
+      "median_used_direction_removal_rms": 0.08686311428090684,
+      "median_used_rms_per_edit_sd": 0.14726732740492354
     },
     "shat": {
+      "grouped_bootstrap_ci95": {
+        "encoded_nonlinear_r2": [
+          0.4016190309699146,
+          0.2935035922287185,
+          0.4849786073213778
+        ],
+        "used_rms": [
+          0.09018295570605783,
+          0.07967595750549195,
+          0.09875054959747336
+        ]
+      },
+      "median_direction_edit_magnitude_standardized_rms": 0.580080103320775,
       "median_encoded_linear_r2": 0.3717838016275795,
       "median_encoded_nonlinear_r2": 0.4016190309699146,
       "median_random_direction_rms": 0.1504846553132006,
-      "median_used_direction_removal_rms": 0.09018295570605783
+      "median_random_direction_rms_per_edit_sd": 0.161711620165866,
+      "median_used_direction_removal_rms": 0.09018295570605783,
+      "median_used_rms_per_edit_sd": 0.12163213003307916
     }
   },
   "estimand": "member-level invariant_tilde_f in native max(log Q, -2) units",
@@ -197,10 +298,14 @@
   "negative_results": [
     "The head is drive-dominated: geometry carries only about 20% of output variance on the panel.",
     "Head nonlinearity adds only about 0.012 median grouped-CV R2 beyond the linear decoder.",
-    "nfp, shat, and aspect are decodable but their direction-removal effects are no larger than the median random-direction control.",
+    "After normalizing by hidden-state edit magnitude, nfp and shat remain below the random-direction control while aspect is near it.",
     "Most pair interactions are small (median RMS about 0.011 native units), although a sparse tail reaches about 0.28."
   ],
   "ranking": {
+    "median_grouped_bootstrap_ci95": [
+      0.8569084494134898,
+      0.8971447523179861
+    ],
     "median_spearman": 0.8900640606732055,
     "member_spearman_values": [
       0.8909090909090909,
