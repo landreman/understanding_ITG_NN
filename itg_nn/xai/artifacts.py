@@ -118,6 +118,7 @@ class RunArtifacts:
         *,
         axes: Mapping[str, Sequence[str]],
         attributes: Mapping[str, Any] | None = None,
+        compression: str | None = None,
     ) -> Path:
         """Write labeled arrays atomically in a self-describing HDF5 artifact."""
 
@@ -128,7 +129,9 @@ class RunArtifacts:
             for key, value in (attributes or {}).items():
                 h5_file.attrs[key] = json.dumps(value) if isinstance(value, (dict, list)) else value
             for key, value in arrays.items():
-                dataset = h5_file.create_dataset(key, data=value)
+                array = np.asarray(value)
+                compress = compression if array.ndim > 0 and array.dtype.kind != "O" else None
+                dataset = h5_file.create_dataset(key, data=array, compression=compress)
                 dataset.attrs["axes"] = json.dumps(list(axes.get(key, ())))
         temporary.replace(path)
         self._outputs.append(path)
