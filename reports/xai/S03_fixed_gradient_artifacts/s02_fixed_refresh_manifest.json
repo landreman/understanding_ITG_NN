@@ -34,10 +34,10 @@
     "sha256": "9d8fa52f93f2782ad9948a38bf46943c0cd6df78cd08b94a006dad4e06c1c8ad"
   },
   "device": "cpu",
-  "git_commit": "d8ccaec97d5e19f8203466c3b4a147a0c956807b",
+  "git_commit": "32ca2deb242f5f951816e19fc5d9a181b2bc79ec",
   "git_dirty": true,
   "git_tracked_dirty": true,
-  "git_tree": "2d9cb60352111d685d5acbbf68924d46ad7089a3",
+  "git_tree": "14314c5a57022c4dcbde1f557a1f71c7450690b0",
   "gradient_set": "fixed",
   "member_ids": [
     "2864601_0.437",
@@ -147,7 +147,7 @@
     "phase_average_exactness.csv": "a30613743d080ac21f2fd525a1b2090cf103d41569823171608ca480bd904ddc",
     "s02_subgroup_exactness.csv": "ab2d14ff4221be6e02b8c142385be95bc105fa023d00010d8efbca6e0ad78608",
     "shift_symmetry_summary.csv": "d7457980e62a83afd969d767d441af73e116bc413b3256234d5b965be696853f",
-    "summary.json": "516b62a5d3fa663bd787856c3754cecdb823260237c015f57475053a537c9643"
+    "summary.json": "ae1f7a84039f4b9d9f9810a04f5bc68b0f9cbe85a44e0ed28f230529bce1600a"
   },
   "package_versions": {
     "captum": "0.9.0",
@@ -1163,5 +1163,5 @@
     100596
   ],
   "seed": 20260816,
-  "wall_time_seconds": 52.8032941249985
+  "wall_time_seconds": 54.22767812500024
 }

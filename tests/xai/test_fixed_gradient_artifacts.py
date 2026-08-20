@@ -106,6 +106,10 @@ def test_the_hundred_percent_floor_claim_is_an_ensemble_statement(convention_row
         "if every member were pinned too, the reports could make the stronger "
         "claim; they deliberately do not"
     )
+    # The figures the reports quote, so a regeneration cannot leave them stale.
+    assert int(np.sum(fractions == 1.0)) == 37
+    assert np.median(fractions) == pytest.approx(0.982, abs=5e-3)
+    assert fractions.min() == pytest.approx(0.0, abs=1e-12)
 
 
 def test_the_legacy_marker_flattens_every_member_relative_to_the_training_input(

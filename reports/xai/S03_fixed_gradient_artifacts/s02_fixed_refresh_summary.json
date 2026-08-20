@@ -96,5 +96,5 @@
       }
     ]
   },
-  "why": "S02's fixed-gradient strata were computed with the loader driving a/L_T to -3, where every member is pinned at the clipped-log floor."
+  "why": "S02's fixed-gradient strata were computed with the loader driving a/L_T to -3, which pins the ensemble mean at the clipped-log floor and flattens every member against it."
 }

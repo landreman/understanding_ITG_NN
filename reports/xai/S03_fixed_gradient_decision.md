@@ -72,6 +72,14 @@ the artifact rather than by reading it:
   member at `+3` — a median compression of about 20×. That, not proximity to
   the floor, is what the collapse argument rests on.
 
+The committed `summary.json`'s `conclusion` string predates this scoping and
+still reads "saturates the members at the clipped-log floor". It is an artifact
+field, so correcting it would mean republishing the run for a string; the
+generator now emits the scoped wording and this paragraph is the authoritative
+form. Only 37 of 100 members have every row at or below floor plus 0.05, and the
+least-pinned member predicts in [-1.823, -1.325] — flat, but nowhere near the
+floor.
+
 The floor fraction is also one-sided: 10.7% of ensemble-mean predictions sit
 more than 0.05 *below* the floor, so the two-sided fraction is 0.893. Both
 columns are published, as `fraction_at_or_below_floor_plus_0p05` and
@@ -305,17 +313,31 @@ more, plus three notes.
 | Finding | Severity | Action |
 | --- | --- | --- |
 | The post-review rerun emptied `s01_panel_metadata_refresh.changed_cells`, which the memo cited as the changed-cell census | should-fix | **Fixed.** The bullet now says the block is `{}` by construction on a rerun — an idempotency check — and rests the claim on the git diff and on the block's two surviving fields. |
-| `VALIDATION.md` kept the two-sided reading of the floor fraction | note | **Accepted**, and superseded: all three documents now quote the member-level spread collapse instead, which is scale-free. |
+| `VALIDATION.md` kept the two-sided reading of the floor fraction | note | **Accepted**, and superseded: the documents now quote the member-level spread collapse instead, which is scale-free. |
 | No test pinned the new `validity_tag` and floor columns or the subgroup artifact | note | **Accepted.** `tests/xai/test_fixed_gradient_artifacts.py` pins the schema, the two floor definitions, per-member coverage, and that the published subgroup rows reproduce `exact_subgroup_max_abs` exactly. Writing it found the scoping error below. |
 | The fixed/varied ratio compares unnormalized changes on differently-scaled row sets | note | **Accepted.** Both panels' target spreads are now quoted beside the ratio in this memo and in `S02_symmetry.md`, with the limitation stated. |
 
 Writing the requested test surfaced a scoping error the reviews had not caught:
 the "100% at or below the floor plus 0.05" figure holds for the **ensemble
-mean**, not member by member — the least-pinned member has 0% of its rows there.
-The claim is now scoped in this memo, `PLAN.md` and `VALIDATION.md`, and the
-member-level statement rests on spread compression instead. The collapse
-conclusion is unaffected and better supported: no member at `-3` varies as much
-as the least-varying member at `+3`.
+mean**, not member by member — only 37 of 100 members have every row there, and
+the least-pinned member has none. The member-level statement rests on spread
+compression instead. The collapse conclusion is unaffected and better supported:
+no member at `-3` varies as much as the least-varying member at `+3`.
+
+Third round: no blocking findings, one should-fix and two notes.
+
+| Finding | Severity | Action |
+| --- | --- | --- |
+| Four sentences added by this PR still stated the member-level claim the previous commit scoped away | should-fix | **Fixed.** The scoping was applied to this memo, `PLAN.md` and `VALIDATION.md` but missed `S02_executive_summary.md`, `S02_symmetry.md` (two places) and `S03_ladder.md`. All four now say the marker pins the *ensemble mean* and *flattens* every member. |
+| The committed artifact's `conclusion` string carries the old wording | note | **Accepted as advised**: the artifact is not republished for a string, the generator is corrected for future runs, and the stale field is flagged above. |
+| The scope-guard test pinned only `min < 1.0`, not the figures the memo quotes | note | **Accepted.** It now pins 37 of 100 fully pinned, median 0.982, minimum 0.0. |
+
+The correction that started this — a wrong `a/L_T` — has now been followed by
+three rounds in which the *reporting* of it, not the science, was what needed
+fixing: a reproduction route to a file without the right rows, an inference
+drawn from float32 noise, a citation invalidated by a rerun, and a claim scoped
+in three documents but not in four other sentences. That pattern is worth
+recording. None of it moved a number; all of it would have misled a reader.
 
 ### Open item for the researcher
 

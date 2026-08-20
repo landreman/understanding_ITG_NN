@@ -29,7 +29,9 @@ The fixed-gradient strata in
 [`parity_symmetry.csv`](S02_artifacts/parity_symmetry.csv) were recomputed
 outside this step's numbered scope, after the shared loader was shown to be
 supplying fixed rows at an `a/L_T` the checkpoint never saw. The original values
-were measured with every member pinned at the clipped-log floor. Corrected
+were measured where the members are flattened against the clipped-log floor —
+the ensemble mean pinned to a 0.097-wide band, every member's spread collapsed
+below the least-varying member's spread at the correct input. Corrected
 numbers appear in place below, each marked; the withdrawn values are quoted
 beside them rather than deleted.
 
@@ -141,8 +143,8 @@ of the 0.59 may be scale.
 
 > **Corrected 2026-08-20.** The figures above replace withdrawn ones
 > (**0.00203 / 0.01167 / 0.02612**, a nominal ~12× gap) that were measured while
-> the loader drove fixed rows to the off-manifold `a/L_T = -3`, where every
-> member is pinned at the clipped-log floor. That was saturation wobble, not
+> the loader drove fixed rows to the off-manifold `a/L_T = -3`, which pins the
+> ensemble mean at the clipped-log floor and flattens every member — prediction spreads fall to 0.0036–0.218 against a minimum of 1.122 at `+3`. That was saturation wobble, not
 > reduced sensitivity to geometry at constant drive. See
 > [`S03_fixed_gradient_decision.md`](S03_fixed_gradient_decision.md). Varied-row
 > results are unchanged and were never affected; the refresh reproduced every

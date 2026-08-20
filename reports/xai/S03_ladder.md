@@ -10,9 +10,10 @@ and compared. Member-level signed predictions and changes are preserved before
 aggregation.
 
 **Fixed-gradient results are withdrawn, and stay withdrawn.** The loader in
-force for this step supplied `a/L_T=-3`, which saturates every member at the
-clipped-log floor, so the fixed rows measured floor wobble rather than the
-trained function. The decision gate this raised was **answered on 2026-08-20**:
+force for this step supplied `a/L_T=-3`, which pins the ensemble mean at the
+clipped-log floor and flattens every member against it — spreads fall to
+0.0036–0.218 from a minimum of 1.122 at `+3` — so the fixed rows measured floor
+wobble rather than the trained function. The decision gate this raised was **answered on 2026-08-20**:
 the loader now supplies the training convention `+3`, and the affected S00–S02
 artifacts were refreshed — see
 [`S03_fixed_gradient_decision.md`](S03_fixed_gradient_decision.md). That

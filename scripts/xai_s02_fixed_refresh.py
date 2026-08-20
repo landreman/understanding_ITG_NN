@@ -2,10 +2,10 @@
 """Recompute S02's fixed-gradient strata under the corrected input convention.
 
 S02 measured shift and parity sensitivity on the panel's 1,000 fixed-gradient
-twins while the loader was driving them to `a/L_T = -3`, where every member sits
-pinned at the clipped-log floor. Those rows measured saturation, not the
-response of the trained function, so the numbers were withdrawn. This run
-replaces them.
+twins while the loader was driving them to `a/L_T = -3`, which pins the ensemble
+mean at the clipped-log floor and flattens every member against it. Those rows
+measured saturation, not the response of the trained function, so the numbers
+were withdrawn. This run replaces them.
 
 Only the fixed half of the panel is recomputed. The varied half is read back
 from the registered S02 run's `predictions.h5` and carried through unchanged,
@@ -637,7 +637,8 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
         "estimand": "native max(log Q, -2); unnormalised RMS change on fixed rows",
         "why": (
             "S02's fixed-gradient strata were computed with the loader driving "
-            "a/L_T to -3, where every member is pinned at the clipped-log floor."
+            "a/L_T to -3, which pins the ensemble mean at the clipped-log floor "
+            "and flattens every member against it."
         ),
         "convention": "training_positive_a_over_LT",
         "members": len(member_ids),

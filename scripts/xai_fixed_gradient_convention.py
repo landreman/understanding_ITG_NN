@@ -379,8 +379,9 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
         ),
         "conclusion": (
             "The checkpoint was trained with fixed-gradient rows at the physical "
-            "a/L_T = +3. The -3 marker is off-manifold and saturates the members "
-            "at the clipped-log floor."
+            "a/L_T = +3. The -3 marker is off-manifold: it pins the ensemble "
+            "mean at the clipped-log floor and flattens every member against "
+            "it, though not every member sits exactly on the floor."
         ),
     }
 
