@@ -54,12 +54,27 @@ On the 1,000 fixed-gradient rows of S01's registered panel, all 100 members
 | Training convention, `a/L_T = +3` | 2.006 | 1.145 | [-2.000, 5.590] | **0.9883** | [0.9726, 0.9867] |
 
 The panel's fixed targets have mean 2.005 and standard deviation 1.161, with
-2.2% at the clipped-log floor. At `-3`, **100%** of predictions land at or below
-the floor plus 0.05 — the whole 1,000-row spread is [-2.101, -2.004], a range of
-0.097 — and 0 of 100 members reach R² > 0.9; at `+3`, all 100 do. The statistic
-is one-sided: 10.7% of the predictions sit more than 0.05 *below* the floor, so
-the two-sided fraction is 0.893. Both columns are in the artifact, as
-`fraction_at_or_below_floor_plus_0p05` and
+2.2% at the clipped-log floor. At `-3`, 0 of 100 members reach R² > 0.9; at
+`+3`, all 100 do.
+
+Two cautions on how the collapse is quoted, both found by writing tests against
+the artifact rather than by reading it:
+
+- **"100% of predictions at or below the floor plus 0.05" is a statement about
+  the *ensemble mean*, whose whole 1,000-row spread is [-2.101, -2.004].** It is
+  not true member by member: the median member has 98.2% of its rows there, but
+  the least-pinned member has 0%, sitting in a narrow band slightly off the
+  floor rather than on it. Distance to the floor is the wrong statistic for such
+  a member.
+- **The scale-free form does hold for every member.** At `-3` member prediction
+  standard deviations run 0.0036–0.218, median 0.056; at `+3` the *smallest* is
+  1.122, median 1.151. No member at `-3` varies as much as the least-varying
+  member at `+3` — a median compression of about 20×. That, not proximity to
+  the floor, is what the collapse argument rests on.
+
+The floor fraction is also one-sided: 10.7% of ensemble-mean predictions sit
+more than 0.05 *below* the floor, so the two-sided fraction is 0.893. Both
+columns are published, as `fraction_at_or_below_floor_plus_0p05` and
 `fraction_within_0p05_of_floor_two_sided`.
 
 This is the decisive argument, and it is an argument about training, not about
@@ -136,7 +151,16 @@ The fixed/varied median ratio moves from **0.084** to **0.59**. The earlier
 claim — repeated as a headline finding in S02's executive summary — that fixed
 rows are about ten times less shift-sensitive was an artifact of the floor. The
 real drive dependence is a factor of about two, which is a result worth keeping
-but an ordinary one. Correct-parity RMS change on fixed rows moves the same way,
+but an ordinary one.
+
+Read that ratio with both panels' scales in view, because it compares
+*unnormalized* changes across row sets whose outputs differ in spread: the
+varied panel's targets have mean 0.446 and standard deviation **2.044** with
+21.5% at the floor, the fixed panel's mean 2.005 and standard deviation
+**1.161** with 2.2% at the floor. Normalizing fixed rows by the varied-reference
+residual denominator is refused here, per `AGENTS.md`, so part of the remaining
+0.59 is plausibly scale rather than drive, and this comparison does not separate
+the two. Correct-parity RMS change on fixed rows moves the same way,
 from 0.00067 / 0.00455 / 0.01009 to **0.0429 / 0.0516 / 0.0640** against
 0.0519 / 0.0607 / 0.0708 on varied rows.
 
@@ -216,12 +240,23 @@ added the varied-rebuild check; it is not the cost of the computation. The
 - Run provenance, hashes, package versions and wall time:
   [`manifest.json`](S03_fixed_gradient_artifacts/manifest.json) and
   [`s02_fixed_refresh_manifest.json`](S03_fixed_gradient_artifacts/s02_fixed_refresh_manifest.json).
-- The serialized-training-tensor statistics and the S01 refresh's
-  changed-cell census:
+- The serialized-training-tensor statistics:
   [`summary.json`](S03_fixed_gradient_artifacts/summary.json).
-- That the S01 refresh moved only `a_over_LT_model` on fixed rows: the
-  `s01_panel_metadata_refresh.changed_cells` block, and the git diff of
-  `panel_metadata.csv`, which is 1,000 changed lines for 2,000 rows.
+- That the S01 refresh moved only `a_over_LT_model` on fixed rows: the git diff
+  of `panel_metadata.csv` against `main`, which is 1,000 changed lines for 2,000
+  rows, all in that one column and all on fixed rows; plus
+  `s01_panel_metadata_refresh.fixed_a_over_LT_model_values: ["3.0"]` and
+  `varied_rows_unchanged: true` in the same block.
+
+  **Do not read `s01_panel_metadata_refresh.changed_cells` as that census.** It
+  is `{}` in the committed summary, and empty *by construction*: the convention
+  run was re-executed after the review, by which time the published
+  `panel_metadata.csv` already held the corrected values, so the run found
+  nothing left to change. That is an idempotency check — the second run
+  reproduces the first run's output exactly — not a contradiction of the claim.
+  The census read `{"a_over_LT_model": 1000}` on the first execution, at commit
+  `d8ccaec`. The two sibling fields above and the git diff are what back the
+  claim in the committed state.
 - The refresh's row-replacement rule:
   `tests/xai/test_fixed_gradient_refresh.py` pins that varied rows come through
   byte-identical and that a changed stratum size is refused.
@@ -262,7 +297,25 @@ notes. Disposition:
 | `fixed_gradient_convention.csv` lacked the registered perturbation-validity vocabulary | note | **Accepted.** A `validity_tag` column now carries `off_manifold` / `observed_comparison`, matching `S03_artifacts/support.csv`. |
 | `fraction_within_0p05_of_floor` was one-sided but read as two-sided | note | **Accepted.** Renamed to `fraction_at_or_below_floor_plus_0p05`, a two-sided column added, and the prose in this memo and `PLAN.md` corrected. |
 | The `AGENTS.md` slice-regeneration rule was amended in the commit that used it | note | **Open — for the researcher.** See below. |
-| Mutation 1's failure tally differs from the reviewer's | note | **Accepted.** The PR body now names the variant used. |
+| Mutation 1's failure tally differs from the reviewer's | note | **Accepted.** The PR body now names the variant used; the second review confirmed the body's tally of 5 was right for that variant. |
+
+Second round: the review confirmed both should-fix items fixed and raised one
+more, plus three notes.
+
+| Finding | Severity | Action |
+| --- | --- | --- |
+| The post-review rerun emptied `s01_panel_metadata_refresh.changed_cells`, which the memo cited as the changed-cell census | should-fix | **Fixed.** The bullet now says the block is `{}` by construction on a rerun — an idempotency check — and rests the claim on the git diff and on the block's two surviving fields. |
+| `VALIDATION.md` kept the two-sided reading of the floor fraction | note | **Accepted**, and superseded: all three documents now quote the member-level spread collapse instead, which is scale-free. |
+| No test pinned the new `validity_tag` and floor columns or the subgroup artifact | note | **Accepted.** `tests/xai/test_fixed_gradient_artifacts.py` pins the schema, the two floor definitions, per-member coverage, and that the published subgroup rows reproduce `exact_subgroup_max_abs` exactly. Writing it found the scoping error below. |
+| The fixed/varied ratio compares unnormalized changes on differently-scaled row sets | note | **Accepted.** Both panels' target spreads are now quoted beside the ratio in this memo and in `S02_symmetry.md`, with the limitation stated. |
+
+Writing the requested test surfaced a scoping error the reviews had not caught:
+the "100% at or below the floor plus 0.05" figure holds for the **ensemble
+mean**, not member by member — the least-pinned member has 0% of its rows there.
+The claim is now scoped in this memo, `PLAN.md` and `VALIDATION.md`, and the
+member-level statement rests on spread compression instead. The collapse
+conclusion is unaffected and better supported: no member at `-3` varies as much
+as the least-varying member at `+3`.
 
 ### Open item for the researcher
 

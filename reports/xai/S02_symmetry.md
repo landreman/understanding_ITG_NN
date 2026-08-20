@@ -132,6 +132,13 @@ varied-reference denominator. This drive dependence is a reason the two gradient
 sets are not pooled, though it is a factor of about two rather than the order of
 magnitude reported before the correction.
 
+The comparison is between unnormalized changes on row sets of different output
+scale, and does not separate drive from scale: varied panel targets have mean
+0.446 and standard deviation 2.044 with 21.5% at the floor, fixed panel targets
+mean 2.005 and standard deviation 1.161 with 2.2%. Refusing the
+varied-reference denominator on fixed rows is deliberate; the cost is that some
+of the 0.59 may be scale.
+
 > **Corrected 2026-08-20.** The figures above replace withdrawn ones
 > (**0.00203 / 0.01167 / 0.02612**, a nominal ~12× gap) that were measured while
 > the loader drove fixed rows to the off-manifold `a/L_T = -3`, where every

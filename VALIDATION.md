@@ -34,8 +34,10 @@ and does **not** describe the inputs the members learned from. Established
   `New test_dataset: 19965 9785`, so the negation *was* active by the time the
   reference figure was made.
 - The checkpoint itself: on 1,000 fixed rows, all 100 members reach R²
-  0.973–0.987 at `+3`, while at `-3` every prediction collapses to within 0.05
-  of the clipped-log floor and no member exceeds R² of −8. A network trained
+  0.973–0.987 at `+3`, while at `-3` every member flattens against the
+  clipped-log floor — member prediction spreads fall to 0.0036–0.218 from a
+  minimum of 1.122 at `+3`, and the ensemble mean spans only [-2.101, -2.004] —
+  and no member exceeds R² of −8. A network trained
   with `-3` on half its rows would fit them there.
 
 This repository therefore supplies fixed rows at `+3`. Nothing above changes:
