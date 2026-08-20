@@ -22,12 +22,21 @@ dependencies = [
 xai = [
   "captum==0.9.0",
 ]
+# Test/lint tooling. CI installs this extra; it deliberately excludes the XAI
+# extras so the suite keeps proving that core inference stands alone.
+dev = [
+  "pytest>=8",
+  "ruff>=0.6",
+]
 
 [tool.setuptools]
 packages = ["itg_nn", "itg_nn.xai"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+# tests/xai imports the thin CLIs in scripts/, which are not part of the
+# installed package. Keep them importable however pytest is invoked.
+pythonpath = ["."]
 
 [tool.ruff]
 line-length = 88

@@ -1,0 +1,16 @@
+# Project-local Codex settings for unattended step execution.
+#
+# Model and reasoning effort are left to whatever sits at the top of your /model
+# picker; effort matters more than the name here. Use "high" for anything
+# numerical, "xhigh" for S02, S03, S04, S09, and S12, where a wrong answer looks
+# right.
+approval_policy = "never"
+sandbox_mode = "workspace-write"
+web_search = "disabled"
+
+[sandbox_workspace_write]
+# Needed for pip installs into .venv-xai and for gh/git against the remote.
+network_access = true
+
+[profiles.grind]                 # scaffolding, I/O plumbing, report formatting
+model_reasoning_effort = "medium"
