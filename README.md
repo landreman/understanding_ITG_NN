@@ -45,6 +45,12 @@ declared as the `xai` optional dependency in `pyproject.toml` and pinned in
 `requirements/xai.lock`. Make a separate `.venv-xai` in each worktree because an
 editable install is worktree-specific.
 
+Core CI installs `.[dev]` only, so the suite keeps proving that inference and the
+tests stand alone without the XAI extras. The automated PR review installs
+`.[dev,xai]` plus `scipy` and `pandas`, so it exercises the same attribution code
+path production did and can cross-check statistics with libraries this package
+does not depend on.
+
 The registered S00 CPU pilot selects the highest stored validation-$R^2$ member,
 uses 64 positive-target varied-gradient rows, verifies the module-form conversion against all
 100 original members, and writes labeled member-level native-target predictions:

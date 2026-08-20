@@ -146,8 +146,16 @@ class RunArtifacts:
         device: str | torch.device,
         repository: str | Path,
         command: Sequence[str] | None = None,
+        published_dir: str | Path | None = None,
     ) -> Path:
-        """Record all registered provenance and hashes in ``manifest.json``."""
+        """Record all registered provenance and hashes in ``manifest.json``.
+
+        The run directory under ``output/xai/`` is git-ignored, so an automated
+        reviewer working from a checkout cannot see the manifest there and has
+        to take the report's word that it exists and is complete. Pass
+        ``published_dir`` — normally ``reports/xai/SNN_artifacts`` — to copy the
+        manifest to a committed location. It is a few kilobytes.
+        """
 
         repository_path = Path(repository).resolve()
         manifest = {
@@ -179,4 +187,8 @@ class RunArtifacts:
         }
         path = self._output_path("manifest.json")
         _atomic_json(path, manifest)
+        if published_dir is not None:
+            published = Path(published_dir)
+            published.mkdir(parents=True, exist_ok=True)
+            _atomic_json(published / "manifest.json", manifest)
         return path

@@ -18,8 +18,16 @@ report's characterization of them.
 You are running without the external HDF5 dataset and without `.venv-xai`, so you
 cannot rerun the pilot or the production run. You have three things instead.
 
-`pytest`, which runs on synthetic fixtures and the committed checkpoint. Every
-committed artifact, manifest, and summary JSON. And **`tests/data/review_slice.h5`**
+`pytest`, which runs on synthetic fixtures and the committed checkpoint, in an
+environment that has **captum, scipy and pandas** installed. captum matters: code
+that falls back to an in-repo estimator when captum is missing takes the real
+Captum path here, the one production took, so check that it does — a reported
+number that still comes from a fallback branch is a finding. scipy and pandas are
+implementations this repository does not depend on, so recomputing a rank
+correlation, a regression, or a bootstrap quantile with them is a genuinely
+independent check rather than a rerun of the code under review.
+
+Every committed artifact, manifest, and summary JSON. And **`tests/data/review_slice.h5`**
 — 2,000 real rows: the whole 1,000-row S01 interpretation panel plus 1,000 sibling
 flux tubes of the same equilibria, with `scripts/build_review_slice.py` recording
 how they were chosen. Use it to recompute, not merely to re-read. If the PR reports
@@ -92,11 +100,24 @@ counterfactual without an equilibrium-consistent construction.
 **6. Do the numbers in the report exist in the artifacts?**
 Recompute at least two headline numbers on the review slice where the claim
 concerns panel rows, and spot-check the rest against the committed summary JSON or
-figure data. Check that `manifest.json` is complete — commit, dirty status,
-command, config, seeds, versions, device, dataset fingerprint, checkpoint hash,
-member and row IDs, wall time, output hashes — and that the checkpoint hash
-matches the committed model. A conclusion that cannot be traced to a manifest is a
-finding regardless of how reasonable it sounds.
+figure data. Read the report's `## Reviewer reproduction` section first: it names
+which numbers are meant to reproduce on the slice, which live in committed
+artifacts, and which need the researcher's machine. Treat it as a claim to test,
+not a map to trust — if a number it lists as slice-recomputable does not
+reproduce, that is blocking; if a number it consigns to the third list could have
+been made checkable by publishing one more small artifact, that is a finding.
+
+Check `reports/xai/SNN_artifacts/manifest.json` — the committed copy of the
+registered run's manifest — for completeness: commit, dirty status, command,
+config, seeds, versions, device, dataset fingerprint, checkpoint hash, member and
+row IDs, wall time, output hashes. Confirm the checkpoint hash matches the
+committed model, that `git_commit` is an ancestor of the PR head, that the
+`run_id` and fingerprints match what the report and PR body quote, and that
+`package_versions` is consistent with the code path the report claims each number
+came from. A missing committed manifest is itself a finding — do not accept
+"it exists in the git-ignored run directory", which you cannot see. A conclusion
+that cannot be traced to that manifest is a finding regardless of how reasonable
+it sounds.
 
 **7. Was an acceptance criterion quietly weakened?**
 Diff tolerances, sample counts, member counts, `xfail`/`skip` markers, and config
@@ -127,6 +148,13 @@ untracked files must be untouched — check the diff, not the PR body's claim. N
 large generated artifact committed. Any ambiguity in `PLAN.md` that the
 implementer resolved by choosing, where the choice changes the estimand, the
 cohort, or the baseline family, needs a decision memo, not a silent pick.
+
+Close with an explicit **What I could not check here** list: each claim you could
+not verify, why — rows outside the slice, a run too expensive to repeat, a
+machine-local artifact — and the nearest partial check you did run instead. State
+plainly whether an unchecked item is an accepted limit of this environment or
+something the PR could have made checkable and did not. The second kind is a
+finding in the table above, not just a caveat here.
 
 Output a table of findings: severity (**blocking** / **should-fix** / **note**),
 location as `file:line`, what is wrong, and what to do about it. Then one line:
