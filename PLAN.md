@@ -105,8 +105,9 @@ project. Each is verified in [Preliminary scoping measurements](#preliminary-sco
 - The two additional inputs are $a/L_T$ and $a/L_n$. **Resolved 2026-08-20:**
   fixed-gradient rows are supplied at their physical $a/L_T=+3$, which is what
   the checkpoint was trained on. All 100 members reach R² 0.973–0.987 on the
-  panel's fixed rows at $+3$ and none exceeds $-8$ at $-3$, where 100% of
-  predictions sit within 0.05 of the clipped-log floor. The legacy loader's
+  panel's fixed rows at $+3$ and none exceeds $-8$ at $-3$, where every
+  prediction sits at or below the clipped-log floor plus 0.05, across a total
+  spread of 0.097. The legacy loader's
   $a/L_T=-3$ marker was added to the training script *after* the ensemble was
   trained, to exclude fixed rows from the paper's test score; it never described
   a learned input. It survives only as the opt-in `legacy_fixed_marker=True`,

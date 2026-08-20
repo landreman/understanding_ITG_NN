@@ -34,10 +34,10 @@
     "sha256": "9d8fa52f93f2782ad9948a38bf46943c0cd6df78cd08b94a006dad4e06c1c8ad"
   },
   "device": "cpu",
-  "git_commit": "d303e992fab719850f717ce5e6294fb0de66fb29",
+  "git_commit": "d8ccaec97d5e19f8203466c3b4a147a0c956807b",
   "git_dirty": true,
   "git_tracked_dirty": true,
-  "git_tree": "74a2db25628e5ff678851af376ff58614dbfd63a",
+  "git_tree": "2d9cb60352111d685d5acbbf68924d46ad7089a3",
   "gradient_set": "fixed",
   "member_ids": [
     "2864601_0.437",
@@ -145,8 +145,9 @@
     "fixed_panel_predictions.h5": "73195bf463a43a632fc9cd598fb09cd5c8b468e7e8cce11dafb60a92f146f987",
     "parity_symmetry.csv": "6e48aee31cd826e3339a3d3bb225706372563c9fe0ee6c4de62403eaf55dd2e0",
     "phase_average_exactness.csv": "a30613743d080ac21f2fd525a1b2090cf103d41569823171608ca480bd904ddc",
+    "s02_subgroup_exactness.csv": "ab2d14ff4221be6e02b8c142385be95bc105fa023d00010d8efbca6e0ad78608",
     "shift_symmetry_summary.csv": "d7457980e62a83afd969d767d441af73e116bc413b3256234d5b965be696853f",
-    "summary.json": "96cdcf8d43901223a0a1cdc3c4f596b89a06eb351f7424c29abd78decc28063c"
+    "summary.json": "516b62a5d3fa663bd787856c3754cecdb823260237c015f57475053a537c9643"
   },
   "package_versions": {
     "captum": "0.9.0",
@@ -1162,5 +1163,5 @@
     100596
   ],
   "seed": 20260816,
-  "wall_time_seconds": 53.336297457997716
+  "wall_time_seconds": 52.8032941249985
 }

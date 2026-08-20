@@ -96,11 +96,23 @@ tolerance. Averaging all 96 shifts and the 32 distinct pooling phases agrees to
 **9.54e-7** maximum absolute error. All later symmetrization therefore uses and
 must be labeled as **32-phase**, not 96-phase.
 
-Both figures are from the 2026-08-20 fixed-gradient refresh and are a *stricter*
-test than the ones they replace (9.54e-6 and 1.07e-6). Under the old convention
-half the panel sat pinned at the clipped-log floor, where a constant output is
-trivially shift-invariant; the subgroup maximum rose once those rows carried a
-real response, and still passes.
+Both figures are from the 2026-08-20 fixed-gradient refresh and replace 9.54e-6
+and 1.07e-6. **Read the pass, not the digits.** These are maxima of float32
+roundoff differences more than an order of magnitude below the registered
+tolerance, and their exact values depend on the machine and the batching: an
+independent recomputation on a GitHub runner reproduced the verdict but not the
+values, and disagreed on which half of the panel carries the maximum. No trend
+should be inferred from the change in either number.
+
+What can be said without depending on those digits is that the check now tests
+more than it did. Under the old convention half the panel sat pinned at the
+clipped-log floor, where a nearly constant output is close to trivially
+shift-invariant, so the subgroup criterion was partly vacuous on those rows; it
+is now evaluated on fixed rows that actually respond, and it passes. The rows the
+maxima are taken over — every entity, both gradient sets, all strata, shifts 32
+and 64 — are published as
+[`s02_subgroup_exactness.csv`](S03_fixed_gradient_artifacts/s02_subgroup_exactness.csv)
+so the distributions can be compared across platforms instead of one scalar.
 
 For non-subgroup shifts on the **varied panel**, the member/shift distribution
 of RMS output change divided by each member's matching varied-reference

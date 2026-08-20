@@ -2,7 +2,8 @@
   "conclusion": "The checkpoint was trained with fixed-gradient rows at the physical a/L_T = +3. The -3 marker is off-manifold and saturates the members at the clipped-log floor.",
   "ensemble": {
     "legacy_marker": {
-      "fraction_within_0p05_of_floor": 1.0,
+      "fraction_at_or_below_floor_plus_0p05": 1.0,
+      "fraction_within_0p05_of_floor_two_sided": 0.893,
       "prediction_max": -2.0043820977210998,
       "prediction_mean": -2.0333261026257277,
       "prediction_min": -2.101462104320526,
@@ -10,7 +11,8 @@
       "r2_against_fixed_target": -12.07764621120431
     },
     "training": {
-      "fraction_within_0p05_of_floor": 0.014,
+      "fraction_at_or_below_floor_plus_0p05": 0.014,
+      "fraction_within_0p05_of_floor_two_sided": 0.014,
       "prediction_max": 5.58965681552887,
       "prediction_mean": 2.006224050283239,
       "prediction_min": -2.0002754032611847,
@@ -71,9 +73,7 @@
   },
   "panel_fixed_rows": 1000,
   "s01_panel_metadata_refresh": {
-    "changed_cells": {
-      "a_over_LT_model": 1000
-    },
+    "changed_cells": {},
     "fixed_a_over_LT_model_values": [
       "3.0"
     ],

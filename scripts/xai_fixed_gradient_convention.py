@@ -151,14 +151,22 @@ def _convention_rows(
                     "entity": entity,
                     "entity_type": entity_type,
                     "convention": convention,
+                    "validity_tag": (
+                        "observed_comparison"
+                        if convention == "training"
+                        else "off_manifold"
+                    ),
                     "a_over_LT_input": 3.0 if convention == "training" else -3.0,
                     "n": int(len(series)),
                     "prediction_mean": float(series.mean()),
                     "prediction_std": float(series.std()),
                     "prediction_min": float(series.min()),
                     "prediction_max": float(series.max()),
-                    "fraction_within_0p05_of_floor": float(
+                    "fraction_at_or_below_floor_plus_0p05": float(
                         np.mean(series <= floor + 0.05)
+                    ),
+                    "fraction_within_0p05_of_floor_two_sided": float(
+                        np.mean(np.abs(series - floor) <= 0.05)
                     ),
                     "r2_against_fixed_target": _r2(series, target),
                     "mean_absolute_error": float(np.mean(np.abs(series - target))),
@@ -352,7 +360,8 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
                     "prediction_min",
                     "prediction_max",
                     "r2_against_fixed_target",
-                    "fraction_within_0p05_of_floor",
+                    "fraction_at_or_below_floor_plus_0p05",
+                    "fraction_within_0p05_of_floor_two_sided",
                 )
             }
             for convention, row in ensemble_rows.items()

@@ -54,8 +54,13 @@ On the 1,000 fixed-gradient rows of S01's registered panel, all 100 members
 | Training convention, `a/L_T = +3` | 2.006 | 1.145 | [-2.000, 5.590] | **0.9883** | [0.9726, 0.9867] |
 
 The panel's fixed targets have mean 2.005 and standard deviation 1.161, with
-2.2% at the clipped-log floor. At `-3`, **100%** of predictions land within 0.05
-of the floor and 0 of 100 members reach R² > 0.9; at `+3`, all 100 do.
+2.2% at the clipped-log floor. At `-3`, **100%** of predictions land at or below
+the floor plus 0.05 — the whole 1,000-row spread is [-2.101, -2.004], a range of
+0.097 — and 0 of 100 members reach R² > 0.9; at `+3`, all 100 do. The statistic
+is one-sided: 10.7% of the predictions sit more than 0.05 *below* the floor, so
+the two-sided fraction is 0.893. Both columns are in the artifact, as
+`fraction_at_or_below_floor_plus_0p05` and
+`fraction_within_0p05_of_floor_two_sided`.
 
 This is the decisive argument, and it is an argument about training, not about
 fit quality. Fixed-gradient rows are roughly half the training set. A network
@@ -136,12 +141,27 @@ from 0.00067 / 0.00455 / 0.01009 to **0.0429 / 0.0516 / 0.0640** against
 0.0519 / 0.0607 / 0.0708 on varied rows.
 
 Two of S02's exactness checks are computed as a maximum over the whole panel and
-therefore moved. The subgroup maximum rose from 9.54e-6 to **1.33e-5** and the
-32-versus-96-phase maximum fell from 1.07e-6 to **9.54e-7**; both still pass the
-registered `atol=rtol=2e-5`. The first is the meaningful one: under the old
-convention half the panel was constant, and a constant output is trivially
-shift-invariant, so the check was partly vacuous. It is now a stricter test on
-rows that actually respond, and S02's exact-subgroup claim survives it.
+therefore moved: the subgroup maximum from 9.54e-6 to **1.33e-5**, the
+32-versus-96-phase maximum from 1.07e-6 to **9.54e-7**. Both still pass the
+registered `atol=rtol=2e-5`, by more than an order of magnitude.
+
+**Neither change should be read as a result.** Both are maxima of float32
+roundoff differences, and an independent recomputation on a GitHub runner
+reproduced the pass verdict but not the values — it put the panel maximum at
+2.86e-6 and found the fixed half *smaller* than the varied half, the opposite of
+this machine, where the split is 1.33e-5 fixed against 6.08e-6 varied. The
+scalar is platform- and batching-specific. An earlier draft of this memo argued
+from the rise that the check had become stricter; that inference was not
+supported and has been withdrawn.
+
+The defensible statement is about what the criterion tests, not about the
+number. Under the old convention half the panel was nearly constant, where
+shift-invariance is close to trivially satisfied, so the subgroup check was
+partly vacuous on those rows. It is now evaluated on fixed rows that respond,
+and it passes. The rows both maxima are taken over are published as
+[`s02_subgroup_exactness.csv`](S03_fixed_gradient_artifacts/s02_subgroup_exactness.csv)
+(1,224 rows: every entity, both gradient sets, all strata, shifts 32 and 64), so
+a reviewer can compare distributions rather than one machine-specific scalar.
 
 Two self-checks establish that these differences are the convention and not the
 refresh pipeline. Re-predicting sampled varied members reproduced the registered
@@ -187,7 +207,12 @@ added the varied-rebuild check; it is not the cost of the computation. The
 
 - Per-member and ensemble statistics under both conventions:
   [`fixed_gradient_convention.csv`](S03_fixed_gradient_artifacts/fixed_gradient_convention.csv),
-  200 rows.
+  202 rows. Each row carries a `validity_tag` — `observed_comparison` for the
+  training convention, `off_manifold` for the legacy marker — so the tagging
+  requirement is met in the artifact and not only in this prose.
+- The rows behind S02's two exactness maxima:
+  [`s02_subgroup_exactness.csv`](S03_fixed_gradient_artifacts/s02_subgroup_exactness.csv),
+  1,224 rows.
 - Run provenance, hashes, package versions and wall time:
   [`manifest.json`](S03_fixed_gradient_artifacts/manifest.json) and
   [`s02_fixed_refresh_manifest.json`](S03_fixed_gradient_artifacts/s02_fixed_refresh_manifest.json).
@@ -215,8 +240,43 @@ added the varied-rebuild check; it is not the cost of the computation. The
   run asserts, and records in its summary, that re-predicting sampled varied
   members reproduces the stored values with maximum absolute difference exactly
   0.0 — so any change in the fixed rows is the convention and not the pipeline.
-  A reviewer can recompute a single member's fixed-row shift RMS on slice rows
-  and compare it with that member's row in `shift_symmetry_summary.csv`.
+  Two reproduction routes exist for the refreshed numbers, and note that
+  `shift_symmetry_summary.csv` is **not** one of them: `_shift_summary_rows`
+  collapses the 100 members into `member_distribution` quantiles, so it holds no
+  per-member row to compare against. Instead, either recompute one member's
+  fixed-row parity RMS on slice rows and compare it with that member's row in
+  [`parity_symmetry.csv`](S02_artifacts/parity_symmetry.csv), which does carry
+  per-member rows; or recompute all 100 members at a single shift and compare
+  the `member_distribution` q10/median/q90 row in `shift_symmetry_summary.csv`.
+  Both were checked by the automated review and reproduce to better than 2e-7.
+
+## Review disposition
+
+The automated review returned **no blocking findings**, two should-fix and four
+notes. Disposition:
+
+| Finding | Severity | Action |
+| --- | --- | --- |
+| Reviewer-reproduction route pointed at `shift_symmetry_summary.csv`, which has no per-member rows | should-fix | **Fixed.** The route was wrong; it now names `parity_symmetry.csv` for per-member comparison and the `member_distribution` quantile row as the alternative, and says explicitly that the summary file holds no per-member rows. |
+| `exact_subgroup_max_abs` did not reproduce off this machine, and the report built a "stricter test" claim on it | should-fix | **Fixed.** The inference is withdrawn as unsupported. Both maxima are now labelled platform-specific float32 roundoff, the reviewer's disagreeing recomputation is quoted, and the 1,224 rows they are taken over are published as `s02_subgroup_exactness.csv`. |
+| `fixed_gradient_convention.csv` lacked the registered perturbation-validity vocabulary | note | **Accepted.** A `validity_tag` column now carries `off_manifold` / `observed_comparison`, matching `S03_artifacts/support.csv`. |
+| `fraction_within_0p05_of_floor` was one-sided but read as two-sided | note | **Accepted.** Renamed to `fraction_at_or_below_floor_plus_0p05`, a two-sided column added, and the prose in this memo and `PLAN.md` corrected. |
+| The `AGENTS.md` slice-regeneration rule was amended in the commit that used it | note | **Open — for the researcher.** See below. |
+| Mutation 1's failure tally differs from the reviewer's | note | **Accepted.** The PR body now names the variant used. |
+
+### Open item for the researcher
+
+The approval recorded at the top of this memo covers the **loader correction**.
+It does not cover the amendment to `AGENTS.md`'s review-slice rule, which was
+widened in the same commit from "when a step deliberately changes the registered
+panel" to also allow "when a correction invalidates the reference predictions it
+stores". The automated review is right that authorising an act and amending the
+rule that governs it should not arrive together unremarked. The amendment is
+disclosed in the PR body and paired with a new reader-side guard that refuses a
+slice built under the wrong convention, but it needs a separate yes or no. If
+declined, the regeneration still stands on the narrower reading — a slice whose
+stored baselines are known-wrong is not a verification artifact — but the rule
+text should then be reverted.
 
 ## Deferred
 

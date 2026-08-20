@@ -535,6 +535,22 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
 
     exact_tolerance = float(resolved["exact_atol"])
     relative_tolerance = float(resolved["exact_rtol"])
+    # The subgroup maximum is a max over the whole panel of a float32 roundoff
+    # difference, so the single headline number is platform-specific and cannot
+    # be cross-checked against any other committed table. Publish the rows it is
+    # taken over, for both gradient sets and every entity, so a reviewer on a
+    # different machine can compare distributions instead of one scalar.
+    subgroup_rows = [
+        {
+            key: row[key]
+            for key in (
+                "entity", "entity_type", "gradient_set", "stratum", "n", "shift",
+                "mean_absolute_change", "rms_change", "max_absolute_change",
+            )
+        }
+        for row in symmetry_rows
+        if row["shift"] in (32, 64)
+    ]
     exact_rows = [
         row for row in symmetry_rows
         if row["entity_type"] == "member" and row["shift"] in (32, 64)
@@ -641,18 +657,42 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
             "varied_all": _parity_quantiles("varied"),
         },
         "checks": checks,
+        "subgroup_max_abs_by_gradient_set": {
+            gradient_set: float(
+                max(
+                    row["max_absolute_change"]
+                    for row in subgroup_rows
+                    if row["entity_type"] == "member"
+                    and row["gradient_set"] == gradient_set
+                    and row["stratum"] == "all"
+                )
+            )
+            for gradient_set in ("varied", "fixed")
+        },
+        "subgroup_max_abs_note": (
+            "These maxima are float32 roundoff differences an order of magnitude "
+            "below the registered atol/rtol of 2e-5. Their exact values depend on "
+            "the machine and batching, so a reviewer on another platform should "
+            "expect the pass verdict to reproduce and the digits not to. See "
+            "s02_subgroup_exactness.csv for the rows they are taken over."
+        ),
         "exact_tolerance": {"atol": exact_tolerance, "rtol": relative_tolerance},
         "s02_run": {
             "directory": str(s02_run),
             "predictions_sha256": sha256_file(stored_path),
         },
     }
+    subgroup_path = artifacts.write_text(
+        "s02_subgroup_exactness.csv", _csv_text(subgroup_rows)
+    )
     summary_path = artifacts.write_json("summary.json", summary)
 
     if not args.no_publish and not args.pilot:
         for path in written:
             shutil.copy2(path, published / path.name)
-        shutil.copy2(summary_path, Path(resolved["decision_artifacts"]) / "s02_fixed_refresh_summary.json")
+        decision = Path(resolved["decision_artifacts"])
+        shutil.copy2(summary_path, decision / "s02_fixed_refresh_summary.json")
+        shutil.copy2(subgroup_path, decision / subgroup_path.name)
         s02_summary_path = published / "summary.json"
         s02_summary = json.loads(s02_summary_path.read_text(encoding="utf-8"))
         s02_summary["checks"].update(checks)

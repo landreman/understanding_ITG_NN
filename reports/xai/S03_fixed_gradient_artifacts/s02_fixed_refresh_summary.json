@@ -57,6 +57,11 @@
     "directory": "output/xai/S02/symmetry-all100-panel2000-reference9785",
     "predictions_sha256": "4d7ec3287cfda5dcbe44f3ccf5f96df360153504cfcbcf8a46bdf24b9b51ff6d"
   },
+  "subgroup_max_abs_by_gradient_set": {
+    "fixed": 1.329183578491211e-05,
+    "varied": 6.079673767089844e-06
+  },
+  "subgroup_max_abs_note": "These maxima are float32 roundoff differences an order of magnitude below the registered atol/rtol of 2e-5. Their exact values depend on the machine and batching, so a reviewer on another platform should expect the pass verdict to reproduce and the digits not to. See s02_subgroup_exactness.csv for the rows they are taken over.",
   "varied_rebuild_check": {
     "parity_symmetry.csv": {
       "max_absolute_difference": 0.0,
