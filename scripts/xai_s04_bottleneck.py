@@ -446,6 +446,71 @@ def _rms_draws(values: np.ndarray, row_weights: np.ndarray) -> tuple[float, np.n
     return float(np.sqrt(np.mean(np.square(values)))), draws
 
 
+def _encoded_used_row(
+    *,
+    member_id: str,
+    target_name: str,
+    stratum: str,
+    target: np.ndarray,
+    linear_prediction: np.ndarray,
+    nonlinear_prediction: np.ndarray,
+    permuted_linear_prediction: np.ndarray,
+    permuted_nonlinear_prediction: np.ndarray,
+    delta: np.ndarray,
+    direction_magnitude: float,
+    random_direction_delta: np.ndarray,
+    random_direction_edit_magnitude: np.ndarray,
+    row_weights: np.ndarray,
+) -> tuple[dict[str, Any], np.ndarray, np.ndarray]:
+    """Build one encoded-versus-used row and retain its bootstrap draws."""
+
+    random_rms = np.sqrt(np.mean(np.square(random_direction_delta), axis=1))
+    random_normalized_rms = random_rms / random_direction_edit_magnitude
+    linear_point, linear_draws = _r2_draws(target, linear_prediction, row_weights)
+    nonlinear_point, nonlinear_draws = _r2_draws(
+        target, nonlinear_prediction, row_weights
+    )
+    used_point, used_draws = _rms_draws(delta, row_weights)
+    _, linear_lower, linear_upper = _interval_from_draws(linear_point, linear_draws)
+    _, nonlinear_lower, nonlinear_upper = _interval_from_draws(
+        nonlinear_point, nonlinear_draws
+    )
+    _, used_lower, used_upper = _interval_from_draws(used_point, used_draws)
+    row = {
+        "member_id": member_id,
+        "target": target_name,
+        "stratum": stratum,
+        "encoded_linear_grouped_cv_r2": linear_point,
+        "encoded_linear_grouped_bootstrap_ci95_lower": linear_lower,
+        "encoded_linear_grouped_bootstrap_ci95_upper": linear_upper,
+        "encoded_nonlinear_grouped_cv_r2": nonlinear_point,
+        "encoded_nonlinear_grouped_bootstrap_ci95_lower": nonlinear_lower,
+        "encoded_nonlinear_grouped_bootstrap_ci95_upper": nonlinear_upper,
+        "label_permutation_linear_r2": _r2(target, permuted_linear_prediction),
+        "label_permutation_nonlinear_r2": _r2(target, permuted_nonlinear_prediction),
+        "used_direction_removal_mean_signed_delta": float(np.mean(delta)),
+        "used_direction_removal_rms_delta": used_point,
+        "used_grouped_bootstrap_ci95_lower": used_lower,
+        "used_grouped_bootstrap_ci95_upper": used_upper,
+        "direction_edit_magnitude_standardized_rms": direction_magnitude,
+        "used_rms_per_edit_sd": (
+            used_point / direction_magnitude
+            if direction_magnitude > np.finfo(np.float64).eps
+            else float("nan")
+        ),
+        "random_direction_control_median_rms": float(np.median(random_rms)),
+        "random_direction_control_q90_rms": float(np.quantile(random_rms, 0.9)),
+        "random_direction_control_median_edit_magnitude_standardized_rms": float(
+            np.median(random_direction_edit_magnitude)
+        ),
+        "random_direction_control_median_rms_per_edit_sd": float(
+            np.median(random_normalized_rms)
+        ),
+        "direction_intervention_validity": HIDDEN_INTERVENTION_VALIDITY,
+    }
+    return row, nonlinear_draws, used_draws
+
+
 def _decoder_rows(
     member_id: str,
     features: np.ndarray,
@@ -1086,73 +1151,33 @@ def run(args: argparse.Namespace) -> Path:
             predictions = decoder_predictions[member_id]
             for stratum, mask in masks.items():
                 stratum_weights = bootstrap_weights[:, mask]
-                random_rms = np.sqrt(
-                    np.mean(np.square(random_result.random_direction_delta[:, mask]), axis=1)
+                row, nonlinear_draws, used_draws = _encoded_used_row(
+                    member_id=member_id,
+                    target_name=target_name,
+                    stratum=stratum,
+                    target=target[mask],
+                    linear_prediction=predictions[(target_name, "linear", False)][mask],
+                    nonlinear_prediction=predictions[(target_name, "nonlinear", False)][mask],
+                    permuted_linear_prediction=predictions[
+                        (target_name, "linear", True)
+                    ][mask],
+                    permuted_nonlinear_prediction=predictions[
+                        (target_name, "nonlinear", True)
+                    ][mask],
+                    delta=delta[mask],
+                    direction_magnitude=direction_magnitude,
+                    random_direction_delta=random_result.random_direction_delta[:, mask],
+                    random_direction_edit_magnitude=(
+                        random_result.random_direction_edit_magnitude
+                    ),
+                    row_weights=stratum_weights,
                 )
-                random_normalized_rms = (
-                    random_rms / random_result.random_direction_edit_magnitude
-                )
-                linear_point, linear_draws = _r2_draws(
-                    target[mask],
-                    predictions[(target_name, "linear", False)][mask],
-                    stratum_weights,
-                )
-                nonlinear_point, nonlinear_draws = _r2_draws(
-                    target[mask],
-                    predictions[(target_name, "nonlinear", False)][mask],
-                    stratum_weights,
-                )
-                used_point, used_draws = _rms_draws(delta[mask], stratum_weights)
-                _, linear_lower, linear_upper = _interval_from_draws(
-                    linear_point, linear_draws
-                )
-                _, nonlinear_lower, nonlinear_upper = _interval_from_draws(
-                    nonlinear_point, nonlinear_draws
-                )
-                _, used_lower, used_upper = _interval_from_draws(used_point, used_draws)
                 if stratum == "overall":
                     concept_bootstrap[target_name]["encoded_nonlinear_r2"].append(
                         nonlinear_draws
                     )
                     concept_bootstrap[target_name]["used_rms"].append(used_draws)
-                encoded_used_rows.append(
-                    {
-                        "member_id": member_id,
-                        "target": target_name,
-                        "stratum": stratum,
-                        "encoded_linear_grouped_cv_r2": linear_point,
-                        "encoded_linear_grouped_bootstrap_ci95_lower": linear_lower,
-                        "encoded_linear_grouped_bootstrap_ci95_upper": linear_upper,
-                        "encoded_nonlinear_grouped_cv_r2": nonlinear_point,
-                        "encoded_nonlinear_grouped_bootstrap_ci95_lower": nonlinear_lower,
-                        "encoded_nonlinear_grouped_bootstrap_ci95_upper": nonlinear_upper,
-                        "label_permutation_linear_r2": _r2(
-                            target[mask], predictions[(target_name, "linear", True)][mask]
-                        ),
-                        "label_permutation_nonlinear_r2": _r2(
-                            target[mask], predictions[(target_name, "nonlinear", True)][mask]
-                        ),
-                        "used_direction_removal_mean_signed_delta": float(np.mean(delta[mask])),
-                        "used_direction_removal_rms_delta": used_point,
-                        "used_grouped_bootstrap_ci95_lower": used_lower,
-                        "used_grouped_bootstrap_ci95_upper": used_upper,
-                        "direction_edit_magnitude_standardized_rms": direction_magnitude,
-                        "used_rms_per_edit_sd": (
-                            used_point / direction_magnitude
-                            if direction_magnitude > np.finfo(np.float64).eps
-                            else float("nan")
-                        ),
-                        "random_direction_control_median_rms": float(np.median(random_rms)),
-                        "random_direction_control_q90_rms": float(np.quantile(random_rms, 0.9)),
-                        "random_direction_control_median_edit_magnitude_standardized_rms": float(
-                            np.median(random_result.random_direction_edit_magnitude)
-                        ),
-                        "random_direction_control_median_rms_per_edit_sd": float(
-                            np.median(random_normalized_rms)
-                        ),
-                        "direction_intervention_validity": HIDDEN_INTERVENTION_VALIDITY,
-                    }
-                )
+                encoded_used_rows.append(row)
     encoded_used_path = artifacts.write_text(
         "encoded_vs_used.csv", _csv_text(encoded_used_rows)
     )

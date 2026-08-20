@@ -53,7 +53,7 @@ The production run is recorded verbatim in the committed
 `d5e092348514a5ee85b68bcdcf51dbb32eaa344beea1daa28f5aaeba9e86eefb`, dataset
 SHA-256 `9d8fa52f93f2782ad9948a38bf46943c0cd6df78cd08b94a006dad4e06c1c8ad`,
 the exact row and member IDs, output hashes, and hashes of the dirty-tree runner
-and reusable library. The final registered pass took 124.9 s on CPU with Python
+and reusable library. The final registered pass took 132.1 s on CPU with Python
 3.12.4, torch 2.4.1, numpy 1.26.4, h5py 3.11.0, and Captum 0.9.0.
 
 ## Methods and artifacts

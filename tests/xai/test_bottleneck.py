@@ -9,6 +9,7 @@ import torch
 
 from itg_nn.xai.bottleneck import (
     HIDDEN_INTERVENTION_VALIDITY,
+    InterventionResult,
     ShapleyResult,
     bottleneck_interventions,
     exact_or_sampled_shapley,
@@ -19,8 +20,13 @@ from itg_nn.xai.bottleneck import (
 )
 from scripts.xai_s04_bottleneck import (
     _direction_delta,
+    _encoded_used_row,
     _effect_interval,
     _group_bootstrap_weights,
+    _interval_from_draws,
+    _metric_rows,
+    _r2_draws,
+    _rms_draws,
     _shapley_rows,
     _stratum_masks,
 )
@@ -361,3 +367,103 @@ def test_runner_direction_delta_uses_edited_minus_original_sign_and_records_size
     np.testing.assert_allclose(delta, edited[:, 0] - bottleneck[:, 0])
     assert magnitude == pytest.approx(np.sqrt(np.mean(np.square(projection))))
     assert magnitude != pytest.approx(1.0)
+
+
+def test_runner_acceptance_intervals_use_grouped_weights_and_95_percent_quantiles() -> None:
+    actual = np.asarray([-3.0, -1.0, 2.0, 5.0])
+    predicted = np.asarray([-2.5, -0.5, 1.0, 4.0])
+    values = np.asarray([1.0, 2.0, 4.0, 8.0])
+    row_weights = np.asarray(
+        [
+            [3.0, 3.0, 0.0, 0.0],
+            [0.0, 0.0, 1.0, 1.0],
+            [2.0, 2.0, 1.0, 1.0],
+            [1.0, 1.0, 2.0, 2.0],
+        ]
+    )
+
+    r2_point, r2_draws = _r2_draws(actual, predicted, row_weights)
+    denominator = row_weights.sum(axis=1)
+    weighted_mean = row_weights @ actual / denominator
+    total = np.sum(
+        row_weights * np.square(actual[None, :] - weighted_mean[:, None]), axis=1
+    )
+    expected_r2_draws = 1.0 - (
+        row_weights @ np.square(actual - predicted)
+    ) / total
+    np.testing.assert_allclose(r2_draws, expected_r2_draws)
+    assert r2_point == pytest.approx(
+        1.0
+        - np.square(actual - predicted).sum()
+        / np.square(actual - actual.mean()).sum()
+    )
+
+    rms_point, rms_draws = _rms_draws(values, row_weights)
+    expected_rms_draws = np.sqrt(
+        row_weights @ np.square(values) / row_weights.sum(axis=1)
+    )
+    np.testing.assert_allclose(rms_draws, expected_rms_draws)
+    assert np.std(rms_draws) > 0.5
+    assert rms_point == pytest.approx(np.sqrt(np.mean(np.square(values))))
+
+    point, lower, upper = _interval_from_draws(rms_point, rms_draws)
+    assert point == rms_point
+    assert lower == pytest.approx(np.quantile(expected_rms_draws, 0.025))
+    assert upper == pytest.approx(np.quantile(expected_rms_draws, 0.975))
+    assert lower != pytest.approx(np.quantile(expected_rms_draws, 0.25))
+    assert upper != pytest.approx(np.quantile(expected_rms_draws, 0.75))
+
+
+def test_runner_row_builders_apply_normalization_and_signed_mse_change() -> None:
+    original = np.asarray([2.0, 1.0, -1.0, -2.0])
+    single_delta = -original
+    pair_delta = -0.5 * original
+    result = InterventionResult(
+        modes=("mean",),
+        feature_names=("toy:u000", "toy:u001"),
+        original_prediction=original,
+        single_delta=np.asarray([[single_delta, np.zeros(4)]]),
+        pair_indices=np.asarray([[0, 1]]),
+        pair_delta=np.asarray([[pair_delta]]),
+        pair_interaction=np.zeros((1, 1, 4)),
+        random_direction_delta=np.asarray([[1.0, 1.0, 1.0, 1.0]]),
+        random_direction_edit_magnitude=np.asarray([0.5]),
+        validity_tag=HIDDEN_INTERVENTION_VALIDITY,
+    )
+    rows = _metric_rows("toy", result, np.zeros(4), {"overall": np.ones(4, bool)})
+    single_row = next(
+        row
+        for row in rows
+        if row["scope"] == "single_unit" and row["feature_1"] == "toy:u000"
+    )
+    pair_row = next(row for row in rows if row["scope"] == "unit_pair")
+    original_mse = np.mean(np.square(original))
+    assert float(single_row["mse_change"]) == pytest.approx(-original_mse)
+    assert float(pair_row["mse_change"]) == pytest.approx(-0.75 * original_mse)
+
+    target = np.asarray([-3.0, -1.0, 2.0, 5.0])
+    delta = np.asarray([-3.0, -1.0, 2.0, 4.0])
+    random_delta = np.asarray([[1.0, 1.0, 1.0, 1.0], [0.0, 2.0, 0.0, 2.0]])
+    random_magnitude = np.asarray([0.5, 2.0])
+    row, _, _ = _encoded_used_row(
+        member_id="toy",
+        target_name="concept",
+        stratum="overall",
+        target=target,
+        linear_prediction=target + 0.5,
+        nonlinear_prediction=target + 0.25,
+        permuted_linear_prediction=np.zeros(4),
+        permuted_nonlinear_prediction=np.ones(4),
+        delta=delta,
+        direction_magnitude=1.25,
+        random_direction_delta=random_delta,
+        random_direction_edit_magnitude=random_magnitude,
+        row_weights=np.eye(4),
+    )
+    used_rms = np.sqrt(np.mean(np.square(delta)))
+    random_rms = np.sqrt(np.mean(np.square(random_delta), axis=1))
+    assert float(row["used_rms_per_edit_sd"]) == pytest.approx(used_rms / 1.25)
+    assert float(row["random_direction_control_median_rms_per_edit_sd"]) == pytest.approx(
+        np.median(random_rms / random_magnitude)
+    )
+    assert float(row["used_rms_per_edit_sd"]) != pytest.approx(used_rms * 1.25)

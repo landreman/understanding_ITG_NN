@@ -53,7 +53,7 @@
     "source_hashes": {
       "bottleneck_library_sha256": "322d6088b6f4ca34a8741a461ce1fe73c9442fe006de15b7144ce1685ab3ba71",
       "cohorts_sha256": "edde45002a709a92ddbee7d0cf8697b2d966d5a14110895e217b2898bf4263f6",
-      "runner_sha256": "3425f84550120b0d6ef39cd0ffd6a2af95028696ae6bf1819cca844c168f895d"
+      "runner_sha256": "3506a64b9539e24f30d9add5c7d6e20f16e5bc9623252f47a1e4535dce765268"
     },
     "stable_threshold_log_Q": -1.9,
     "step": "S04",
@@ -66,10 +66,10 @@
     "sha256": "9d8fa52f93f2782ad9948a38bf46943c0cd6df78cd08b94a006dad4e06c1c8ad"
   },
   "device": "cpu",
-  "git_commit": "b59c64bbe2c546b42036c7b1eb9262429266a42f",
+  "git_commit": "54e6f1bd76f23930a6e853b96e1d09e67d0cbc5d",
   "git_dirty": true,
   "git_tracked_dirty": true,
-  "git_tree": "b1af5a8ce2a0d3f0e07f7b99b5b097b830c12198",
+  "git_tree": "63f3c6442f6b46dadc6fdba7f3b2a11068d0e09c",
   "gradient_set": "varied frozen S01 interpretation panel only",
   "member_ids": [
     "2864601_0.437",
@@ -1205,5 +1205,5 @@
     100596
   ],
   "seed": 20260820,
-  "wall_time_seconds": 124.93937291699967
+  "wall_time_seconds": 132.10186937500112
 }
