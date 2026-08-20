@@ -9,13 +9,18 @@ primary estimand is S02's exactly shift-invariant canonical member function
 and compared. Member-level signed predictions and changes are preserved before
 aggregation.
 
-**Fixed-gradient results are withdrawn.** The shared loader supplies `a/L_T=-3`,
-but the serialized training tensors contain nonnegative `a/L_T` only, and direct
-inference shows that `-3` saturates the members at the clipped-log floor whereas
-`+3` recovers R² of 0.978–0.985 for the tested top three. This registered-premise
-conflict and the required cross-step correction are documented in
-[`S03_fixed_gradient_decision.md`](S03_fixed_gradient_decision.md). Every number
-interpreted below is from the 1,000-row varied-gradient panel.
+**Fixed-gradient results are withdrawn, and stay withdrawn.** The loader in
+force for this step supplied `a/L_T=-3`, which pins the ensemble mean at the
+clipped-log floor and flattens every member against it — spreads fall to
+0.0036–0.218 from a minimum of 1.122 at `+3` — so the fixed rows measured floor
+wobble rather than the trained function. The decision gate this raised was **answered on 2026-08-20**:
+the loader now supplies the training convention `+3`, and the affected S00–S02
+artifacts were refreshed — see
+[`S03_fixed_gradient_decision.md`](S03_fixed_gradient_decision.md). That
+correction does not restore the numbers below, because regenerating them means
+rerunning this step's perturbation ladder on fixed rows. Every number
+interpreted here is from the 1,000-row varied-gradient panel, which was never
+affected.
 
 The networks use substantially more than the multiset of pointwise
 seven-channel vectors. On the frozen 1,000-row varied panel, random joint

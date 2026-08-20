@@ -21,6 +21,34 @@ figures. The compact machine-readable results are in
 [`S02_artifacts/summary.json`](S02_artifacts/summary.json), with all published
 tables in the same directory.
 
+### Post-step correction, 2026-08-20
+
+The fixed-gradient strata in
+[`shift_symmetry_summary.csv`](S02_artifacts/shift_symmetry_summary.csv),
+[`phase_average_exactness.csv`](S02_artifacts/phase_average_exactness.csv) and
+[`parity_symmetry.csv`](S02_artifacts/parity_symmetry.csv) were recomputed
+outside this step's numbered scope, after the shared loader was shown to be
+supplying fixed rows at an `a/L_T` the checkpoint never saw. The original values
+were measured where the members are flattened against the clipped-log floor —
+the ensemble mean pinned to a 0.097-wide band, every member's spread collapsed
+below the least-varying member's spread at the correct input. Corrected
+numbers appear in place below, each marked; the withdrawn values are quoted
+beside them rather than deleted.
+
+Nothing else in this step moves. The refresh recomputed only the fixed half of
+the panel, read the varied half back from this step's registered
+`predictions.h5`, and verified two things: re-predicting sampled varied members
+reproduces the stored values with maximum absolute difference **0.0**, and
+rebuilding all 1,782 committed varied rows through the same statistic builders
+reproduces them with maximum absolute difference **0.0**. Accuracy, the
+canonical decision, the density census and the bottleneck census are untouched —
+the bottleneck is computed from geometry alone and never sees `a/L_T`. The run
+is `output/xai/S03fix/s02-fixed-refresh-all100-panel1000/`; its manifest is
+committed as
+[`s02_fixed_refresh_manifest.json`](S03_fixed_gradient_artifacts/s02_fixed_refresh_manifest.json)
+and the reasoning is in
+[`S03_fixed_gradient_decision.md`](S03_fixed_gradient_decision.md).
+
 External review found that the first implementation preserved `mean_z rho` but
 rolled `rho`'s position axis for 91 architectures with even kernels. The à trous
 padding convention is corrected and a new alignment check pins
@@ -65,10 +93,28 @@ therefore reported independently.
 ## Cyclic-shift symmetry
 
 The pooling subgroup at shifts 0, 32, and 64 is invariant to a maximum absolute
-member-output change of **9.54e-6**, passing the registered `atol=rtol=2e-5`
+member-output change of **1.33e-5**, passing the registered `atol=rtol=2e-5`
 tolerance. Averaging all 96 shifts and the 32 distinct pooling phases agrees to
-**1.07e-6** maximum absolute error. All later symmetrization therefore uses and
+**9.54e-7** maximum absolute error. All later symmetrization therefore uses and
 must be labeled as **32-phase**, not 96-phase.
+
+Both figures are from the 2026-08-20 fixed-gradient refresh and replace 9.54e-6
+and 1.07e-6. **Read the pass, not the digits.** These are maxima of float32
+roundoff differences more than an order of magnitude below the registered
+tolerance, and their exact values depend on the machine and the batching: an
+independent recomputation on a GitHub runner reproduced the verdict but not the
+values, and disagreed on which half of the panel carries the maximum. No trend
+should be inferred from the change in either number.
+
+What can be said without depending on those digits is that the check now tests
+more than it did. Under the old convention half the panel sat pinned at the
+clipped-log floor, where a nearly constant output is close to trivially
+shift-invariant, so the subgroup criterion was partly vacuous on those rows; it
+is now evaluated on fixed rows that actually respond, and it passes. The rows the
+maxima are taken over — every entity, both gradient sets, all strata, shifts 32
+and 64 — are published as
+[`s02_subgroup_exactness.csv`](S03_fixed_gradient_artifacts/s02_subgroup_exactness.csv)
+so the distributions can be compared across platforms instead of one scalar.
 
 For non-subgroup shifts on the **varied panel**, the member/shift distribution
 of RMS output change divided by each member's matching varied-reference
@@ -78,11 +124,33 @@ residual standard deviation has 10th/median/90th percentiles
 **0.353 / 0.492 / 0.602**. The earlier mixed fixed+varied value of 0.366 is
 withdrawn.
 
-The fixed-gradient twins are materially less sensitive: their unnormalized RMS
-change has 10th/median/90th percentiles **0.00203 / 0.01167 / 0.02612**, versus
-**0.1002 / 0.1382 / 0.1681** for varied rows. No fixed-row ratio is formed using
-the varied-reference denominator. This drive dependence is exactly why the two
-gradient sets cannot be pooled. The committed
+The fixed-gradient twins are somewhat less sensitive: their unnormalized RMS
+change has 10th/median/90th percentiles **0.0607 / 0.0818 / 0.0979**, versus
+**0.1002 / 0.1382 / 0.1681** for varied rows — a median ratio of **0.59**.
+Within the fixed set the split by stability is large: stable/near-floor rows
+(n = 23) give **0.0123 / 0.0269 / 0.0490** and unstable rows (n = 977) give
+**0.0612 / 0.0826 / 0.0988**. No fixed-row ratio is formed using the
+varied-reference denominator. This drive dependence is a reason the two gradient
+sets are not pooled, though it is a factor of about two rather than the order of
+magnitude reported before the correction.
+
+The comparison is between unnormalized changes on row sets of different output
+scale, and does not separate drive from scale: varied panel targets have mean
+0.446 and standard deviation 2.044 with 21.5% at the floor, fixed panel targets
+mean 2.005 and standard deviation 1.161 with 2.2%. Refusing the
+varied-reference denominator on fixed rows is deliberate; the cost is that some
+of the 0.59 may be scale.
+
+> **Corrected 2026-08-20.** The figures above replace withdrawn ones
+> (**0.00203 / 0.01167 / 0.02612**, a nominal ~12× gap) that were measured while
+> the loader drove fixed rows to the off-manifold `a/L_T = -3`, which pins the
+> ensemble mean at the clipped-log floor and flattens every member — prediction spreads fall to 0.0036–0.218 against a minimum of 1.122 at `+3`. That was saturation wobble, not
+> reduced sensitivity to geometry at constant drive. See
+> [`S03_fixed_gradient_decision.md`](S03_fixed_gradient_decision.md). Varied-row
+> results are unchanged and were never affected; the refresh reproduced every
+> committed varied row exactly, to a maximum absolute difference of 0.0.
+
+The committed
 [`shift_symmetry_summary.csv`](S02_artifacts/shift_symmetry_summary.csv) contains
 member quantiles, ensemble mean, and ensemble spread for every
 gradient-set/flux stratum and shift. The manifest-hashed ignored run retains the
@@ -192,7 +260,10 @@ medians are 0.214 and 0.216. The wrong control is much larger at
 transformation changes the output by RMS 0.00994 (0.0437 residual standard
 deviations), versus 0.3564 (1.567) for the wrong control. On fixed rows, correct
 parity member RMS change has 10th/median/90th percentiles
-0.00067/0.00455/0.01009, and no varied-reference normalization is applied.
+**0.0429 / 0.0516 / 0.0640**, against **0.0519 / 0.0607 / 0.0708** for the same
+unnormalized statistic on varied rows, and no varied-reference normalization is
+applied. These too are the 2026-08-20 corrected values; the withdrawn
+0.00067/0.00455/0.01009 were measured at the output floor.
 Thus the trained functions strongly prefer the physical parity rule, but parity
 is neither exact in the odd-channel data nor exact in predictions. The signed
 member results and ensemble spread for every gradient/flux stratum are retained in
@@ -301,10 +372,10 @@ git diff --check
 | Criterion | Evidence | Status |
 | --- | --- | --- |
 | All 96 shifts, all member/ensemble estimands | 100 members x 2,000 panel rows; signed member predictions retained | Pass |
-| Exact subgroup verified | Maximum absolute change 9.54e-6 at shifts 0/32/64 | Pass |
-| 32 phases replace 96 phases | Maximum average discrepancy 1.07e-6 | Pass |
+| Exact subgroup verified | Maximum absolute change 1.33e-5 at shifts 0/32/64 | Pass |
+| 32 phases replace 96 phases | Maximum average discrepancy 9.54e-7 | Pass |
 | `f`, `bar_f`, and `tilde_f` registered | Public `InvariantMember` API; all-member fidelity/cost table | Pass |
-| Fixed/varied and stable/unstable separate | Accuracy plus six shift/parity strata; no cross-cohort fixed normalization | Pass |
+| Fixed/varied and stable/unstable separate | Accuracy plus six shift/parity strata; no cross-cohort fixed normalization. Fixed strata recomputed 2026-08-20 at the corrected `a/L_T`; varied rows reproduced exactly | Pass |
 | Grouped uncertainty | Ensemble and 100 member-level paired intervals from 500 resamples of 8,113 `equilibrium_files` | Pass |
 | Full-resolution `rho` exactness | Mean 1.91e-6; equivariance 2.86e-6; spatial alignment 7.63e-6 | Pass |
 | Data and model parity reported | Full varied reference plus six prediction strata and wrong-reversal control | Pass |

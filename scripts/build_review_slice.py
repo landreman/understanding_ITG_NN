@@ -56,6 +56,8 @@ import numpy as np
 from itg_nn.data import load_hdf5_rows
 from itg_nn.ensemble import load_ensemble
 from itg_nn.xai.config import DEFAULT_CHECKPOINT, DEFAULT_DATASET
+# Single source of truth: the reader refuses a slice stamped with anything else.
+from itg_nn.xai.review_slice import FIXED_GRADIENT_CONVENTION
 
 
 SLICE_FORMAT_VERSION = 1
@@ -85,6 +87,7 @@ PER_ROW = (
     "tube_files",
 )
 GRADIENT_GROUPS = ("fixed_gradient_simulations", "varied_gradient_simulations")
+
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -270,6 +273,7 @@ def write_slice(
         index.attrs["git_commit"] = git_commit()
         index.attrs["generator"] = "scripts/build_review_slice.py"
         index.attrs["selection"] = json.dumps(record, sort_keys=True)
+        index.attrs["fixed_gradient_convention"] = FIXED_GRADIENT_CONVENTION
         index.attrs["geometry_dtype_note"] = (
             "raw_feature_tensor is float32 here; load_hdf5_rows casts the float64 "
             "parent to float32, so the model sees identical values."

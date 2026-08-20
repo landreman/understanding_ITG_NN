@@ -327,9 +327,9 @@ def _panel_artifact(
             positive = target_q > 0
             target_log = np.full(len(target_q), np.nan, dtype=np.float32)
             target_log[positive] = np.maximum(np.log(target_q[positive]), -2.0)
+            # The value the checkpoint actually sees. Fixed rows are supplied
+            # at their physical +3; see reports/xai/S03_fixed_gradient_decision.md.
             model_lt = group["a_over_LT"][varied_rows].astype(np.float32)
-            if gradient_set == "fixed":
-                model_lt = -model_lt
             block = {
                 "row_id": varied_rows,
                 "gradient_set_code": np.full(len(varied_rows), gradient_code, dtype=np.int8),

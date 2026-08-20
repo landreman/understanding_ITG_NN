@@ -13,6 +13,18 @@ run is `output/xai/S01/reference-audit-all100-panel2000/`; its `manifest.json`
 hashes the external dataset, protected checkpoint, and every generated artifact.
 This report includes the post-review rerun from code commit `d354d25`.
 
+### Post-step correction
+
+Applied 2026-08-20, outside this step's numbered scope. The `a_over_LT_model`
+column of [`S01_artifacts/panel_metadata.csv`](S01_artifacts/panel_metadata.csv)
+recorded `-3.0` for the 1,000 fixed-gradient twins, inherited from a loader
+convention that has since been shown wrong; it now records the physical `+3.0`
+the network is actually given. S01 never ran the model on fixed rows — the
+`fixed_pair_split` strata below are varied-row predictions stratified by each
+row's twin — so no number in this report changes, and the regenerating run
+asserts that no other cell and no varied row moved. See
+[`S03_fixed_gradient_decision.md`](S03_fixed_gradient_decision.md).
+
 ## Registered methods
 
 The legacy split was reconstructed with seed 42 from the positive-flux samples

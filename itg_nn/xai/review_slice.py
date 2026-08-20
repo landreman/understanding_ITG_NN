@@ -31,6 +31,13 @@ from itg_nn.data import GradientSet
 REVIEW_SLICE_PATH = Path("tests/data/review_slice.h5")
 SLICE_FORMAT_VERSION = 1
 
+# The fixed-gradient input convention the stored reference predictions were made
+# under. A slice built before the correction carries no such attribute and its
+# fixed-row predictions sit at the clipped-log floor, so refuse it rather than
+# let a review confirm a number against an off-manifold baseline. See
+# reports/xai/S03_fixed_gradient_decision.md.
+FIXED_GRADIENT_CONVENTION = "training_positive_a_over_LT"
+
 
 @dataclass(frozen=True)
 class ReviewSliceIndex:
@@ -139,4 +146,12 @@ def load_review_slice_index(
         )
     if np.any(np.diff(source_row_ids) <= 0):
         raise ValueError("review slice source row IDs must be sorted and unique")
+    convention = index.provenance.get("fixed_gradient_convention")
+    if convention != FIXED_GRADIENT_CONVENTION:
+        raise ValueError(
+            f"review slice was built under fixed-gradient convention "
+            f"{convention!r}, but this code expects "
+            f"{FIXED_GRADIENT_CONVENTION!r}. Rebuild it with "
+            "`make review-slice`; see reports/xai/S03_fixed_gradient_decision.md."
+        )
     return index

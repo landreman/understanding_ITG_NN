@@ -36,9 +36,9 @@
     "density_exactness_pass": true,
     "density_mean_identity_max_abs": 1.9073486328125e-06,
     "density_mean_identity_pass": true,
-    "exact_subgroup_max_abs": 9.5367431640625e-06,
+    "exact_subgroup_max_abs": 1.329183578491211e-05,
     "exact_subgroup_pass": true,
-    "phase_32_vs_96_max_abs": 1.0728836059570312e-06,
+    "phase_32_vs_96_max_abs": 9.5367431640625e-07,
     "phase_32_vs_96_pass": true
   },
   "ensemble_accuracy": {
@@ -104,6 +104,12 @@
     }
   },
   "estimand": "native max(log Q, -2)",
+  "fixed_gradient_convention": {
+    "convention": "training_positive_a_over_LT",
+    "note": "Fixed-gradient strata in shift_symmetry_summary.csv, phase_average_exactness.csv and parity_symmetry.csv were recomputed after the loader correction. Varied-row results, accuracy, density and bottleneck artifacts are the original S02 run's and are unaffected.",
+    "refreshed_by": "scripts/xai_s02_fixed_refresh.py",
+    "run_id": "s02-fixed-refresh-all100-panel1000"
+  },
   "members": 100,
   "mode": "registered_production",
   "paired_grouped_bootstrap": {

@@ -1,0 +1,24 @@
+{
+  "step": "S03fix",
+  "run_id": "s02-fixed-refresh-all100-panel1000",
+  "seed": 20260816,
+  "device": "cpu",
+  "batch_size": 64,
+  "phase_chunk": 8,
+  "stable_threshold_log_Q": -1.9,
+  "exact_atol": 0.00002,
+  "exact_rtol": 0.00002,
+  "varied_check_members": 3,
+  "dataset": "/Users/mattland/20260523-01-files_for_Kosmos_interpreting_neural_networks/20250102-01_GX_stellarator_dataset.h5",
+  "checkpoint": "models/cyclic_ensemble_pre2.pt",
+  "cohorts": "reports/xai/S01_artifacts/cohorts.json",
+  "s02_run_dir": "output/xai/S02/symmetry-all100-panel2000-reference9785",
+  "published_dir": "reports/xai/S02_artifacts",
+  "decision_artifacts": "reports/xai/S03_fixed_gradient_artifacts",
+  "pilot": {
+    "run_id": "pilot-s02-fixed-refresh-top5-panel64",
+    "members": 5,
+    "panel_rows": 64,
+    "varied_check_members": 2
+  }
+}

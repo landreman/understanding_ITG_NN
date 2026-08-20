@@ -16,6 +16,7 @@ from itg_nn.data import load_hdf5_rows
 from itg_nn.ensemble import load_ensemble
 from itg_nn.xai.config import DEFAULT_CHECKPOINT
 from itg_nn.xai.review_slice import (
+    FIXED_GRADIENT_CONVENTION,
     REVIEW_SLICE_PATH,
     load_review_slice_index,
 )
@@ -143,3 +144,29 @@ def test_slice_preserves_the_clipped_floor_population(index):
 
     at_floor = np.mean(np.maximum(np.log(q), -2.0) <= -2.0 + 1e-9)
     assert 0.05 < at_floor < 0.6, f"floor fraction {at_floor:.3f} is not representative"
+
+
+def test_slice_records_the_fixed_gradient_convention(index):
+    """The stored fixed-row baseline says which a/L_T produced it."""
+
+    assert index.provenance["fixed_gradient_convention"] == FIXED_GRADIENT_CONVENTION
+
+
+def test_a_slice_without_the_convention_attribute_is_refused(tmp_path):
+    """A pre-correction slice must raise, not silently supply floor baselines.
+
+    Its fixed-row reference predictions were made at the off-manifold -3 and
+    would have a review confirm numbers against saturation.
+    """
+
+    import shutil
+
+    import h5py
+
+    copied = tmp_path / "stale_slice.h5"
+    shutil.copy(REVIEW_SLICE_PATH, copied)
+    with h5py.File(copied, "r+") as handle:
+        del handle["review_slice"].attrs["fixed_gradient_convention"]
+
+    with pytest.raises(ValueError, match="fixed-gradient convention"):
+        load_review_slice_index(copied)

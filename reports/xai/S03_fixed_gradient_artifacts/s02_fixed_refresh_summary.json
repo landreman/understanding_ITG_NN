@@ -1,0 +1,100 @@
+{
+  "arbitrary_shift_member_rms_change": {
+    "fixed_all": {
+      "median": 0.08180072493059878,
+      "q10": 0.060701967999816614,
+      "q90": 0.09790323991818006
+    },
+    "fixed_stable_near_floor": {
+      "median": 0.02691285368940658,
+      "q10": 0.01225393942001532,
+      "q90": 0.04902558297048027
+    },
+    "fixed_unstable": {
+      "median": 0.08263584900073218,
+      "q10": 0.06123630097931623,
+      "q90": 0.09884253990460026
+    },
+    "varied_all": {
+      "median": 0.13821369877908862,
+      "q10": 0.10019307117008845,
+      "q90": 0.1681376431415349
+    }
+  },
+  "checks": {
+    "exact_subgroup_max_abs": 1.329183578491211e-05,
+    "exact_subgroup_pass": true,
+    "phase_32_vs_96_max_abs": 9.5367431640625e-07,
+    "phase_32_vs_96_pass": true
+  },
+  "convention": "training_positive_a_over_LT",
+  "estimand": "native max(log Q, -2); unnormalised RMS change on fixed rows",
+  "exact_tolerance": {
+    "atol": 2e-05,
+    "rtol": 2e-05
+  },
+  "members": 100,
+  "panel_fixed_rows": 1000,
+  "panel_varied_rows": 1000,
+  "parity_member_rms_change": {
+    "fixed_all": {
+      "median": 0.05163766889236278,
+      "q10": 0.04290712352091144,
+      "q90": 0.06403575106885326
+    },
+    "varied_all": {
+      "median": 0.060702175717204494,
+      "q10": 0.05186315973721993,
+      "q90": 0.07080733537826503
+    }
+  },
+  "rows_replaced": {
+    "parity_symmetry.csv": 612,
+    "phase_average_exactness.csv": 306,
+    "shift_symmetry_summary.csv": 864
+  },
+  "s02_run": {
+    "directory": "output/xai/S02/symmetry-all100-panel2000-reference9785",
+    "predictions_sha256": "4d7ec3287cfda5dcbe44f3ccf5f96df360153504cfcbcf8a46bdf24b9b51ff6d"
+  },
+  "subgroup_max_abs_by_gradient_set": {
+    "fixed": 1.329183578491211e-05,
+    "varied": 6.079673767089844e-06
+  },
+  "subgroup_max_abs_note": "These maxima are float32 roundoff differences an order of magnitude below the registered atol/rtol of 2e-5. Their exact values depend on the machine and batching, so a reviewer on another platform should expect the pass verdict to reproduce and the digits not to. See s02_subgroup_exactness.csv for the rows they are taken over.",
+  "varied_rebuild_check": {
+    "parity_symmetry.csv": {
+      "max_absolute_difference": 0.0,
+      "varied_rows_compared": 612,
+      "worst_field": null
+    },
+    "phase_average_exactness.csv": {
+      "max_absolute_difference": 0.0,
+      "varied_rows_compared": 306,
+      "worst_field": null
+    },
+    "shift_symmetry_summary.csv": {
+      "max_absolute_difference": 0.0,
+      "varied_rows_compared": 864,
+      "worst_field": null
+    }
+  },
+  "varied_reproduction_check": {
+    "max_absolute_difference": 0.0,
+    "members_checked": [
+      {
+        "max_absolute_difference": 0.0,
+        "member_id": "2864601_0.437"
+      },
+      {
+        "max_absolute_difference": 0.0,
+        "member_id": "2864601_0.371"
+      },
+      {
+        "max_absolute_difference": 0.0,
+        "member_id": "2864601_0.409"
+      }
+    ]
+  },
+  "why": "S02's fixed-gradient strata were computed with the loader driving a/L_T to -3, which pins the ensemble mean at the clipped-log floor and flattens every member against it."
+}
