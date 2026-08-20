@@ -77,12 +77,22 @@ def load_hdf5_rows(
     *,
     gradient_set: GradientSet = "varied",
     include_targets: bool = False,
+    legacy_fixed_marker: bool = False,
 ) -> InferenceData:
     """Load selected flux tubes from the metadata-rich HDF5 dataset.
 
     The trained target called ``Q_avgs_without_FSA_grad_x`` in the legacy
     pickle files is byte-for-byte equal to ``Q_avgs`` in the HDF5 file. The
     newer HDF5 name and metadata are authoritative here.
+
+    Fixed-gradient rows are supplied at their physical ``a/L_T = +3``, which is
+    the value the checkpoint was trained on. ``legacy_fixed_marker=True``
+    negates it instead, reproducing the pre-correction loader. That input is
+    **off-manifold**: the members never saw it in training and collapse to the
+    clipped-log floor there, so any sensitivity measured under it explains an
+    extrapolation and not the network's behaviour on plasma data. See
+    ``reports/xai/S03_fixed_gradient_decision.md`` for the evidence and the
+    provenance of the legacy convention.
     """
 
     try:
@@ -96,10 +106,7 @@ def load_hdf5_rows(
         geometry = _take_rows(geometry_dataset, rows).astype(np.float32)
         group = h5_file[simulation_group]
         a_over_lt = _take_rows(group["a_over_LT"], rows).astype(np.float32)
-        if gradient_set == "fixed":
-            # The trained models saw a negative a/L_T as the fixed-gradient
-            # group marker. Preserve that learned input convention while the
-            # HDF5 file retains the physical, positive value in its metadata.
+        if gradient_set == "fixed" and legacy_fixed_marker:
             a_over_lt = -a_over_lt
         a_over_ln = _take_rows(group["a_over_Ln"], rows).astype(np.float32)
         target = None

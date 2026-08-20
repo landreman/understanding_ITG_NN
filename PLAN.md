@@ -102,17 +102,17 @@ project. Each is verified in [Preliminary scoping measurements](#preliminary-sco
   magnitude should be specified in absolute units.
 - Grid: `z` is uniform, 96 points, spanning $[-37.70, 36.91]$ in the stored
   normalization (period $96\,\Delta z$).
-- The two additional inputs are $a/L_T$ and $a/L_n$. **Contested premise — do
-  not use for downstream fixed-row inference:** the legacy loader supplies
-  $a/L_T=-3$ as a marker for fixed-gradient simulations, but S03 found that the
-  checkpoint's serialized training tensors contain only nonnegative $a/L_T$ and
-  direct inference at $-3$ saturates at the output floor, whereas $+3$ recovers
-  fixed-row R² of 0.978–0.985 for the tested top three members. The original
-  marker claim is retained here only as historical context. Before S07 or S13
-  uses fixed rows, decide whether to correct the loader to $+3$ and refresh the
-  affected S00–S02 fixed-row artifacts. See
-  `reports/xai/S03_fixed_gradient_decision.md`. Fixed- and varied-gradient
-  results must not be pooled.
+- The two additional inputs are $a/L_T$ and $a/L_n$. **Resolved 2026-08-20:**
+  fixed-gradient rows are supplied at their physical $a/L_T=+3$, which is what
+  the checkpoint was trained on. All 100 members reach R² 0.973–0.987 on the
+  panel's fixed rows at $+3$ and none exceeds $-8$ at $-3$, where 100% of
+  predictions sit within 0.05 of the clipped-log floor. The legacy loader's
+  $a/L_T=-3$ marker was added to the training script *after* the ensemble was
+  trained, to exclude fixed rows from the paper's test score; it never described
+  a learned input. It survives only as the opt-in `legacy_fixed_marker=True`,
+  which is an **off-manifold** probe and must be tagged as one wherever it is
+  used. See `reports/xai/S03_fixed_gradient_decision.md`. Fixed- and
+  varied-gradient results must still not be pooled: the drive genuinely differs.
 - **Target floor:** 33,891 of 100,705 varied-gradient rows (33.7%) sit at the
   clipped-log floor $\max(\log Q,-2)=-2$; 1,773 rows have $Q\le 0$ and are
   dropped by the positive-flux filter. Fixed-gradient rows have no $Q\le 0$.
@@ -761,8 +761,11 @@ statistic.
 2. Compare sample-level summaries with `zonal_phi2_amplitudes`, which is the
    natural observable for the geodesic-curvature/zonal-flow hypothesis.
 3. Use the same geometry's fixed and varied simulation pair as a natural paired
-   comparison, while retaining the artificial fixed-set $a/L_T=-3$ marker as a
-   potential learned interaction rather than a nuisance to be erased.
+   comparison at constant drive. Fixed rows are ordinary in-distribution points
+   at $(a/L_T,a/L_n)=(3,0.9)$; there is no marker to preserve. If the
+   off-manifold $-3$ input is probed at all, it is a statement about
+   extrapolation and must be reported as such, never as constant-drive
+   evidence.
 4. Identify examples that support and contradict each physics hypothesis, and
    report the contradicting cases with equal prominence.
 
@@ -837,7 +840,8 @@ gradient-interaction surfaces, and `reports/xai/S09_completeness.md`.
 
 **Accept when:** high fidelity is demonstrated on held-out equilibria; added
 complexity has an uncertainty-qualified gain; interaction conclusions reproduce
-across members and do not depend on the fixed-set marker alone.
+across members and do not rest on the fixed-gradient set alone, whose rows all
+share one $(a/L_T,a/L_n)$ and therefore carry no gradient contrast of their own.
 
 ### S10 — Representations and motifs common across networks
 

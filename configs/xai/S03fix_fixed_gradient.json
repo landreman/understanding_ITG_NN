@@ -1,0 +1,18 @@
+{
+  "step": "S03fix",
+  "run_id": "convention-all100-panelfixed1000",
+  "seed": 20260820,
+  "device": "cpu",
+  "batch_size": 64,
+  "log_heat_flux_floor": -2.0,
+  "dataset": "/Users/mattland/20260523-01-files_for_Kosmos_interpreting_neural_networks/20250102-01_GX_stellarator_dataset.h5",
+  "checkpoint": "models/cyclic_ensemble_pre2.pt",
+  "cohorts": "reports/xai/S01_artifacts/cohorts.json",
+  "legacy_training_dataset": "/Users/mattland/20260523-01-files_for_Kosmos_interpreting_neural_networks/neural_networks/cyclic_invariant_models/train_val_test_dataset_5_pre_2.pth",
+  "published_dir": "reports/xai/S03_fixed_gradient_artifacts",
+  "pilot": {
+    "run_id": "pilot-top5-panelfixed64",
+    "members": 5,
+    "panel_rows": 64
+  }
+}

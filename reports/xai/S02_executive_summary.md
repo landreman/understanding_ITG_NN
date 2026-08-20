@@ -35,7 +35,9 @@ Two important refinements:
 - Averaging over 32 shifts is identical to averaging over all 96, so all later work uses 32 phases. (Cheaper, and it's an exact statement, not an approximation.)
 - The ensemble average hides most of this — members' shift-artifacts partly cancel. So the artifact would have been easy to overlook if you only looked at ensemble numbers.
 
-**2. Rows with fixed vs. varied gradients behave completely differently.** Fixed-gradient cases shift by ~0.012 in output; varied-gradient cases by ~0.14, about 10× more. An earlier pooled headline number was withdrawn because of this — the two sets can't be averaged together.
+**2. Rows with fixed vs. varied gradients behave differently, but not dramatically.** Fixed-gradient cases shift by ~0.082 in output; varied-gradient cases by ~0.138, so roughly **1.7× more**. An earlier pooled headline number was withdrawn because of this — the two sets still can't be averaged together.
+
+> **This finding was corrected on 2026-08-20, and the original version was wrong in substance, not just in its digits.** It first read "~0.012 versus ~0.14, about 10× more." Those fixed-gradient rows had been fed to the network at an $a/L_T$ it was never trained on, which pins every member at the output floor where nothing moves. What looked like "fixed-gradient cases are far less sensitive to geometry" was the networks being saturated. Measured properly, the gap is a factor of about two — a real effect of the different drive, but an ordinary one. Details in [S03_fixed_gradient_decision.md](reports/xai/S03_fixed_gradient_decision.md). Nothing else in step 02 changed: the varied-gradient numbers were never affected, and the refresh reproduced every previously published varied row exactly.
 
 **3. A cheap exactly-symmetric version of the model was built and adopted.** Three candidates were compared:
 

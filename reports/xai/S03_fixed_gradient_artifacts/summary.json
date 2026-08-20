@@ -1,0 +1,89 @@
+{
+  "conclusion": "The checkpoint was trained with fixed-gradient rows at the physical a/L_T = +3. The -3 marker is off-manifold and saturates the members at the clipped-log floor.",
+  "ensemble": {
+    "legacy_marker": {
+      "fraction_within_0p05_of_floor": 1.0,
+      "prediction_max": -2.0043820977210998,
+      "prediction_mean": -2.0333261026257277,
+      "prediction_min": -2.101462104320526,
+      "prediction_std": 0.014040339664300147,
+      "r2_against_fixed_target": -12.07764621120431
+    },
+    "training": {
+      "fraction_within_0p05_of_floor": 0.014,
+      "prediction_max": 5.58965681552887,
+      "prediction_mean": 2.006224050283239,
+      "prediction_min": -2.0002754032611847,
+      "prediction_std": 1.1453105851527696,
+      "r2_against_fixed_target": 0.9883024277830708
+    }
+  },
+  "estimand": "native max(log Q, -2) on the S01 panel's fixed-gradient rows",
+  "legacy_training_tensors": {
+    "a_over_LT_max": 14.430206298828125,
+    "a_over_LT_min": 0.00012909296492580324,
+    "available": true,
+    "fingerprint": {
+      "bytes": 539889544,
+      "mtime_ns": 1779545749000000000,
+      "path": "/Users/mattland/20260523-01-files_for_Kosmos_interpreting_neural_networks/neural_networks/cyclic_invariant_models/train_val_test_dataset_5_pre_2.pth",
+      "sha256": "ed9bea8b26928ccdb92dc4d6601186d0bdc7fca97f9e870bdd9164abf2271842"
+    },
+    "interpretation": "The saved split holds the unfiltered test set and no negative a/L_T, so it predates the negation trick in Cyclic_net.py. The checkpoint's own behaviour, not this file, is the decisive evidence; this records that the two agree.",
+    "negative_count": 0,
+    "saved_test_rows": 19965,
+    "splits": {
+      "test_dataset": {
+        "a_over_LT_max": 13.281187057495117,
+        "a_over_LT_min": 0.0032500410452485085,
+        "n": 19965,
+        "negative_count": 0
+      },
+      "train_dataset": {
+        "a_over_LT_max": 14.430206298828125,
+        "a_over_LT_min": 0.00012909296492580324,
+        "n": 159709,
+        "negative_count": 0
+      },
+      "val_dataset": {
+        "a_over_LT_max": 12.448490142822266,
+        "a_over_LT_min": 0.000663610699120909,
+        "n": 19963,
+        "negative_count": 0
+      }
+    },
+    "total_rows": 199637
+  },
+  "member_r2_range": {
+    "legacy_marker": [
+      -19.74069585689287,
+      -8.152086324863092
+    ],
+    "training": [
+      0.9726104235614019,
+      0.9867361026577386
+    ]
+  },
+  "members": 100,
+  "members_with_r2_above_0p9": {
+    "legacy_marker": 0,
+    "training": 100
+  },
+  "panel_fixed_rows": 1000,
+  "s01_panel_metadata_refresh": {
+    "changed_cells": {
+      "a_over_LT_model": 1000
+    },
+    "fixed_a_over_LT_model_values": [
+      "3.0"
+    ],
+    "published_to": "reports/xai/S01_artifacts/panel_metadata.csv",
+    "rows": 2000,
+    "varied_rows_unchanged": true
+  },
+  "target": {
+    "fraction_at_floor": 0.022,
+    "mean": 2.0047739962406923,
+    "std": 1.1614592161512423
+  }
+}

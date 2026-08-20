@@ -68,8 +68,12 @@ request. One step, one branch, one PR.
   all scientific work. Its row IDs are slice-local — go through
   `itg_nn.xai.review_slice.load_review_slice_index().slice_rows()`, never pass
   cohort row IDs straight to a reader pointed at the slice. Regenerate it only
-  when a step deliberately changes the registered panel, with
-  `scripts/build_review_slice.py`, and say so in the PR body.
+  when a step deliberately changes the registered panel, or when a correction
+  invalidates the reference predictions it stores, with
+  `scripts/build_review_slice.py`. Either way, say so in the PR body and report
+  which datasets changed: a regeneration that alters rows is a different act
+  from one that only refreshes stored baselines, and the reviewer needs to know
+  which happened.
 - Negative and contradictory results are kept, not dropped.
 - Every reported number must say which code path produced it when more than one
   exists. Where an optional dependency selects the path — the Captum estimator
