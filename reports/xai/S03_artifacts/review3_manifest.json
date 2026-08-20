@@ -3,27 +3,37 @@
     "channel_scales": "aeb870f8fb3d47d786aaa06e27574f7a99c8ffd0e900958373445226e2d21c28",
     "cohorts": "edde45002a709a92ddbee7d0cf8697b2d966d5a14110895e217b2898bf4263f6",
     "dataset": "9d8fa52f93f2782ad9948a38bf46943c0cd6df78cd08b94a006dad4e06c1c8ad",
-    "ladder_code": "8478a33bbd8f876454175fa8f0f294facf5909a6c023f1711065563d0002ef04",
+    "ladder_code": "e5b0a6a31d967f9b0e4d10b859d333fd9400a1c02320fe2c28ba504566fce2f1",
     "perturbation_code": "33d41d4375f22ff1712c5e39d1b0e4703b0014f2e56b3ba898c6e55ee9097a84"
   },
   "generator": "/Users/mattland/understanding_ITG_NN/understanding_ITG_NN/scripts/xai_s03_review2_artifacts.py",
-  "generator_sha256": "9a99e55ddd6ed377652e30d0cf290ba2839f3d35227288a5fcfeb6aa92e5c7b5",
+  "generator_sha256": "6c97677a461c0d7752e577ab6ec54109d3337e5bd7e03a3c38547bb4c56fc391",
   "phase_manifest": "/Users/mattland/understanding_ITG_NN/understanding_ITG_NN/output/xai/S03/phase-matched-top10-all100-varied1000-review3b/manifest.json",
   "phase_manifest_sha256": "ca7ffd133f5b16187cc827c211f5148ce2e654e7f919775c3adf7659c2e77b8e",
   "published_output_hashes": {
-    "baseline_registry.json": "8e4c3f130825a811017eb4474bc89c8d90195844f0e7bae7ac3686ff37ade074",
-    "contrasts.csv": "195df1c4639b7e49b56c5c9fc4ca1dce5b7872fc8b0a2603fef482e559ebaa42",
-    "ladder_summary.csv": "c96b1a93d875a2924de38985762a406bade223282b41774e40a96999a723bd28",
-    "review2_summary.json": "e9c793a6b79a3f57dea600ecba9bc94df27cd86f2f77c1758653fef905861227",
-    "summary.json": "49308fc3631e67a286f17c74c56580078d71e80b36165a83efe1cff38b301885"
+    "baseline_registry.json": "02fe7603df714a6544e19ebca0024783a7de8f7fc72c0c514af48e073837ff62",
+    "contrasts.csv": "f41866d7ba84abf59feffd66f8baed05da4f130482e5aacf544a4edf203dcd03",
+    "dose_response.png": "95b2baa9e894ac3f40aabc1adc3e0f75b9b51faae3216f8c02bf1c51a6190dea",
+    "ladder_summary.csv": "bc9c4c15adc77a57abeb581ffd227b553c462d21e944d11a0a440c4ceb9dc328",
+    "operator_endpoint_hashes.json": "c6b8c77973f4d4aca3d69905b3fd395dbe3fa72821df3fe1e8bb4a1737a97bbb",
+    "review2_summary.json": "c71d79c5270163953dd7dc2e2ff80b753e65c091665f0646c5a1932ecf117ecd",
+    "summary.json": "02898ffed5d74c55659d5f8333c6a58ab91fae8cdcee3ebbe53c4ab2eb7f7d2e",
+    "support.csv": "ab8e7fb314df3aee3e5bae901f972ac080622d4090db865622d427cb1e9e8302",
+    "window_registry.csv": "6616b5aefcc4655ef386b3cf50ad17202e70d2e614a3f0a5d3b72c8cea2ea792"
   },
   "source_manifest": "/Users/mattland/understanding_ITG_NN/understanding_ITG_NN/output/xai/S03/ladder-top10-all100-varied1000-paired2000-reviewfix/manifest.json",
   "source_manifest_sha256": "6fc4edcde9a0c61df424c4fe61d0e651984997a48de8f04756fb5da77a2f52fc",
   "verified_source_outputs": {
     "matched_phase_ladder.csv": "597b53b0fac77988ae6d68cb6c42581e307e4e78149b3eae892f5dcf5b0a38d6",
+    "matched_phase_operator_endpoint_hashes.json": "a3cbb845364754224b819a5fa063c60a15022c9ee2a4db62c1e780d890422e51",
+    "matched_phase_predictions.h5": "88d8f125eefd3dfebe8f2ae9e2c560705931ce03ceeebb2a26a1b2b6043a4583",
+    "matched_phase_summary.json": "632d857a837612d84ccaddcdad5522765a77e5e5749cafabcfe5ad1c8fac066b",
     "source_baseline_registry.json": "5a3f847dfa9bda8e6aa19cca0ec36c64186c0f643b00c9dbc23cf1ed25b82b27",
     "source_ladder.csv": "97b9487017fd98fb72e2f39592204a815b4b0894afc51c613b2602910691c21d",
+    "source_operator_endpoint_hashes.json": "cdd2392819416c7641a5fd0ee702dd19045459268778247294ed18e708ba785e",
+    "source_predictions.h5": "8a7b99651a5f3f69b7cf58ce7de3b25943df1b68fb91a382df7b32f1a31ddc31",
     "source_summary.json": "6b928bd351e525624e50596353dbf8ea8e12f91b7b856100ea83f0e1bc30e18b",
-    "source_support.csv": "37f2c6ae1290c57093f69944eef4de172212a860cc8569c5bf487cc8b6d51288"
+    "source_support.csv": "37f2c6ae1290c57093f69944eef4de172212a860cc8569c5bf487cc8b6d51288",
+    "source_support_model.npz": "7ab510538bd0f4ea0d813afca4885e4b8004313e30237b9271f5ff822960334c"
   }
 }

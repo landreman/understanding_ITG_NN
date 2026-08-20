@@ -1,6 +1,23 @@
 # S03 fixed-gradient premise conflict
 
-## Decision
+## Open decision gate
+
+**Question before S07 or S13:** approve changing the shared fixed-gradient
+loader from `a/L_T=-3` to the checkpoint's demonstrated `+3` training convention
+and refreshing affected S00–S02 fixed-row artifacts?
+
+**Recommendation:** yes. The serialized training inputs and direct inference
+agree, while retaining `-3` would knowingly measure output-floor saturation.
+The change should be made as a focused prerequisite task, not hidden inside a
+later scientific step.
+
+**Estimated cost:** one focused session. There is no GX rerun or retraining;
+the work is a loader edit, tests, and regeneration of fixed-row validation
+tables. Pilot the top three members/500 rows already measured here, then refresh
+only S00–S02 artifacts whose manifests include fixed inputs. The exact full-run
+cost should be measured from that pilot before dispatch.
+
+## Current S03 decision
 
 All S03 fixed-gradient model-sensitivity results are withdrawn. They must not be
 used as constant-drive evidence in S07 or S13. The varied-gradient S03 ladder is
