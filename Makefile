@@ -1,5 +1,5 @@
 # List available recipes when you type `make`
-.PHONY: default test check smoke env
+.PHONY: default test check smoke env review-slice
 
 default:
 	@grep -E '^[A-Za-z][A-Za-z0-9_-]*:' $(MAKEFILE_LIST) | cut -d: -f1
@@ -20,3 +20,9 @@ smoke:
 # Create or refresh this worktree's .venv-xai.
 env:
 	bash scripts/setup_xai_env.sh
+
+# Rebuild the committed review slice. Needs the external dataset. This is a
+# deliberate act: the slice is frozen, and regenerating it invalidates every
+# review that ran against the old one. See AGENTS.md.
+review-slice:
+	.venv-xai/bin/python scripts/build_review_slice.py

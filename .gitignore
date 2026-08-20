@@ -222,6 +222,11 @@ __marimo__/
 *.h5
 train_val_test_dataset_*.pth
 
+# The one exception: the ~7 MB committed slice of real rows the automated PR
+# review computes against, since CI cannot see the external dataset.
+# scripts/build_review_slice.py regenerates it.
+!tests/data/review_slice.h5
+
 # Generated inference arrays and temporary PDF renders
 output/*.npz
 output/xai/

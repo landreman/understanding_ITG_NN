@@ -68,6 +68,11 @@ Tests use synthetic fixtures and the committed checkpoint; they must pass withou
 the external HDF5 dataset, because CI and the review both run without it. Gate any
 test that genuinely needs the dataset behind a skip on its absence.
 
+`tests/data/review_slice.h5` holds 2,000 real rows so the automated reviewer can
+recompute your reported numbers. It is not yours to work with: do not develop
+against it, tune on it, or report a result from it. Use the real dataset through
+`.venv-xai`, and see `AGENTS.md`.
+
 Then run the new tests against the unimplemented code and confirm they fail for
 the reason you intend — the missing science, not an import error.
 

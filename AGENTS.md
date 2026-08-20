@@ -55,6 +55,16 @@ request. One step, one branch, one PR.
   not the plasma.
 - Write large output to `output/xai/<step>/<run_id>/` (git-ignored) with a
   complete `manifest.json`; commit only small reports and figures.
+- `tests/data/review_slice.h5` is a **verification artifact, not a development
+  set**. The automated review recomputes reported numbers on it. Do not develop
+  against it, tune explanation hyperparameters on it, select a method with it, or
+  report a result from it: doing so would make the reviewer's independent check a
+  restatement of your own choices. Use the real dataset through `.venv-xai` for
+  all scientific work. Its row IDs are slice-local — go through
+  `itg_nn.xai.review_slice.load_review_slice_index().slice_rows()`, never pass
+  cohort row IDs straight to a reader pointed at the slice. Regenerate it only
+  when a step deliberately changes the registered panel, with
+  `scripts/build_review_slice.py`, and say so in the PR body.
 - Negative and contradictory results are kept, not dropped.
 
 ## Definition of done for a step

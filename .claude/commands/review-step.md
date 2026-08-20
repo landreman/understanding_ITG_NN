@@ -16,11 +16,35 @@ and MVD, `PLAN.md`'s `## Interpretation contract` and `## What not to conclude`,
 report's characterization of them.
 
 You are running without the external HDF5 dataset and without `.venv-xai`, so you
-cannot rerun the pilot or the production run. You can run `pytest`, which uses
-synthetic fixtures and the committed checkpoint, and you can read every committed
-artifact, manifest, and summary JSON. Verify claims against those. Where a claim
-can only be checked by rerunning a dataset-backed calculation, say that explicitly
-in the finding rather than assuming it holds or assuming it fails.
+cannot rerun the pilot or the production run. You have three things instead.
+
+`pytest`, which runs on synthetic fixtures and the committed checkpoint. Every
+committed artifact, manifest, and summary JSON. And **`tests/data/review_slice.h5`**
+— 2,000 real rows: the whole 1,000-row S01 interpretation panel plus 1,000 sibling
+flux tubes of the same equilibria, with `scripts/build_review_slice.py` recording
+how they were chosen. Use it to recompute, not merely to re-read. If the PR reports
+a correlation, an R², an attribution ranking, a bootstrap interval, or a
+per-channel statistic on panel rows, compute it yourself on the slice and compare.
+A number that does not reproduce is a blocking finding.
+
+Load it through `itg_nn.xai.review_slice`:
+
+```python
+from itg_nn.xai.review_slice import REVIEW_SLICE_PATH, load_review_slice_index
+index = load_review_slice_index()
+rows = index.slice_rows(parent_row_ids)   # raises if a row is not in the slice
+```
+
+**Slice row IDs are not parent row IDs.** The cohort registry in
+`reports/xai/S01_artifacts/cohorts.json` is written in parent row IDs; passing one
+straight to a reader pointed at the slice silently reads a different flux tube.
+Always go through `slice_rows`, which raises instead. Never edit or regenerate the
+slice during a review.
+
+The slice covers the panel and its sibling tubes, not the 9,785-row reference
+cohort and not the full 100,705 rows. Where a claim can only be checked by
+rerunning a dataset-backed calculation on rows the slice does not hold, say that
+explicitly in the finding rather than assuming it holds or assuming it fails.
 
 Answer these in order, each with a verdict and the evidence you checked.
 
@@ -44,7 +68,10 @@ yourself, run the affected test, and confirm it goes red. Report what you ran.
 **3. Leakage, pseudoreplication, and cohort integrity.**
 Every split, fold, bootstrap resample, and permutation must be grouped by
 `equilibrium_files`. Flux tubes from one equilibrium on both sides of a split is a
-blocking finding no matter how good the reported score is. Check that the cohort
+blocking finding no matter how good the reported score is. The slice carries 780
+equilibria with more than one tube precisely so you can test this rather than read
+it: run the PR's resampling code on those rows both ways and check the interval
+widths actually differ. If they do not, the grouping is not doing anything. Check that the cohort
 and panel are the ones S01 registered, that no hyperparameter was tuned on the
 same rows used for the final claim, and that near-floor and unstable rows are
 reported separately rather than pooled.
@@ -63,7 +90,8 @@ blocking finding. So is a feature replacement described as a physical
 counterfactual without an equilibrium-consistent construction.
 
 **6. Do the numbers in the report exist in the artifacts?**
-Spot-check at least two headline numbers against the committed summary JSON or
+Recompute at least two headline numbers on the review slice where the claim
+concerns panel rows, and spot-check the rest against the committed summary JSON or
 figure data. Check that `manifest.json` is complete — commit, dirty status,
 command, config, seeds, versions, device, dataset fingerprint, checkpoint hash,
 member and row IDs, wall time, output hashes — and that the checkpoint hash

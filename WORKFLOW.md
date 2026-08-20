@@ -27,7 +27,7 @@ a decision gate, commits a decision memo, and opens the PR as a draft.
 
 **CI** installs the inference dependencies and runs `pytest` on Linux and macOS.
 It never sees the external HDF5 dataset, so the suite must stand on synthetic
-fixtures and the committed checkpoint.
+fixtures, the committed checkpoint, and the committed review slice.
 
 **Claude** reviews the PR on open and on every push, against
 `.claude/commands/review-step.md`, and posts a findings table with severities and
@@ -58,6 +58,7 @@ again. When you find yourself giving the same review note twice, put it in
 | `.github/workflows/claude-code-review.yml` | CI | Runs the review on every PR push. |
 | `.codex/config.toml` | Codex | Sandboxed, no approvals, no web search. |
 | `Makefile` | both | `make test`, `make check`, `make smoke`, `make env`. |
+| `tests/data/review_slice.h5` | Claude | 2,000 real rows (~7 MB) so the reviewer can recompute, not just re-read. |
 
 ### 2. Codex
 
@@ -103,7 +104,39 @@ between a subtly wrong estimand and a merged subtly wrong estimand — so
 change the trigger in `claude-code-review.yml` to `types: [opened]`, or drop the
 workflow and run `claude` with `/review-step` locally on the branch instead.
 
-### 4. Dataset
+### 4. Dataset, and the committed review slice
+
+A GitHub runner cannot see the 647 MB dataset, and putting it in Git LFS would
+exhaust the free 1 GB monthly bandwidth after two checkouts — on a public repo it
+would also be a data release, which is a decision for the paper, not for CI. So
+the repository instead commits `tests/data/review_slice.h5`: 2,000 real rows,
+6.97 MB gzipped, smaller than the model checkpoint already in git.
+
+It holds all 1,000 HDF5 rows of the S01 frozen interpretation panel — the rows
+reports actually quote — plus 1,000 sibling flux tubes of those same equilibria.
+The siblings matter: the panel takes at most one tube per equilibrium, so on the
+panel alone a bootstrap grouped by `equilibrium_files` is indistinguishable from
+one grouped by flux tube. With the siblings, 780 equilibria carry more than one
+tube (229 of them inside the reference cohort), and the reviewer can test the
+grouping rather than read it.
+
+Geometry is stored `float32`, which is lossless with respect to what the model
+sees, and the slice reproduces the full dataset's 100-member ensemble prediction
+bit-for-bit. `tests/xai/test_review_slice.py` checks that against reference values
+the generator computed from the parent file, so a corrupted or mis-indexed slice
+is a test failure rather than a wrong review.
+
+**It is a verification artifact, not a development set.** `AGENTS.md` forbids
+implementers from developing against it, tuning on it, or reporting results from
+it — otherwise the reviewer's independent check becomes a restatement of the
+implementer's own choices. Rebuild it only when a step deliberately changes the
+registered panel:
+
+```bash
+make review-slice
+```
+
+### 5. Dataset
 
 No environment variable is needed. `PLAN.md` registers the canonical dataset path
 as
@@ -111,7 +144,7 @@ as
 Scripts use it by default with a `--dataset` override. It stays outside git; the
 518 MB legacy serialized dataset is never copied in.
 
-### 5. Python environment
+### 6. Python environment
 
 The conda environment `20240629-01-ML` has the package and its inference
 dependencies. `AGENTS.md` forbids installing into it, so XAI extras live in a

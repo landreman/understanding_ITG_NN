@@ -50,9 +50,12 @@ jobs:
 
             The external HDF5 dataset registered in PLAN.md is not available on
             this runner and .venv-xai does not exist here. Do not try to create
-            them. Verify claims against committed artifacts, manifests, and the
-            pytest suite, which runs on synthetic fixtures and the committed
-            checkpoint.
+            them. You do have tests/data/review_slice.h5: 2,000 real rows
+            covering the whole S01 interpretation panel plus sibling flux tubes.
+            Recompute the PR's headline numbers on it where they concern panel
+            rows, loading it through itg_nn.xai.review_slice so that a row ID
+            outside the slice raises instead of silently reading a different
+            flux tube. Do not edit or regenerate the slice.
 
             Post a top-level GitHub PR comment containing the required findings
             table and the final verdict line, even when there are no findings.
