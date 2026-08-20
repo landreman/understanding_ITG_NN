@@ -76,11 +76,12 @@
       "wrong_parity": true
     },
     "prediction_completeness": true,
+    "registered_control_contrast_rows": 28,
     "support_at_every_spec_and_path_dose": true,
     "toy_controls": {
       "colocation_toy_block_rms": 7.945399005393483e-09,
-      "colocation_toy_channel_phase_rms": 0.14209148287773132,
-      "colocation_toy_common_phase_rms": 1.775697455741465e-08,
+      "colocation_toy_channel_phase_rms": 0.126939058303833,
+      "colocation_toy_common_phase_rms": 2.0855539517583566e-08,
       "colocation_toy_independent_rms": 0.13040325045585632,
       "colocation_toy_joint_rms": 1.287582218623129e-08,
       "colocation_toy_joint_shift_rms": 1.1204502214923195e-08,
@@ -92,7 +93,7 @@
       "permutation_toy_independent_rms": 0.13427403569221497,
       "permutation_toy_joint_rms": 6.40923190076137e-08,
       "permutation_toy_joint_shift_rms": 6.580174272130535e-08,
-      "phase_scramble_amplitude_max_error": 3.814697265625e-06,
+      "phase_scramble_amplitude_max_error": 5.7220458984375e-06,
       "replacement_untouched_channel_max_error": 0.0,
       "stellarator_parity_roundtrip_max_error": 0.0,
       "wrapped_window_no_boundary_artifact": true,
@@ -139,7 +140,7 @@
     "support_components": 24,
     "support_fit_rows": 1536,
     "support_heldout_rows": 512,
-    "support_warning": "robust per-channel scaling + ordinary SVD PCA + held-out nearest-neighbour distance; PCA components remain outlier-sensitive; two-sided tails; not proof of physical validity"
+    "support_warning": "robust per-channel scaling + ordinary SVD PCA + held-out nearest-neighbour distance; publish one-sided component percentiles as well as the legacy two-sided maximum; not proof of physical validity"
   },
   "top10_canonical_varied_all_family_summary": {
     "amplitude_scaling": {
@@ -155,7 +156,7 @@
       "members_x_entries": 50
     },
     "channel_phase_scramble": {
-      "median_rms_over_residual_std": 2.9840923274519735,
+      "median_rms_over_residual_std": 3.2984795820694544,
       "members_x_entries": 10
     },
     "channel_replacement": {
@@ -163,7 +164,7 @@
       "members_x_entries": 70
     },
     "common_phase_scramble": {
-      "median_rms_over_residual_std": 2.8007251109525098,
+      "median_rms_over_residual_std": 2.770883933248081,
       "members_x_entries": 10
     },
     "independent_shift": {

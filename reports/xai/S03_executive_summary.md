@@ -1,5 +1,3 @@
-I'll look at the plan and the step 03 report.
-
 ## The setting, in plain terms
 
 You have a neural network that takes in the *shape of a magnetic field* along a field line — seven different geometric quantities sampled at 96 points going around the line — plus two "drive" numbers (how steep the temperature and density gradients are). It outputs a predicted turbulent heat flux, specifically `max(log Q, -2)`.
@@ -20,7 +18,7 @@ Along the way it also builds the reusable toolkit — the "perturbation API" —
 
 ## What was found
 
-**1. Order along the field line genuinely matters.** The key test: shuffle the 96 positions randomly, keeping each position's seven values glued together. Every individual "point" is still present and unchanged — only their sequence is scrambled. Output moves by **3.3 residual SDs**, a large effect. So the network is not just averaging over points; it reads the *arrangement*.
+**1. The network is not a multiset-only model, and channel alignment matters.** Randomly shuffling the 96 joint seven-channel vectors moves output by **3.3 residual SDs**, so preserving the vector multiset is not enough. That edit destroys both ordering and the low-frequency envelope, however, so it cannot say which caused the response. The cleaner alignment test shifts each channel independently while preserving every channel's complete profile and spectrum; its 2.4-SD effect shows that cross-channel alignment matters.
 
 **2. Broad structure carries much of the signal.** Shuffling in contiguous blocks instead of point-by-point gives: blocks of 2 → 2.93, 4 → 2.42, 8 → 1.83, and 16 → 1.26. The 32-point edit is not another scale rung: with only three blocks it is a reversal control (1.17). Complementary Fourier evidence gives raw effects 3.85, 1.22, and 0.099 for removing low, middle, and high bands. Dose-normalized multipliers depend strongly on whether dose is reduced by RMS or a median, so they are not used as headline evidence. **Takeaway for later steps: examine broad, smooth features, while treating normalization-dependent efficiency ranks cautiously.**
 
@@ -34,6 +32,6 @@ Along the way it also builds the reusable toolkit — the "perturbation API" —
 
 ## Why the report reads as it does
 
-Much of it is machinery you can skim: operators were validated on toy models *before* touching the real network; deterministic endpoints are hashed; uncertainty resamples whole equilibria rather than individual field lines; and the original ladder plus corrected matched-phase slice are connected to the committed summaries through an explicit derived-artifact manifest. Three independent review rounds changed several secondary claims while leaving the main ordering result intact.
+Much of it is machinery you can skim: operators were validated on toy models *before* touching the real network; deterministic endpoints are hashed; uncertainty resamples whole equilibria rather than individual field lines; and the original ladder plus corrected matched-phase slice are connected to the committed summaries through an explicit derived-artifact manifest. Four independent review rounds sharpened the interpretation and corrected the machine-readable evidence.
 
-The net contribution: the later, expensive steps now know to look for **broad, long-wavelength, order-dependent structure**, chiefly in unstable cases — and they have a vetted toolkit plus a documented list of things that don't work.
+The net contribution: the later, expensive steps now know to look for **broad, long-wavelength structure and cross-channel alignment**, chiefly in unstable cases. Whether permutation's additional response is specifically ordering-dependent remains unresolved.

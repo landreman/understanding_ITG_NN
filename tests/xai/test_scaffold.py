@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+import csv
+import hashlib
 import importlib
 import json
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -50,6 +53,52 @@ def test_s03_compact_summary_reports_a_capped_expanded_cohort() -> None:
     joint_shift = next(row for row in summary if row["item"] == "joint_shift")
     assert joint_shift["expanded_member_count"] == 5
     assert joint_shift["expanded_cohort_median"] == 3.0
+
+
+def test_s03_published_summary_matches_compact_family_medians() -> None:
+    artifacts = Path("reports/xai/S03_artifacts")
+    summary = json.loads((artifacts / "summary.json").read_text())
+    with (artifacts / "ladder_summary.csv").open(newline="") as handle:
+        ladder = list(csv.DictReader(handle))
+    by_item = {
+        row["item"]: float(row["top10_median"])
+        for row in ladder
+        if row["section"] == "ladder"
+    }
+    family = summary["top10_canonical_varied_all_family_summary"]
+    for name, value in by_item.items():
+        assert family[name]["median_rms_over_residual_std"] == pytest.approx(
+            value, rel=0, abs=1e-14
+        )
+
+
+def test_s03_published_manifest_covers_every_other_artifact() -> None:
+    artifacts = Path("reports/xai/S03_artifacts")
+    manifest = json.loads((artifacts / "review3_manifest.json").read_text())
+    expected = {
+        path.name
+        for path in artifacts.iterdir()
+        if path.is_file() and path.name != "review3_manifest.json"
+    }
+    assert set(manifest["published_output_hashes"]) == expected
+    for name, digest in manifest["published_output_hashes"].items():
+        actual = hashlib.sha256((artifacts / name).read_bytes()).hexdigest()
+        assert actual == digest
+
+
+def test_s03_published_support_and_hashes_keep_component_scopes() -> None:
+    artifacts = Path("reports/xai/S03_artifacts")
+    with (artifacts / "support.csv").open(newline="") as handle:
+        fields = set(csv.DictReader(handle).fieldnames or ())
+    assert {"reconstruction_percentile_median", "nearest_percentile_median"} <= fields
+    endpoints = json.loads(
+        (artifacts / "operator_endpoint_hashes.json").read_text()
+    )
+    assert len(endpoints["operators"]) == 56
+    assert all(
+        {"varied_sha256", "full_paired_sha256"} <= set(values)
+        for values in endpoints["operators"].values()
+    )
 
 
 def _architecture() -> Architecture:

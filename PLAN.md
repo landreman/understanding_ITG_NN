@@ -102,11 +102,17 @@ project. Each is verified in [Preliminary scoping measurements](#preliminary-sco
   magnitude should be specified in absolute units.
 - Grid: `z` is uniform, 96 points, spanning $[-37.70, 36.91]$ in the stored
   normalization (period $96\,\Delta z$).
-- The two additional inputs are $a/L_T$ and $a/L_n$. The legacy training
-  convention used $a/L_T=-3$ as a marker for the fixed-gradient simulations
-  (which all have the physical values $a/L_T=3$, $a/L_n=0.9$); this is not a
-  physical negative temperature gradient. Fixed- and varied-gradient results must
-  not be pooled without recording this distinction.
+- The two additional inputs are $a/L_T$ and $a/L_n$. **Contested premise — do
+  not use for downstream fixed-row inference:** the legacy loader supplies
+  $a/L_T=-3$ as a marker for fixed-gradient simulations, but S03 found that the
+  checkpoint's serialized training tensors contain only nonnegative $a/L_T$ and
+  direct inference at $-3$ saturates at the output floor, whereas $+3$ recovers
+  fixed-row R² of 0.978–0.985 for the tested top three members. The original
+  marker claim is retained here only as historical context. Before S07 or S13
+  uses fixed rows, decide whether to correct the loader to $+3$ and refresh the
+  affected S00–S02 fixed-row artifacts. See
+  `reports/xai/S03_fixed_gradient_decision.md`. Fixed- and varied-gradient
+  results must not be pooled.
 - **Target floor:** 33,891 of 100,705 varied-gradient rows (33.7%) sit at the
   clipped-log floor $\max(\log Q,-2)=-2$; 1,773 rows have $Q\le 0$ and are
   dropped by the positive-flux filter. Fixed-gradient rows have no $Q\le 0$.

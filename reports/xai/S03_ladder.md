@@ -2,7 +2,7 @@
 
 ## Status and headline result
 
-Complete, including three external-review rounds. Every retained result explains the
+Complete, including four external-review rounds. Every retained result explains the
 trained native output `max(log Q, -2)`, never `Q` or `exp(prediction)`. The
 primary estimand is S02's exactly shift-invariant canonical member function
 `tilde_f_m = MLP_m(mean_z rho_m, a/L_T, a/L_n)`; the original `f_m` is retained
@@ -21,10 +21,14 @@ The networks use substantially more than the multiset of pointwise
 seven-channel vectors. On the frozen 1,000-row varied panel, random joint
 permutation changes canonical top-10-member outputs by a median **3.26 panel
 member residual standard deviations** (10th–90th member range 3.00–3.54).
-Independent channel shifts give 2.41 (2.23–2.59). These edits have similar robust
-input displacement, so the result supports sensitivity to both parallel order
-and cross-channel co-location, but the off-manifold probes do not form an
-additive decomposition.
+This rejects a multiset-only description, but it does **not** isolate parallel
+order: permutation also destroys the low-frequency envelope, and full low-band
+attenuation is larger (3.85) at a smaller robust-scaled RMS dose (2.64 versus
+5.20). High-band attenuation is only 0.099, so injected high-frequency power is
+unlikely to explain the permutation response. Independent channel shifts give
+2.41 (2.23–2.59) while preserving every channel's full profile and marginal
+spectrum, cleanly establishing sensitivity to cross-channel alignment. The two
+ordering/envelope mechanisms remain inseparable in this registered ladder.
 
 The phase comparison was rerun with a genuinely matched random tensor: each
 channel receives an independent random phase rotation, while the common endpoint
@@ -32,9 +36,12 @@ uses that same tensor's channel-0 rotation for every channel. Across three
 replicates, common/per-channel effects are 2.771/3.298, 3.030/3.013, and
 2.690/3.161 panel residual SD. Paired per-member channel-minus-common medians are
 0.364/0.287/0.548, with 8/10, 6/10, and 9/10 members positive; the 10th member
-percentile is negative in the first two replicates. This is suggestive but not
-robust member-level evidence that cross-channel phase alignment contributes.
-No component-size or dominant-mechanism claim is made.
+percentile is negative in the first two replicates. Paired 1,000-draw
+equilibrium bootstrap intervals for the median-across-member differences are
+0.131–0.789, 0.051–0.609, and 0.353–0.791. These intervals address equilibrium
+sampling within each phase draw, not Monte-Carlo uncertainty over phase draws.
+With only the three preregistered phase realizations, the result remains
+suggestive rather than a component-size or dominant-mechanism claim.
 
 The original manifest-backed production run is
 `output/xai/S03/ladder-top10-all100-varied1000-paired2000-reviewfix/`. It took
@@ -51,7 +58,8 @@ Review-derived, source-hash-verified quantities are in
 registered paired control contrasts are in
 [`S03_artifacts/contrasts.csv`](S03_artifacts/contrasts.csv).
 [`S03_artifacts/review3_manifest.json`](S03_artifacts/review3_manifest.json)
-verifies both source manifests and hashes all five derived published files. The
+verifies both source manifests, both signed-prediction files, the stored support
+model, and hashes all nine other files in the published artifact directory. The
 old full-run `--resume` command is intentionally no longer documented because
 HEAD's source fingerprint differs; reproducibility now follows this explicit
 two-manifest derivation rather than pretending the old cache is resumable.
@@ -87,7 +95,11 @@ for all 10 members in all three replicates; paired difference medians are 0.883,
 0.910, and 0.938 panel residual SD. Contrasts against random joint shift are
 retained only as exact-symmetry diagnostics: because that control is null by
 construction, they are not statistical or effect-size evidence. Full quantiles
-are retained in `contrasts.csv`.
+are retained in `contrasts.csv`. Inferential paired contrasts now additionally
+resample the same 1,000 equilibrium rows for treatment, control, reference, and
+residual denominator, then take the median across the registered top 10. The
+joint-permutation-minus-independent-shift intervals are 0.716–1.079,
+0.744–1.069, and 0.726–1.109 across the three registered random replicates.
 
 Parenthetical 10th–90th ranges in this report are explicitly **member spread**,
 not sampling uncertainty. The compact table now also commits, for every headline
@@ -101,6 +113,10 @@ edited cells. Single-channel replacement uses only the edited channel. Neither
 reduction is a canonical effect-size denominator: RMS is tail-sensitive, while
 the median can ignore sparse but consequential edits. Normalized rankings are
 therefore reported only as sensitivity analyses, never as headline rankings.
+The compact table publishes both input-dose reductions for every family, while
+tagging cross-family values `reported_not_cross_family_comparable`; it also
+publishes the S02-reference-normalized output column alongside the panel-
+normalized headline.
 
 ## Perturbation and baseline API
 
@@ -173,7 +189,7 @@ The larger structure tests agree across functions. Original `f` gives medians
 2.41 for `tilde_f`. Matched common/per-channel phase values are 2.67/3.10 for
 `f` and 2.77/3.30 for `tilde_f` in replicate zero.
 
-## Ordering, co-location, and length scale
+## Permutation, co-location, and length scale
 
 For canonical `tilde_f` on varied rows, replicate-zero top-10 and all-100
 member distributions agree:
@@ -185,8 +201,13 @@ member distributions agree:
 | Common relative-phase-preserving rotation | 2.77 (1.81–3.95) | 2.37 (1.69–3.54) |
 | Per-channel phase rotation | 3.30 (2.40–4.33) | 2.79 (2.29–3.95) |
 
-Joint permutation preserves every pointwise channel vector but destroys its
-parallel order, directly rejecting a multiset-only description. Median signed
+Joint permutation preserves every pointwise channel vector but changes both its
+parallel order and its low-frequency envelope, directly rejecting a multiset-
+only description without identifying which destroyed property drives the
+response. Its robust-scaled RMS/median-absolute doses are 5.201/0.679, compared
+with 5.115/0.678 for independent shifts; these nearly equal descriptive doses
+are now committed in `ladder_summary.csv`, but are not treated as universal
+cross-family effect denominators. Median signed
 changes are -0.682 clipped-log units for joint permutation, -0.201 for
 independent shifts, -0.060 for common phase rotation, and -0.237 for per-channel
 scrambling. Signed member values remain in the full table.
@@ -224,8 +245,12 @@ low-frequency multiplier is withdrawn: its magnitude and even the efficiency
 ordering depend on how a heavy-tailed edit is reduced. The defensible result is
 the raw finite-edit ordering, supported independently by the block ladder:
 removing the low band changes the network much more than removing the mid or
-high band. Later attribution should examine broad structure, but not because one
-dose normalization establishes a universal efficiency rank.
+high band. This also means the permutation result cannot separately establish
+order dependence: destroying the low-frequency envelope is already sufficient
+to cause a larger response. The tiny 0.099 high-band attenuation response argues
+against injected high-frequency power as the permutation driver. Later
+attribution should examine broad structure, but not because one dose
+normalization establishes a universal efficiency rank.
 
 Uniform attenuation of every non-DC amplitude is the registered control that
 changes marginal power while preserving all relative phases. At doses
@@ -286,10 +311,17 @@ Tail fractions, rather than raw warning medians, show the useful departures:
 complete non-DC removal is 82.1% outside, full low-band attenuation 36.9%, and
 full mid-band attenuation 26.5%.
 
-An important negative check remains: this coarse scaled-PCA warning does not reliably
-identify ordering edits. Joint permutation has 10.5% outside and independent
-shifts 6.9%. Outlier-sensitive components are a plausible mechanical contributor
-to that failure. Low warning values are not evidence of physical realizability.
+The legacy combined warning still does not reliably identify ordering edits:
+joint permutation has 10.5% outside and independent shifts 6.9%. The component
+scores show that this is a summary-statistic failure, not evidence that PCA saw
+nothing. From path dose zero to joint permutation, the median one-sided
+reconstruction calibration percentile moves from 0.470 to **0.809**, while the
+nearest-distance percentile moves only from 0.587 to 0.628. Folding the former
+two-sided and then taking a maximum with the latter obscures that clean upper-
+tail reconstruction shift; a heavy-tailed calibration also makes the central-
+95% fraction insensitive. `support.csv` now publishes both one-sided component
+percentiles at every path dose. Downstream S06 must inspect them separately;
+low legacy warning values are not evidence of physical realizability.
 
 ## Toy controls, determinism, and reproducibility
 
@@ -306,7 +338,7 @@ retain constant support across index 0.
 
 Every full-batch endpoint is generated twice before inference and compared
 bit-for-bit, including channel replacement. Endpoint SHA-256 values are
-manifest-hashed in
+separated into the retained 1,000-row varied half and the full paired batch in
 [`S03_artifacts/operator_endpoint_hashes.json`](S03_artifacts/operator_endpoint_hashes.json).
 Two independent fresh-process pilot runs produced byte-identical 46-entry
 endpoint-hash JSON files and byte-identical prediction HDF5 files. Determinism is
@@ -325,17 +357,21 @@ Both were read only.
 signed native outputs. Resume validates dataset, checkpoint, row IDs, member
 IDs, perturbation registry, config, cohort and robust-scale fingerprints, and
 code hashes. The original full run and corrected phase run remain immutable.
-`xai_s03_review2_artifacts.py` verifies their manifests, replaces only the six
-phase rows, deterministically regenerates robust dose summaries, and hashes the
-five committed outputs in `review3_manifest.json`. No published JSON or CSV is
-hand-edited.
+`xai_s03_review2_artifacts.py` verifies their manifests and signed predictions,
+replaces only the six phase ladder rows, deterministically regenerates robust
+dose and support summaries, computes paired equilibrium bootstraps, and hashes
+every other published artifact in `review3_manifest.json`. It also rebuilds
+`summary.json` family medians and toy checks from the merged/corrected sources.
+Regression tests enforce agreement between that summary and the compact ladder
+and complete manifest coverage. No published JSON or CSV is hand-edited.
 
 Pilot, fresh targeted phase reproduction, and artifact-derivation commands:
 
 ```bash
 MPLCONFIGDIR=/private/tmp/mpl-s03 .venv-xai/bin/python \
   scripts/xai_s03_ladder.py --config configs/xai/S03_ladder.json \
-  --pilot --no-publish
+  --pilot --no-publish \
+  --output-dir output/xai/S03/pilot-review4-final
 
 MPLCONFIGDIR=/private/tmp/mpl-s03 .venv-xai/bin/python \
   scripts/xai_s03_ladder.py --config configs/xai/S03_ladder.json \
@@ -352,7 +388,10 @@ MPLCONFIGDIR=/private/tmp/mpl-s03 .venv-xai/bin/python \
 The pilot uses a deterministic proportional sample across equilibrium class ×
 stable/unstable strata (64 varied rows plus fixed twins), not a sorted row-ID
 prefix. It uses one member, two random replicates, and 200 grouped bootstrap
-draws. Production uses 1,000 draws.
+draws. The final fourth-review rerun completed all 46 perturbations and checks in 15.7
+s; its manifest is
+`output/xai/S03/pilot-review4-final/manifest.json`. Production uses
+1,000 draws.
 
 ## External-review disposition
 
@@ -424,8 +463,9 @@ were still added.
 
 ### Third review (`review_step03_03.md`)
 
-Findings 1–6 and 8–14 were accepted. Finding 7 was rejected as a defect, with
-the registered common-random-number design made explicit.
+Findings 1–6 and 8–14 were accepted. Finding 7 was initially rejected, but the
+fourth review demonstrated that the rejection rationale was wrong; its corrected
+disposition appears below.
 
 1. The five derived published artifacts are now generated rather than
    hand-edited and hashed by `review3_manifest.json`, which verifies both the
@@ -444,11 +484,13 @@ the registered common-random-number design made explicit.
    intervals.
 6. The heterogeneous family-pooled overview figure was removed in favor of the
    parameter-resolved table.
-7. Rejected: block lengths deliberately share a common random-number stream
-   within each replicate so length-scale differences have less realization
-   noise. `dose` is irrelevant to the deterministic Fourier operators. The
-   coupling is now documented; phase families are separately special-cased for
-   their required matched tensor.
+7. Initially rejected on an incorrect common-random-number rationale. Block
+   lengths share a deterministic family seed, but block-count-dependent
+   `randperm` calls make streams diverge after the first sample. The fourth
+   review withdraws the variance-reduction claim; the empirical ≤0.070
+   replicate range remains the evidence for rung stability. `dose` remains
+   irrelevant to deterministic Fourier operators, and phase families retain
+   their genuinely matched tensor.
 8. Exact-symmetry gates now call `allclose` with both registered `atol` and
    `rtol`; maximum absolute error remains reported as a diagnostic.
 9. `ScaledPCASupport` and the report now say robust scaling followed by ordinary
@@ -465,6 +507,43 @@ the registered common-random-number design made explicit.
 14. The review-artifact script supports both direct execution and package import,
     with a regression test.
 
+### Fourth review (`review_step03_04.md`)
+
+All eight findings identified valid defects or ambiguities. Two suggested new
+calculations were not adopted for the concrete scope reasons below; the
+underlying interpretive/uncertainty issues were addressed.
+
+1. `summary.json` now rebuilds family medians from the merged ladder and takes
+   the current toy checks from the corrected phase run. Endpoint hashes separate
+   the retained varied half from the withdrawn paired full batch and include the
+   corrected phase endpoints. The derived manifest covers every other published
+   file, and regression tests enforce median agreement and manifest coverage.
+2. The permutation claim is softened: it rejects a multiset-only model but
+   cannot separate order from low-band-envelope destruction. No post hoc
+   spectrum-restoration control was added because it was not registered and its
+   exact estimand would require a new design choice; instead the report elevates
+   independent shifts as the clean alignment result and reconciles permutation
+   with low/high attenuation quantitatively.
+3. Registered inferential contrasts now have paired 1,000-draw equilibrium-file
+   bootstrap intervals. The suggestion to add phase realizations after seeing
+   the three registered draws was rejected as an adaptive expansion of the
+   preregistered random-replicate design; the report explicitly treats
+   Monte-Carlo uncertainty as unresolved and keeps the claim suggestive.
+4. `support.csv` now publishes median one-sided reconstruction and nearest-
+   distance calibration percentiles for every path point. The text corrects the
+   diagnosis: two-sided folding/maximum aggregation and the tail-fraction
+   summary mask the reconstruction shift.
+5. The false common-random-number claim for block lengths is withdrawn in code
+   and prose. Deterministic shared family seeding is retained without a variance-
+   reduction interpretation.
+6. `PLAN.md` now marks the `-3` fixed-input premise as contested. The decision
+   memo states an explicit open question, recommendation, evidence, and refresh
+   cost before S07/S13.
+7. The compact ladder publishes dose numbers for all families with an explicit
+   non-comparability scope tag and adds the S02-reference-normalized column.
+8. The executive-summary transcript line was removed and the `.gitignore`
+   comment corrected.
+
 ## Acceptance criteria
 
 | Criterion | Evidence | Status |
@@ -478,8 +557,8 @@ the registered common-random-number design made explicit.
 | Top-10 full varied ladder | Both `f` and `tilde_f`, stable/unstable separately | Pass |
 | Cheap entries cover all 100 members | 13 entries; signed member predictions retained | Pass |
 | Baseline API avoids all-zero default | Five distinct API paths; real-data usage disclosed | Pass |
-| Member-level grouped uncertainty | 1,000 equilibrium-file draws; interval summaries committed | Pass |
-| Committed conclusions reproduce from manifests | Two verified run manifests plus derived-output manifest | Pass |
+| Member-level grouped uncertainty | 1,000 equilibrium-file draws for effects and paired inferential contrasts | Pass |
+| Committed conclusions reproduce from manifests | Two verified run manifests/prediction files plus complete derived-output manifest | Pass |
 
 Verification commands:
 
@@ -492,7 +571,10 @@ git diff --check
 ## Deferred
 
 The repository-wide fixed-gradient loader correction and refresh of affected
-S00–S02 fixed artifacts are deliberately deferred to the decision recorded in
-`S03_fixed_gradient_decision.md`; no fixed result may be used downstream until
-that correction is made. All S03-local tasks, varied-panel calculations, and
-valid review corrections are complete.
+S00–S02 fixed artifacts are deliberately deferred to the explicit open decision
+gate in `S03_fixed_gradient_decision.md`; no fixed result may be used downstream
+until that decision is resolved. A post hoc spectrum-restored permutation and
+additional random phase draws are also deferred as new experimental design,
+rather than silently appended after observing the registered ladder. All
+S03-local tasks, varied-panel calculations, and valid review corrections are
+complete.

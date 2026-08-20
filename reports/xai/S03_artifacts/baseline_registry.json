@@ -17,5 +17,5 @@
   "support_components": 24,
   "support_fit_rows": 1536,
   "support_heldout_rows": 512,
-  "support_warning": "robust per-channel scaling + ordinary SVD PCA + held-out nearest-neighbour distance; PCA components remain outlier-sensitive; two-sided tails; not proof of physical validity"
+  "support_warning": "robust per-channel scaling + ordinary SVD PCA + held-out nearest-neighbour distance; publish one-sided component percentiles as well as the legacy two-sided maximum; not proof of physical validity"
 }

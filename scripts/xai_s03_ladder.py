@@ -340,9 +340,10 @@ def _specs(config: dict[str, Any]) -> list[PerturbationSpec]:
 
 
 def _seed(config: dict[str, Any], spec: PerturbationSpec) -> int:
-    # Block lengths intentionally share a common random-number stream within a
-    # replicate, reducing realization noise in the length-scale comparison.
-    # Phase variants also share a stream, and phase_scramble maps column zero of
+    # Block lengths share a deterministic family seed within a replicate.  The
+    # block-count-dependent randperm calls mean this is not a common-random-
+    # number coupling across lengths.  Phase variants do share a matched tensor,
+    # and phase_scramble maps column zero of
     # the full tensor to the common endpoint for a genuinely matched contrast.
     family = (
         "matched_phase_scramble"
@@ -726,7 +727,13 @@ def _support_rows(
                     "validity_tag": spec.validity.value,
                     "n": len(values),
                     "reconstruction_rms_median": float(np.median(scores["reconstruction_rms"])),
+                    "reconstruction_percentile_median": float(
+                        np.median(scores["reconstruction_percentile"])
+                    ),
                     "nearest_distance_median": float(np.median(scores["nearest_distance"])),
+                    "nearest_percentile_median": float(
+                        np.median(scores["nearest_percentile"])
+                    ),
                     "warning_score_median": float(np.median(scores["warning_score"])),
                     "warning_score_q90": float(np.quantile(scores["warning_score"], 0.9)),
                     "fraction_outside_heldout_central_95pct": float(
@@ -903,6 +910,13 @@ def _compact_ladder_summary(
         )
         bootstrap_lower = [float(row["bootstrap_ci95_lower"]) for row in top]
         bootstrap_upper = [float(row["bootstrap_ci95_upper"]) for row in top]
+        s02_normalized = [
+            float(row["rms_change"]) / float(row["s02_reference_residual_std"])
+            for row in top
+            if row.get("rms_change", "") != ""
+            and row.get("s02_reference_residual_std", "") != ""
+            and float(row["s02_reference_residual_std"]) > 0
+        ]
         return {
             "section": section,
             "item": item,
@@ -913,13 +927,13 @@ def _compact_ladder_summary(
                         [float(row["robust_input_displacement_rms"]) for row in top]
                     )
                 )
-                if dose_comparable and top
+                if top and top[0].get("robust_input_displacement_rms", "") != ""
                 else ""
             ),
             "robust_dose_comparison_scope": (
                 "within_section_sensitivity_analysis"
-                if dose_comparable and top
-                else "not_cross_family_comparable"
+                if dose_comparable
+                else "reported_not_cross_family_comparable"
             ),
             "robust_input_displacement_median_abs": (
                 float(
@@ -930,7 +944,7 @@ def _compact_ladder_summary(
                         ]
                     )
                 )
-                if dose_comparable and top
+                if top and top[0].get("robust_input_displacement_median_abs", "") != ""
                 else ""
             ),
             "top10_q10": quantile(top_effect, 0.1),
@@ -942,6 +956,9 @@ def _compact_ladder_summary(
             ),
             "top10_member_bootstrap_ci95_upper_median": quantile(
                 bootstrap_upper, 0.5
+            ),
+            "top10_median_rms_change_over_s02_reference_residual_std": quantile(
+                s02_normalized, 0.5
             ),
             "top10_median_effect_per_robust_input_rms": quantile(normalized, 0.5),
             "top10_median_effect_per_robust_input_median_abs": quantile(
@@ -1024,6 +1041,39 @@ def _compact_ladder_summary(
             )
         )
     return output
+
+
+def _family_summary(
+    rows: list[dict[str, Any]], top_ids: set[str]
+) -> dict[str, dict[str, float | int]]:
+    """Summarize the canonical replicate-zero varied ladder by family."""
+
+    canonical = [
+        row
+        for row in rows
+        if row["member_id"] in top_ids
+        and row["function"] == "invariant_tilde_f"
+        and row["gradient_set"] == "varied"
+        and row["stratum"] == "all"
+        and int(row["replicate"]) == 0
+    ]
+    return {
+        family: {
+            "median_rms_over_residual_std": float(
+                np.median(
+                    [
+                        float(row["rms_change_over_residual_std"])
+                        for row in canonical
+                        if row["family"] == family
+                    ]
+                )
+            ),
+            "members_x_entries": int(
+                sum(row["family"] == family for row in canonical)
+            ),
+        }
+        for family in sorted({str(row["family"]) for row in canonical})
+    }
 
 
 def _contrast_summary_rows(
@@ -1263,7 +1313,7 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
     )
     channel_scales = _channel_robust_scales(Path(resolved["s01_channel_scales"]))
     input_displacements: dict[tuple[str, str, str], dict[str, float]] = {}
-    endpoint_hashes: dict[str, str] = {}
+    endpoint_hashes: dict[str, dict[str, str]] = {}
     deterministic_specs: dict[str, bool] = {}
     for spec in specs:
         endpoint = _transform(
@@ -1287,9 +1337,15 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
         deterministic_specs[spec.name] = bool(torch.equal(endpoint, repeated))
         if not deterministic_specs[spec.name]:
             raise RuntimeError(f"full-batch fixed-seed repeat failed: {spec.name}")
-        endpoint_hashes[spec.name] = hashlib.sha256(
-            np.ascontiguousarray(endpoint.numpy()).tobytes()
-        ).hexdigest()
+        varied_count = int(resolved["panel_varied_rows"])
+        endpoint_hashes[spec.name] = {
+            "varied_sha256": hashlib.sha256(
+                np.ascontiguousarray(endpoint[:varied_count].numpy()).tobytes()
+            ).hexdigest(),
+            "full_paired_sha256": hashlib.sha256(
+                np.ascontiguousarray(endpoint.numpy()).tobytes()
+            ).hexdigest(),
+        }
         input_displacements.update(
             _robust_input_displacements(
                 panel.geometry, endpoint, spec, masks, channel_scales
@@ -1465,33 +1521,19 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
             "conditional_channel_profile": "used for S03 channel replacement",
             "robust_constant_matched_observed_medoid_low_pass": "API-only in S03; first real consumers are downstream steps",
         },
-        "support_warning": "robust per-channel scaling + ordinary SVD PCA + held-out nearest-neighbour distance; PCA components remain outlier-sensitive; two-sided tails; not proof of physical validity",
+        "support_warning": (
+            "robust per-channel scaling + ordinary SVD PCA + held-out "
+            "nearest-neighbour distance; publish one-sided component "
+            "percentiles as well as the legacy two-sided maximum; not proof "
+            "of physical validity"
+        ),
         "cyclic_anchor": "argmax joint robust-standardized energy across all channels",
         "panel_equilibrium_overlap": 0,
         "support_fit_rows": split,
         "support_heldout_rows": len(support_varied.geometry) - split,
         "support_components": int(resolved["support_components"]),
     }
-    top_canonical = [
-        row for row in ladder_rows
-        if row["member_id"] in top_ids
-        and row["function"] == "invariant_tilde_f"
-        and row["gradient_set"] == "varied"
-        and row["stratum"] == "all"
-        and row["replicate"] == 0
-    ]
-    family_summary = {
-        family: {
-            "median_rms_over_residual_std": float(
-                np.median([
-                    float(row["rms_change_over_residual_std"])
-                    for row in top_canonical if row["family"] == family
-                ])
-            ),
-            "members_x_entries": int(sum(row["family"] == family for row in top_canonical)),
-        }
-        for family in sorted({str(row["family"]) for row in top_canonical})
-    }
+    family_summary = _family_summary(ladder_rows, top_ids)
     summary = {
         "mode": resolved["mode"],
         "estimand": "native max(log Q, -2)",
