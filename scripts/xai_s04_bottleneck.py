@@ -1677,6 +1677,11 @@ def run(args: argparse.Namespace) -> Path:
         gradient_set="varied frozen S01 interpretation panel only",
         device=ensemble.device,
         repository=repository,
+        published_dir=(
+            Path(resolved["published_dir"])
+            if not args.pilot and not args.no_publish
+            else None
+        ),
     )
     if not args.pilot and not args.no_publish:
         _publish(

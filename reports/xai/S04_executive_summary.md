@@ -22,8 +22,10 @@ is a distant second (0.273), and one is completely dead. The other networks show
 the same broad pattern of a few strong units plus a shoulder, although the unit
 numbers are network-specific.
 
-The networks have rediscovered much of the paper's feature grammar. From the
-bottleneck alone, a held-out decoder recovers:
+The bottlenecks encode much of the paper's feature grammar. This is not itself a
+discovery—especially for $f_Q$, whose role was already known—and S04 does not
+yet ask what the network adds beyond that feature family. From the bottleneck
+alone, a held-out decoder recovers:
 
 - the paper's $f_Q$ feature with median $R^2=0.89$;
 - the exactly known $\log\langle|\nabla x|\rangle$ factor with $R^2=0.85$; and
@@ -32,12 +34,14 @@ bottleneck alone, a held-out decoder recovers:
 That is substantially better than reading out `nfp`, magnetic shear, or aspect
 ratio. More importantly, S04 did not stop at “the information is present.” It
 removed the bottleneck direction associated with each feature and asked whether
-the output moved. $f_Q$, $f_{\rm stab}$, and the known gradient factor moved the
-output much more than random directions. `nfp`, shear, and aspect ratio did not.
-So the first group is both **encoded and used**; the second is at least partly
-encoded but not demonstrably used. This is the cleanest negative result in the
-step: being able to decode something from a hidden layer is not evidence that
-the network bases its answer on it.
+the output moved. Those edits have unequal sizes, so the raw changes are not
+directly comparable. Once divided by the removed projection's RMS size, $f_Q$,
+$f_{\rm stab}$, and the known gradient factor remain above random directions;
+`nfp` and shear are below the control, while aspect ratio is approximately on
+it. So the first group is both **encoded and used**; the second is at least
+partly encoded but not demonstrably used. This is the cleanest negative result
+in the step: being able to decode something from a hidden layer is not evidence
+that the network bases its answer on it.
 
 The dense head is also simpler than its architecture suggests. A linear model
 of the bottleneck and drives reproduces about 80% of each top member's output

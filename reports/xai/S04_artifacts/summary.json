@@ -294,6 +294,35 @@
       0.05401150686911671
     ]
   },
+  "intervention_modes_all100": {
+    "mean": {
+      "all_unit_mse_change_median": 0.0059844310606695095,
+      "strongest_unit_mse_change_median": 0.1684066557689849,
+      "strongest_unit_rms_median": 0.4059788143349742,
+      "strongest_unit_rms_range": [
+        0.23675716968418203,
+        0.8010110040633914
+      ]
+    },
+    "resample": {
+      "all_unit_mse_change_median": 0.012669809962013973,
+      "strongest_unit_mse_change_median": 0.3460848040090723,
+      "strongest_unit_rms_median": 0.5817741287844563,
+      "strongest_unit_rms_range": [
+        0.3628721165266424,
+        1.0164810126057169
+      ]
+    },
+    "zero": {
+      "all_unit_mse_change_median": 0.009576173260361281,
+      "strongest_unit_mse_change_median": 0.48728483796462296,
+      "strongest_unit_rms_median": 0.6933681673101151,
+      "strongest_unit_rms_range": [
+        0.3033155920230647,
+        1.3167951265009352
+      ]
+    }
+  },
   "mode": "production",
   "negative_results": [
     "The head is drive-dominated: geometry carries only about 20% of output variance on the panel.",
