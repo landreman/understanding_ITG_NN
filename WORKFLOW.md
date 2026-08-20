@@ -31,7 +31,9 @@ fixtures, the committed checkpoint, and the committed review slice.
 
 **Claude** reviews the PR on open and on every push, against
 `.claude/commands/review-step.md`, and posts a findings table with severities and
-a verdict line.
+a verdict line, plus a list of what it could not check from a runner. That list is
+worth reading: it is where a claim that nobody has independently verified shows
+up, and shrinking it is a design goal of the report format, not a formality.
 
 **Codex** fixes every **blocking** and **should-fix** finding and pushes, until
 the review returns neither. It does not merge.
@@ -59,6 +61,7 @@ again. When you find yourself giving the same review note twice, put it in
 | `.codex/config.toml` | Codex | Sandboxed, no approvals, no web search. |
 | `Makefile` | both | `make test`, `make check`, `make smoke`, `make env`. |
 | `tests/data/review_slice.h5` | Claude | 2,000 real rows (~7 MB) so the reviewer can recompute, not just re-read. |
+| `reports/xai/SNN_artifacts/manifest.json` | Claude | The registered run's manifest, committed so provenance is checkable off your machine. |
 
 ### 2. Codex
 
@@ -103,6 +106,34 @@ between a subtly wrong estimand and a merged subtly wrong estimand — so
 `claude_args: --model opus` stays. If you would rather not pay on every push,
 change the trigger in `claude-code-review.yml` to `types: [opened]`, or drop the
 workflow and run `claude` with `/review-step` locally on the branch instead.
+
+### 3a. What the reviewer can and cannot see
+
+The review runner has the checkout, `pytest`, `tests/data/review_slice.h5`, and
+an environment installed from `.[dev,xai]` plus `scipy` and `pandas`. It does not
+have the external dataset, `.venv-xai`, or anything under `output/xai/`.
+
+The XAI extras are there on purpose. Code that quietly falls back to an in-repo
+estimator when `captum` is missing would otherwise have the reviewer checking a
+path production never took, which is how the S04 review came to report the nine
+sampled members' Shapley values as unverifiable. `scipy` and `pandas` are not
+repository dependencies, so a statistic recomputed with them is an independent
+check rather than a rerun of the code under review.
+
+Core CI (`ci.yml`) keeps installing `.[dev]` only. That asymmetry is the point:
+`ci.yml` proves the package and its suite stand alone without XAI extras, and
+`claude-code-review.yml` gives the reviewer the tools to attack the science. Do
+not make the two match.
+
+Two consequences for implementers, both in `AGENTS.md`:
+
+- the registered run's `manifest.json` is committed to
+  `reports/xai/SNN_artifacts/`, a few kilobytes, because a git-ignored manifest
+  is provenance nobody but you can check;
+- every step report carries a `## Reviewer reproduction` section splitting its
+  numbers into recomputable on the slice, checkable from committed artifacts,
+  and needing your machine — with the nearest slice-computable proxy named for
+  the last group.
 
 ### 4. Dataset, and the committed review slice
 

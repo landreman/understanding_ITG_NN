@@ -48,6 +48,13 @@ it to the `xai` extra in `pyproject.toml` and to `requirements/xai.lock`, run a
 real call against this repository's model with it, and record the tested version
 in the report.
 
+The review runner installs `.[dev,xai]`, so a package added to the `xai` extra is
+present during review and the reviewer exercises the same code path production
+did. Core CI installs `.[dev]` only, so the suite must still pass with the extra
+absent. If your code falls back to an in-repo implementation when an optional
+package is missing, test both branches and record which one produced each
+reported number.
+
 ## 3. Write the tests first
 
 Derive them from `PLAN.md`'s acceptance criteria and interpretation contract, not
@@ -98,6 +105,18 @@ Python and package versions, device, dataset path and fingerprint, checkpoint
 hash, member IDs, row IDs, gradient set, wall time, and output hashes. Commit only
 the report and the small figures and JSON summaries the conclusions rest on.
 
+The run directory is git-ignored, so pass `published_dir=reports/xai/SNN_artifacts`
+to `RunArtifacts.finalize` for the registered production run. That commits a
+verbatim copy of the manifest — a few kilobytes — and is the only way the reviewer
+can confirm the run actually recorded its provenance rather than that the code
+would have. Pilot runs do not publish theirs.
+
+Before you decide what else to publish, ask what the reviewer will be able to
+recompute. It gets the checkout, `pytest`, the 2,000-row review slice, and
+captum, scipy and pandas — no dataset, no `.venv-xai`. If a headline number's
+only home is the git-ignored run directory, publish the small artifact that
+carries it. `AGENTS.md`'s `## Reviewer reproduction` is the contract.
+
 Monitor a launched run to completion. Do not assume a detached command succeeded.
 
 ## 6. Verify
@@ -135,11 +154,15 @@ generated artifact staged.
 
 `reports/xai/SNN_<name>.md`, with methods, cohort, estimand, uncertainty, failed
 checks, negative results, interpretation limits, and the exact commands to
-reproduce every number. Two sections are mandatory:
+reproduce every number. Three sections are mandatory:
 
 - `## Acceptance criteria` — the `PLAN.md` criteria one by one, each with a
   verdict and the number or artifact that answers it;
-- `## Deferred` — what you dropped and why, or "nothing".
+- `## Deferred` — what you dropped and why, or "nothing";
+- `## Reviewer reproduction` — the three lists `AGENTS.md` specifies: numbers
+  recomputable on the review slice, numbers checkable from committed artifacts
+  alone, and numbers that need the researcher's machine, each of the last with
+  the nearest slice-computable proxy and what agreement with it would mean.
 
 Add `reports/xai/SNN_executive_summary.md` in plain language for the researcher,
 following the tone of the existing S01–S03 summaries. Keep contradictory and
@@ -169,6 +192,8 @@ The PR body must contain, in this order:
 - the mutations you verified turn the suite red, and any that did not;
 - tests added, and what each one would catch;
 - what is in `## Deferred`, and why;
+- which reported numbers the reviewer can recompute on the review slice, and
+  which it cannot and why;
 - any decision-gate question you are raising, or "none";
 - confirmation that the model file, the dataset, and `paper/` are untouched; and
 - what you were least sure about and want the reviewer to attack hardest.
