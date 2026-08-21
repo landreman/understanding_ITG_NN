@@ -13,6 +13,7 @@ from itg_nn.xai.unit_semantics import (
     physics_concept_traces,
     select_natural_exemplars,
     shift_consistency_error,
+    row_permutation_selection_null,
     unit_concept_alignment,
 )
 
@@ -101,9 +102,97 @@ def test_lagged_alignment_recovers_analytic_cyclic_concept_and_null() -> None:
     assert signal_row["concept"] == "known_signal"
     assert signal_row["best_lag"] == 7
     assert signal_row["lag_correlation"] == pytest.approx(1.0, abs=1e-12)
-    assert signal_row["overlap_at_fixed_sparsity"] == pytest.approx(1.0)
+    assert signal_row["overlap_at_fixed_sparsity_tie_inclusive"] == pytest.approx(1.0)
     assert abs(float(null_row["lag_correlation"])) < 0.15
-    assert abs(float(signal_row["partial_rank_correlation"])) > 0.9
+    assert (
+        abs(float(signal_row["partial_rank_correlation_density_local_controls"]))
+        > 0.9
+    )
+    direct_zero_lag = np.mean(
+        [np.corrcoef(density[row], signal[row])[0, 1] for row in range(samples)]
+    )
+    assert signal_row["lag_correlation_zero_lag"] == pytest.approx(direct_zero_lag)
+
+
+def test_partial_rank_control_handles_noncontiguous_channel_view() -> None:
+    rng = np.random.default_rng(231)
+    samples = 24
+    confound = rng.normal(size=(samples, 96))
+    density = confound + 0.25 * rng.normal(size=(samples, 96))
+    concept = confound + 0.25 * rng.normal(size=(samples, 96))
+    raw_controls = rng.normal(size=(samples, 96, 7))
+    raw_controls[:, :, 0] = confound
+    controls = np.moveaxis(raw_controls, 2, 1)
+    assert not controls.flags.c_contiguous
+    controlled = unit_concept_alignment(
+        density,
+        concept[:, None, :],
+        concept_names=("confounded",),
+        channel_magnitude_controls=controls,
+        sparsity=0.05,
+    ).rows[0]
+    zeroed = unit_concept_alignment(
+        density,
+        concept[:, None, :],
+        concept_names=("confounded",),
+        channel_magnitude_controls=np.zeros_like(controls),
+        sparsity=0.05,
+    ).rows[0]
+    assert float(controlled["lag_correlation"]) > 0.8
+    assert abs(float(controlled["partial_rank_correlation_density_local_controls"])) < 0.15
+    assert float(zeroed["partial_rank_correlation_density_local_controls"]) > 0.8
+
+
+def test_overlap_includes_ties_and_reports_its_chance_baseline() -> None:
+    density = np.zeros((3, 96), dtype=np.float64)
+    density[:, 0] = 2.0
+    density[:, 1:11] = 1.0
+    controls = np.zeros((3, 7, 96), dtype=np.float64)
+    row = unit_concept_alignment(
+        density,
+        density[:, None, :],
+        concept_names=("tied_signal",),
+        channel_magnitude_controls=controls,
+        sparsity=0.05,
+    ).rows[0]
+    assert row["density_mask_mean_count"] == pytest.approx(11.0)
+    assert row["concept_mask_mean_count"] == pytest.approx(11.0)
+    assert row["overlap_at_fixed_sparsity_tie_inclusive"] == pytest.approx(1.0)
+    assert row["overlap_chance_baseline"] == pytest.approx(11 / 96)
+    assert row["overlap_enrichment"] == pytest.approx(96 / 11)
+
+
+def test_flat_density_rows_are_counted_and_zero_weighted_by_convention() -> None:
+    rng = np.random.default_rng(92)
+    signal = rng.normal(size=(4, 96))
+    density = signal.copy()
+    density[:2] = 0.0
+    row = unit_concept_alignment(
+        density,
+        signal[:, None, :],
+        concept_names=("signal",),
+        channel_magnitude_controls=np.zeros((4, 7, 96)),
+        sparsity=0.05,
+    ).rows[0]
+    assert row["n_rows_with_defined_correlation"] == 2
+    assert row["lag_correlation"] == pytest.approx(0.5)
+    assert row["lag_correlation_defined_rows"] == pytest.approx(1.0)
+
+
+def test_row_permutation_selection_null_is_deterministic_and_breaks_signal() -> None:
+    rng = np.random.default_rng(77)
+    signal = rng.normal(size=(32, 96))
+    density = np.roll(signal, 5, axis=1)
+    traces = np.stack((signal, rng.normal(size=(32, 96))), axis=1)
+    first = row_permutation_selection_null(
+        density, traces, permutations=7, seed=13
+    )
+    second = row_permutation_selection_null(
+        density, traces, permutations=7, seed=13
+    )
+    np.testing.assert_array_equal(first, second)
+    assert first.shape == (7,)
+    assert np.max(first) < 0.2
 
 
 def test_alignment_and_bootstrap_are_shift_invariant_and_grouped() -> None:

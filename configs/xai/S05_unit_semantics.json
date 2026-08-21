@@ -11,6 +11,7 @@
   "window_widths": [1, 9, 25],
   "alignment_sparsity": 0.05,
   "bootstrap_replicates": 500,
+  "selection_null_permutations": 8,
   "exemplars_per_unit": 16,
   "motif_clusters": 2,
   "motif_min_recurrence": 0.5,
@@ -28,6 +29,7 @@
     "members": 1,
     "panel_varied_rows": 96,
     "bootstrap_replicates": 100,
+    "selection_null_permutations": 4,
     "exemplars_per_unit": 8,
     "shift_check_rows": 24
   }

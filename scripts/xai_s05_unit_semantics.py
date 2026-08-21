@@ -34,6 +34,7 @@ from itg_nn.xai.unit_semantics import (
     first_layer_transfer,
     native_output_comparison,
     physics_concept_traces,
+    row_permutation_selection_null,
     select_natural_exemplars,
     shift_consistency_error,
     unit_concept_alignment,
@@ -710,6 +711,18 @@ def run(args: argparse.Namespace) -> Path:
                     recurrence >= float(resolved["motif_min_recurrence"])
                     and abs_correlation >= float(resolved["motif_min_abs_lag_correlation"])
                 )
+                if supported:
+                    selection_null = row_permutation_selection_null(
+                        density[:, unit],
+                        concepts.values,
+                        permutations=int(resolved["selection_null_permutations"]),
+                        seed=int(resolved["seed"]) + 7001 * member_index + 31 * unit,
+                    )
+                    null_q95 = float(np.quantile(selection_null, 0.95))
+                    null_max = float(np.max(selection_null))
+                else:
+                    null_q95 = float("nan")
+                    null_max = float("nan")
                 exemplars = select_natural_exemplars(
                     density[:, unit],
                     equilibrium_files,
@@ -746,6 +759,11 @@ def run(args: argparse.Namespace) -> Path:
                         "lag_correlation_ci95_upper": winner["lag_correlation_ci95_upper"],
                         "bootstrap_recurrence": recurrence,
                         "bootstrap_unit": "equilibrium_files",
+                        "selection_null_scope": "maximum absolute mean Pearson correlation over 75 concepts x 96 lags",
+                        "selection_null_permutations": int(resolved["selection_null_permutations"]) if supported else 0,
+                        "selection_null_q95": null_q95,
+                        "selection_null_max": null_max,
+                        "observed_abs_correlation_to_null_q95": abs_correlation / null_q95 if supported and null_q95 > 0 else float("nan"),
                         "natural_exemplar_count": len(exemplars.sample_indices),
                         "independent_exemplar_equilibria": len(np.unique(equilibrium_files[exemplars.sample_indices])),
                         "formal_receptive_field_span": rf.formal_span,
@@ -969,6 +987,14 @@ def run(args: argparse.Namespace) -> Path:
                 "unit": "equilibrium_files",
                 "replicates": int(resolved["bootstrap_replicates"]),
             },
+            "selection_null": {
+                "unit": "sample-row permutation",
+                "scope": "maximum absolute mean Pearson correlation over 75 concepts x 96 lags",
+                "permutations_per_supported_unit": int(resolved["selection_null_permutations"]),
+                "minimum_observed_to_q95_ratio": float(
+                    min(row["observed_abs_correlation_to_null_q95"] for row in supported_rows)
+                ) if supported_rows else float("nan"),
+            },
             "toy_checks": toy_checks,
             "validity_tags": {
                 "density_shift": "exact-symmetry",
@@ -981,7 +1007,7 @@ def run(args: argparse.Namespace) -> Path:
             },
             "deferred": [
                 "window surrogate for unresolved units: both MVD members have globally connected 96-position final receptive fields, so the nominal 672-input surrogate is not a small local regression; defer model choice to a later step rather than tune it on the registered panel",
-                "NMF or sparse dictionary learning: natural two-cluster summaries are coherent enough to retain as the preregistered first diagnostic",
+                "NMF or sparse dictionary learning: the natural two-cluster summaries do not establish a coherent shared motif family, so a learned dictionary remains deferred rather than being tuned on the registered panel",
             ],
         }
         summary_path = artifacts.write_json("summary.json", summary)

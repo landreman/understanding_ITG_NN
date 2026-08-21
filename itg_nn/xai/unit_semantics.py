@@ -206,6 +206,10 @@ def unit_concept_alignment(
         axis=2,
     )
     denominator = target_norm[:, None, None] * trace_norm[:, :, None]
+    defined = (
+        (target_norm[:, None] > np.finfo(float).eps)
+        & (trace_norm > np.finfo(float).eps)
+    )
     correlations = np.divide(
         numerator,
         denominator,
@@ -231,22 +235,32 @@ def unit_concept_alignment(
         aligned_ranks[:, concept] = np.roll(trace_ranks[:, concept], int(lag), axis=1)
 
     selected_count = max(1, int(np.ceil(sparsity * grid_size)))
-    target_top = np.argpartition(target, grid_size - selected_count, axis=1)[
-        :, grid_size - selected_count :
-    ]
     overlap = np.empty((sample_count, concept_count), dtype=np.float64)
+    overlap_baseline = np.empty_like(overlap)
+    density_mask_count = np.empty_like(overlap)
+    concept_mask_count = np.empty_like(overlap)
+    density_threshold = np.partition(
+        target, grid_size - selected_count, axis=1
+    )[:, grid_size - selected_count]
+    target_mask = target >= density_threshold[:, None]
     for concept in range(concept_count):
         oriented = aligned[:, concept] * np.where(
             mean_by_lag[concept, best_indices[concept]] >= 0, 1.0, -1.0
         )
-        concept_top = np.argpartition(
+        concept_threshold = np.partition(
             oriented, grid_size - selected_count, axis=1
-        )[:, grid_size - selected_count :]
+        )[:, grid_size - selected_count]
+        concept_mask = oriented >= concept_threshold[:, None]
         for sample in range(sample_count):
-            overlap[sample, concept] = (
-                len(np.intersect1d(target_top[sample], concept_top[sample]))
-                / selected_count
+            target_count = int(target_mask[sample].sum())
+            trace_count = int(concept_mask[sample].sum())
+            intersection = int(
+                np.count_nonzero(target_mask[sample] & concept_mask[sample])
             )
+            density_mask_count[sample, concept] = target_count
+            concept_mask_count[sample, concept] = trace_count
+            overlap[sample, concept] = intersection / max(trace_count, 1)
+            overlap_baseline[sample, concept] = target_count / grid_size
 
     control_ranks = _rank_last(controls)
     partial = np.zeros((sample_count, concept_count), dtype=np.float64)
@@ -286,11 +300,35 @@ def unit_concept_alignment(
         row: dict[str, Any] = {
             "concept": name,
             "rank_correlation_zero_lag": float(zero_lag_rank[concept]),
-            "overlap_at_fixed_sparsity": float(overlap[:, concept].mean()),
+            "lag_correlation_zero_lag": float(mean_by_lag[concept, 0]),
+            "overlap_at_fixed_sparsity_tie_inclusive": float(
+                overlap[:, concept].mean()
+            ),
+            "overlap_chance_baseline": float(
+                overlap_baseline[:, concept].mean()
+            ),
+            "overlap_enrichment": float(
+                overlap[:, concept].mean()
+                / max(overlap_baseline[:, concept].mean(), np.finfo(float).eps)
+            ),
+            "density_mask_mean_count": float(
+                density_mask_count[:, concept].mean()
+            ),
+            "concept_mask_mean_count": float(
+                concept_mask_count[:, concept].mean()
+            ),
             "sparsity": float(sparsity),
             "best_lag": int(best_lags[concept]),
             "lag_correlation": float(mean_by_lag[concept, best_index]),
-            "partial_rank_correlation": float(partial[:, concept].mean()),
+            "lag_correlation_defined_rows": float(
+                per_sample_lag[defined[:, concept], concept].mean()
+            ) if np.any(defined[:, concept]) else float("nan"),
+            "n_rows_with_defined_correlation": int(defined[:, concept].sum()),
+            "defined_correlation_fraction": float(defined[:, concept].mean()),
+            "partial_rank_correlation_density_local_controls": float(
+                partial[:, concept].mean()
+            ),
+            "partial_control_position": "density_position_not_lagged_concept_source",
             "validity_tag": NATURAL_EXEMPLAR_VALIDITY,
             "bootstrap_group": bootstrap_group,
             "bootstrap_recurrence": float(recurrence.get(name, np.nan)),
@@ -518,6 +556,47 @@ def native_output_comparison(
     return rows
 
 
+def row_permutation_selection_null(
+    density: np.ndarray,
+    concept_traces: np.ndarray,
+    *,
+    permutations: int,
+    seed: int,
+) -> np.ndarray:
+    """Maximum |correlation| over all concepts/lags after permuting sample pairs."""
+
+    target = np.asarray(density, dtype=np.float64)
+    traces = np.asarray(concept_traces, dtype=np.float64)
+    if target.ndim != 2 or target.shape[1] != 96:
+        raise ValueError("density must have shape (sample, 96)")
+    if traces.ndim != 3 or traces.shape[0] != len(target) or traces.shape[2] != 96:
+        raise ValueError("concept traces must have shape (sample, concept, 96)")
+    if permutations < 2:
+        raise ValueError("at least two row permutations are required")
+    trace_centered = traces - traces.mean(axis=2, keepdims=True)
+    trace_fft = np.conjugate(np.fft.rfft(trace_centered, axis=2))
+    trace_norm = np.linalg.norm(trace_centered, axis=2)
+    rng = np.random.default_rng(seed)
+    maxima = np.empty(permutations, dtype=np.float64)
+    for permutation in range(permutations):
+        permuted = target[rng.permutation(len(target))]
+        centered = permuted - permuted.mean(axis=1, keepdims=True)
+        numerator = np.fft.irfft(
+            np.fft.rfft(centered, axis=1)[:, None, :] * trace_fft,
+            n=96,
+            axis=2,
+        )
+        denominator = np.linalg.norm(centered, axis=1)[:, None, None] * trace_norm[:, :, None]
+        correlations = np.divide(
+            numerator,
+            denominator,
+            out=np.zeros_like(numerator),
+            where=denominator > np.finfo(float).eps,
+        )
+        maxima[permutation] = np.max(np.abs(correlations.mean(axis=0)))
+    return maxima
+
+
 def _circular_mean(values: np.ndarray, width: int) -> np.ndarray:
     left = (width - 1) // 2
     offsets = range(-left, width - left)
@@ -547,7 +626,7 @@ def _local_expected_fourier_k(values: np.ndarray, width: int) -> np.ndarray:
 
 
 def _rank_last(values: np.ndarray) -> np.ndarray:
-    array = np.asarray(values, dtype=np.float64)
+    array = np.ascontiguousarray(values, dtype=np.float64)
     output = np.empty_like(array)
     flattened = array.reshape(-1, array.shape[-1])
     ranked = output.reshape(-1, array.shape[-1])
