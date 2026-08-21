@@ -71,7 +71,7 @@
     "randomization_rows": 8,
     "review_publish_rows": 16,
     "run_id": "attribution-benchmark-top1-panel128",
-    "script_sha256": "3e1b34f7d389c1825cf6fe1385a00cd028bbee31282cd2144a8b849a40ad9e96",
+    "script_sha256": "3d62a4e5c412c25d5d752ed7e12ee9fa878f87961fc22a85a00f606a60a20f06",
     "seed": 20260821,
     "selection_rule": {
       "faithfulness_strata": [
@@ -117,10 +117,10 @@
     "sha256": "9d8fa52f93f2782ad9948a38bf46943c0cd6df78cd08b94a006dad4e06c1c8ad"
   },
   "device": "cpu",
-  "git_commit": "235f8fa18263950a19edf5b0b54b2093fb187cd3",
+  "git_commit": "aa0b9ea4caf5d281db0c30f3d0278fe4c659a0a1",
   "git_dirty": true,
   "git_tracked_dirty": true,
-  "git_tree": "d47b7fb47f510c4fe3b6e878dc32cb42c6bcb81e",
+  "git_tree": "2c4181e7bfaf2e19a4530afb3e731dacddea6205",
   "gradient_set": "varied",
   "member_ids": [
     "2864601_0.437"
@@ -128,7 +128,7 @@
   "output_hashes": {
     "attribution_maps.h5": "9773d0a61cfc131c16b701db0cc5001d02c8e22a9212789991f09bdc23569451",
     "benchmark.png": "5f43593c53851dd109133d5e190e528cadd99cadfe186622e34a63d64deac210",
-    "benchmark_metrics.csv": "ff612e82924c47fbc812e999de4af83c679c8a4f80f5c09ce0da2e4485ddc181",
+    "benchmark_metrics.csv": "3e2ecfd147925b06a17024434bcb095b487d934f6a5ce3a6b8bf3f4bec39d180",
     "faithfulness_curves.csv": "453ce0a9636d8597fe37a7f6302a1cb41e903d23f7c69d9aa42010c501245840",
     "grouped_uncertainty.csv": "27e5f5617dc411b8c39cd1f4f1cc5a07839e3c0efa5297fafce4a07c26cba8ae",
     "ig_convergence.csv": "92c916c1626228acd64dacfaa9aa5e5740476ce0860ffb03c68453684143a424",
@@ -283,5 +283,5 @@
     100493
   ],
   "seed": 20260821,
-  "wall_time_seconds": 219.29439441600698
+  "wall_time_seconds": 265.8494234589889
 }

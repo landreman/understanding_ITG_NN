@@ -59,7 +59,10 @@ insertion resolves against its displacement control, **0.1374**
 faithfulness versus a control map is stratum- and direction-specific, not a
 blanket pass. The selected pair is retained because this control diagnoses how
 much network information the chosen explanations add; it was not part of the
-post-run candidate-ranking rule.
+post-run candidate-ranking rule. Only the selected pair was measured against
+this control. Whether robust-constant, medoid, or Expected Gradients would rank
+better under a control-aware rule is therefore unknown and requires the
+off-slice S03 support cohort.
 
 Both selected methods respond to complete parameter randomization: absolute-map
 rank correlation with the randomized member is **0.406** for low-pass IG and
@@ -109,7 +112,7 @@ and dataset SHA-256
 `9d8fa52f93f2782ad9948a38bf46943c0cd6df78cd08b94a006dad4e06c1c8ad`.
 Production used CPU, Python 3.12.4, torch 2.4.1, numpy 1.26.4, h5py 3.11.0,
 and Captum 0.9.0.
-The run was generated from a tracked-dirty tree at commit `235f8fa`; the
+The run was generated from a tracked-dirty tree at commit `aa0b9ea`; the
 manifest's hashed script and attribution module match the eventual committed
 head byte-for-byte and pin the code used for these post-run diagnostics.
 
@@ -317,6 +320,9 @@ or method records:
     stratum and direction. Low-pass adds resolved network-dependent ordering on
     unstable rows but not stable rows; most mask comparisons against its control
     are unresolved.
+13. The control statistic was initially unpinned. A negative-endpoint paired
+    fixture now fails if the control is not oriented per row, and a mixed-sign
+    tensor pins the production control ranking to exactly $|X-B|$.
 
 Six deliberate post-run mutations turned the focused suite red and were
 reverted: dropping robust channel scales failed the exact scaled-gradient test;
@@ -347,7 +353,9 @@ negative-endpoint control.
   rows, although it does in both unstable directions. The mask beats its control
   conclusively only for unstable insertion. Passing a random-order control is
   therefore insufficient evidence that an attribution adds learned-network
-  information.
+  information. These near-floor rows have a mean endpoint difference of only
+  0.00273 native units, so a mechanical tie is plausible; it is not by itself
+  proof that the map contains no learned information.
 - Baseline agreement is only moderate; selected low-pass IG correlates 0.432
   with robust-reference IG.
 - Low-pass IG has the weakest parameter-randomization response among eligible IG
@@ -390,6 +398,15 @@ negative-endpoint control.
 | Signed and absolute summaries are distinguishable | **Pass.** Full HDF5 maps retain signs; every metrics row has `signed` and `contribution_valued`; VarGrad and masks are marked magnitude-only. |
 | No feature is called common without agreement | **Pass.** S06a names no common feature; member agreement is deferred to S06b. |
 
+**Open researcher decision.** Two criteria are now not fully met: control-map
+faithfulness is partial and the registered fixed-background mask fails symmetry.
+The researcher must choose among: proceed with the pair as qualified S06b
+sensitivities (no additional S06a compute); rerun control-aware selection across
+all five path candidates (roughly one code iteration and under 10 minutes of
+production compute, but it may change the registered baseline family); or demote
+the mask and choose a new perturbation primary (new method-selection work). S06a
+does not make that choice.
+
 ## Reproduction
 
 ```bash
@@ -410,10 +427,12 @@ rows in `tests/data/review_slice.h5`. Translate them with
 IDs directly to `load_hdf5_rows`. Low-pass IG uses only each analyzed geometry,
 its low-pass transform, the checkpoint, and the stored drives, so the reviewer
 can recompute its 128-row toy, completeness, symmetry, randomization, and
-faithfulness numbers within ordinary platform tolerance. Near-zero canonical
+faithfulness numbers, including all low-pass displacement-control gaps, within
+ordinary platform tolerance. Near-zero canonical
 co-shifted equivariance is roundoff-limited: the production artifact records
-$1.03\times10^{-4}$ for low-pass IG while review runners obtain values of order
-$10^{-8}$, so only its effectively-zero order is expected to agree.
+$1.03\times10^{-4}$ for low-pass IG while reviewer recomputations are many orders
+below the fixed-baseline value, so only its effectively-zero character is
+expected to agree.
 The fixed-baseline columns use the same eight rows and are directly recomputable;
 they prevent confusing the mask's co-shifted and registered-background maps.
 The first 16 maps to compare are in `selected_review_maps.h5`, with explicit axes
@@ -453,6 +472,9 @@ baseline from non-panel slice rows and compare the selected method and
 correlation ordering; qualitative agreement would support, but not reproduce,
 the registered sensitivity result. Full 22-method maps are 9.6 MB in the
 ignored run; only the selected 16-row maps are committed.
+The mask's four displacement-control comparisons likewise depend on the
+off-slice matched-observed background and cannot be independently recomputed on
+the review runner.
 
 ## Deferred
 

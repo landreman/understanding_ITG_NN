@@ -28,6 +28,7 @@ from scripts.xai_s06a_attribution import (
     METHOD_NAMES,
     _attribution_equivariance_pair,
     _curve_margin_components,
+    _faithfulness_control_map,
     _forward,
     _grouped_curve_margin_interval,
     _resolve,
@@ -504,6 +505,36 @@ def test_curve_margin_orientation_handles_original_below_baseline() -> None:
     assert interval["per_row_oriented_native_gap_estimate"] > 0
     assert interval["per_row_oriented_native_gap_ci_lower"] > 0
     assert interval["row_favouring_fraction_estimate"] == 1.0
+
+    control_curves = [dict(curve) for curve in curves]
+    control_curves[1] = {
+        **control_curves[1],
+        "deletion_output_per_sample": np.full(2, 1.5),
+    }
+    paired = _grouped_curve_margin_interval(
+        curves,
+        np.asarray(("eq0", "eq1")),
+        np.arange(2),
+        direction="deletion",
+        replicates=40,
+        seed=7,
+        control_curves=control_curves,
+    )
+    assert paired["per_row_oriented_native_gap_estimate"] == pytest.approx(0.75)
+    assert paired["control_map_per_row_oriented_native_gap_estimate"] == pytest.approx(
+        1.0
+    )
+    assert paired["method_minus_control_map_gap_estimate"] == pytest.approx(-0.25)
+    assert paired["method_minus_control_map_gap_ci_upper"] < 0
+
+
+def test_faithfulness_control_map_is_absolute_input_minus_baseline() -> None:
+    geometry = torch.as_tensor(((-2.0, 3.0), (5.0, -7.0))).reshape(1, 2, 2)
+    baseline = torch.as_tensor(((1.0, -1.0), (2.0, -3.0))).reshape(1, 2, 2)
+    expected = torch.as_tensor(((3.0, 4.0), (3.0, 4.0))).reshape(1, 2, 2)
+    torch.testing.assert_close(
+        _faithfulness_control_map(geometry, baseline), expected, atol=0, rtol=0
+    )
 
 
 def test_curve_margin_interval_pairs_method_with_control_map() -> None:

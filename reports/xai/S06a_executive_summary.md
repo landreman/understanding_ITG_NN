@@ -179,7 +179,15 @@ from unresolved stable-row evidence.
 
 ## What comes next
 
-S06b should apply low-pass Integrated Gradients and the periodic mask to the
+Before S06b, the researcher must decide whether to proceed with this pair as
+qualified sensitivities, rerun selection with displacement controls for every
+candidate, or demote the mask because its registered fixed-background maps fail
+symmetry. The first choice costs no additional S06a compute; the second is about
+one code iteration and under 10 minutes of production compute but may change the
+baseline family; the third requires new perturbation-method selection.
+
+If the pair is retained, S06b should apply low-pass Integrated Gradients and the
+periodic mask to the
 registered top 10 networks, with medoid and robust-reference Integrated
 Gradients retained as baseline checks. The fixed-background mask should remain
 a secondary perturbation sensitivity method, not be described as a symmetry-

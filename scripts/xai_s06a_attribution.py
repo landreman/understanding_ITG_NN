@@ -687,6 +687,14 @@ def _curve_margin(
     return _curve_margin_components(curves, sample_rows, direction)["normalized_margin"]
 
 
+def _faithfulness_control_map(
+    geometry: torch.Tensor, baseline: torch.Tensor
+) -> torch.Tensor:
+    """Network-free cell ranking matched to a method's replacement baseline."""
+
+    return torch.abs(geometry - baseline)
+
+
 def _grouped_curve_margin_interval(
     curves: list[dict[str, Any]],
     equilibrium_files: np.ndarray,
@@ -1359,7 +1367,9 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
                 ),
                 geometry[selected_rows],
                 baseline[selected_rows],
-                torch.abs(geometry[selected_rows] - baseline[selected_rows]),
+                _faithfulness_control_map(
+                    geometry[selected_rows], baseline[selected_rows]
+                ),
                 fractions=config["deletion_fractions"],
                 robust_scales=scales,
                 seed=int(config["seed"]) + 1201 + method_index,
