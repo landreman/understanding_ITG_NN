@@ -1,0 +1,98 @@
+{
+  "cyclic_occlusion": {
+    "channel_top1": 1.0,
+    "deletion_auc": 0.025,
+    "insertion_auc": 0.975,
+    "position_average_precision": 0.6125,
+    "random_deletion_auc": 0.5572035899592216,
+    "random_insertion_auc": 0.4427964707498119
+  },
+  "expected_gradients": {
+    "channel_top1": 1.0,
+    "deletion_auc": 0.025,
+    "insertion_auc": 0.975,
+    "position_average_precision": 1.0,
+    "random_deletion_auc": 0.5572035899592216,
+    "random_insertion_auc": 0.4427964707498119
+  },
+  "ig_low_pass": {
+    "channel_top1": 1.0,
+    "deletion_auc": 0.025,
+    "insertion_auc": 0.975,
+    "position_average_precision": 1.0,
+    "random_deletion_auc": 0.5572035899592216,
+    "random_insertion_auc": 0.4427964707498119
+  },
+  "ig_matched_observed": {
+    "channel_top1": 1.0,
+    "deletion_auc": 0.025,
+    "insertion_auc": 0.975,
+    "position_average_precision": 1.0,
+    "random_deletion_auc": 0.5572035899592216,
+    "random_insertion_auc": 0.4427964707498119
+  },
+  "ig_medoid": {
+    "channel_top1": 1.0,
+    "deletion_auc": 0.025,
+    "insertion_auc": 0.975,
+    "position_average_precision": 1.0,
+    "random_deletion_auc": 0.5572035899592216,
+    "random_insertion_auc": 0.4427964707498119
+  },
+  "ig_robust_constant": {
+    "channel_top1": 1.0,
+    "deletion_auc": 0.025,
+    "insertion_auc": 0.975,
+    "position_average_precision": 1.0,
+    "random_deletion_auc": 0.5572035899592216,
+    "random_insertion_auc": 0.4427964707498119
+  },
+  "periodic_mask": {
+    "channel_top1": 1.0,
+    "deletion_auc": 0.025,
+    "insertion_auc": 0.975,
+    "position_average_precision": 1.0,
+    "random_deletion_auc": 0.5572035899592216,
+    "random_insertion_auc": 0.4427964707498119
+  },
+  "random_map_control": {
+    "channel_top1": 0.0,
+    "deletion_auc": 0.4828983128446396,
+    "insertion_auc": 0.5171017372246665,
+    "position_average_precision": 0.044190332556569456,
+    "random_deletion_auc": 0.4670559713755781,
+    "random_insertion_auc": 0.5329441049801135
+  },
+  "scaled_gradient": {
+    "channel_top1": 1.0,
+    "deletion_auc": 0.025,
+    "insertion_auc": 0.975,
+    "position_average_precision": 1.0,
+    "random_deletion_auc": 0.5572035899592216,
+    "random_insertion_auc": 0.4427964707498119
+  },
+  "tsr_ig_robust_constant": {
+    "channel_top1": 1.0,
+    "deletion_auc": 0.025,
+    "insertion_auc": 0.975,
+    "position_average_precision": 1.0,
+    "random_deletion_auc": 0.5572035899592216,
+    "random_insertion_auc": 0.4427964707498119
+  },
+  "tsr_scaled_gradient": {
+    "channel_top1": 1.0,
+    "deletion_auc": 0.025,
+    "insertion_auc": 0.975,
+    "position_average_precision": 1.0,
+    "random_deletion_auc": 0.5572035899592216,
+    "random_insertion_auc": 0.4427964707498119
+  },
+  "vargrad": {
+    "channel_top1": 1.0,
+    "deletion_auc": 0.025,
+    "insertion_auc": 0.975,
+    "position_average_precision": 1.0,
+    "random_deletion_auc": 0.5572035899592216,
+    "random_insertion_auc": 0.4427964707498119
+  }
+}

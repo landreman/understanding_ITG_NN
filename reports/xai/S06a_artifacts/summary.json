@@ -1,0 +1,89 @@
+{
+  "baseline_families": {
+    "cyclic_occlusion": "matched_observed",
+    "expected_gradients": "observed_background_distribution",
+    "ig_low_pass": "low_pass",
+    "ig_matched_observed": "matched_observed",
+    "ig_medoid": "medoid",
+    "ig_robust_constant": "robust_constant",
+    "periodic_mask": "matched_observed",
+    "scaled_gradient": "none_local",
+    "tsr_ig_robust_constant": "robust_constant",
+    "tsr_scaled_gradient": "none_local",
+    "vargrad": "none_local_noise"
+  },
+  "baseline_validity_tags": {
+    "low_pass": "deliberately_off_manifold_diagnostic",
+    "matched_observed": "observed_comparison",
+    "medoid": "observed_comparison",
+    "none_local": "plausibly_local_not_guaranteed_physical",
+    "none_local_noise": "plausibly_local_not_guaranteed_physical",
+    "observed_background_distribution": "observed_comparison",
+    "robust_constant": "deliberately_off_manifold_diagnostic"
+  },
+  "canonical_function": "invariant_tilde_f",
+  "estimand": "native max(log Q, -2)",
+  "function_count": 2,
+  "magnitude_only_methods": [
+    "vargrad",
+    "periodic_mask"
+  ],
+  "member_id": "2864601_0.437",
+  "method_count": 11,
+  "mode": "production",
+  "panel_support_equilibrium_overlap": 0,
+  "row_count": 128,
+  "run_id": "attribution-benchmark-top1-panel128",
+  "selection": {
+    "eligible": {
+      "cyclic_occlusion": false,
+      "expected_gradients": true,
+      "ig_low_pass": true,
+      "ig_matched_observed": false,
+      "ig_medoid": true,
+      "ig_robust_constant": true,
+      "periodic_mask": true,
+      "scaled_gradient": true,
+      "tsr_ig_robust_constant": true,
+      "tsr_scaled_gradient": true,
+      "vargrad": true
+    },
+    "passed": true,
+    "primary_path_gradient": "ig_low_pass",
+    "primary_perturbation": "periodic_mask",
+    "rule": {
+      "minimum_deletion_margin": 0.0,
+      "minimum_insertion_margin": 0.0,
+      "minimum_toy_channel_top1": 1.0,
+      "minimum_toy_position_average_precision": 0.75,
+      "path_candidates": [
+        "ig_robust_constant",
+        "ig_matched_observed",
+        "ig_medoid",
+        "ig_low_pass",
+        "expected_gradients"
+      ],
+      "perturbation_candidates": [
+        "cyclic_occlusion",
+        "periodic_mask"
+      ],
+      "tie_break": "lowest_normalized_infidelity_then_runtime"
+    }
+  },
+  "signed_methods": [
+    "scaled_gradient",
+    "ig_robust_constant",
+    "ig_matched_observed",
+    "ig_medoid",
+    "ig_low_pass",
+    "expected_gradients",
+    "cyclic_occlusion",
+    "tsr_scaled_gradient",
+    "tsr_ig_robust_constant"
+  ],
+  "stable_or_near_floor_rows": 33,
+  "step": "S06a",
+  "support_calibration_rows": 128,
+  "support_fit_rows": 384,
+  "unstable_rows": 95
+}
