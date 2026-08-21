@@ -864,6 +864,12 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
                     "function": function_name,
                     "method": method,
                     "artifact_method": result.method,
+                    "batch_layout_adapter": result.metadata.get(
+                        "batch_layout_adapter", "none"
+                    ),
+                    "deterministic_optimizer": result.metadata.get(
+                        "deterministic_optimizer", "not_applicable"
+                    ),
                     "stratum": stratum,
                     "row_count": len(indices),
                     "signed": result.signed,
@@ -983,6 +989,26 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
                     row["parameter_randomization_correlation"] = absolute_rank_correlation(
                         result.values[:random_count], random_map
                     )
+                    row["trained_map_input_baseline_abs_rank_correlation"] = float(
+                        "nan"
+                    )
+                    row[
+                        "randomized_map_input_baseline_abs_rank_correlation"
+                    ] = float("nan")
+                    if method == "ig_low_pass":
+                        input_baseline_factor = (
+                            geometry[:random_count] - baseline[:random_count]
+                        )
+                        row[
+                            "trained_map_input_baseline_abs_rank_correlation"
+                        ] = absolute_rank_correlation(
+                            input_baseline_factor, result.values[:random_count]
+                        )
+                        row[
+                            "randomized_map_input_baseline_abs_rank_correlation"
+                        ] = absolute_rank_correlation(
+                            input_baseline_factor, random_map
+                        )
                     sensitivity_count = min(int(config["sensitivity_rows"]), len(geometry))
                     sensitivity_geometry = geometry[:sensitivity_count]
                     sensitivity_baselines = _subset_baselines(
@@ -1262,6 +1288,9 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
             "channel_scales_sha256": sha256_file(channel_scales_path),
             "baseline_registry_sha256": sha256_file(baseline_registry_path),
             "script_sha256": sha256_file(__file__),
+            "attribution_module_sha256": sha256_file(
+                repository / "itg_nn/xai/attribution.py"
+            ),
         },
         dataset=dataset,
         checkpoint=checkpoint,

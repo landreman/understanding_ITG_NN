@@ -354,6 +354,7 @@ def periodic_extremal_mask(
     seed: int,
 ) -> AttributionMap:
     started = time.monotonic()
+    del seed  # Kept in the uniform estimator API; this optimizer uses no RNG.
     values, reference = _validated_inputs_and_baseline(inputs, baseline)
     if not 0 < area_fraction <= 1 or steps < 1 or learning_rate <= 0:
         raise ValueError("invalid periodic extremal-mask configuration")
@@ -391,7 +392,8 @@ def periodic_extremal_mask(
             "estimand": "native max(log Q, -2)",
             "area_fraction": float(area_fraction),
             "optimization_steps": int(steps),
-            "seed": int(seed),
+            "seed_used": False,
+            "deterministic_optimizer": True,
             "periodic_total_variation": True,
             "replacement_path": ValidityTag.OFF_MANIFOLD.value,
             "contribution_valued": False,
