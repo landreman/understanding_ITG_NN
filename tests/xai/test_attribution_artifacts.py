@@ -73,6 +73,7 @@ def test_s06a_selected_methods_pass_both_faithfulness_directions_in_each_stratum
     assert selection["passed"] is True
     assert selection["primary_path_gradient"] == "ig_low_pass"
     assert selection["primary_perturbation"] == "periodic_mask"
+    assert selection["rule"]["maximum_parameter_randomization_correlation"] == 0.95
     selected = {
         selection["primary_path_gradient"],
         selection["primary_perturbation"],
@@ -88,6 +89,18 @@ def test_s06a_selected_methods_pass_both_faithfulness_directions_in_each_stratum
     assert all(float(row["toy_channel_top1"]) == 1 for row in rows)
     assert all(float(row["toy_position_average_precision"]) >= 0.75 for row in rows)
     all_rows = {row["method"]: row for row in rows if row["stratum"] == "all"}
+    assert all(
+        row["cyclic_equivariance_baseline_convention"] == "co_shifted"
+        for row in all_rows.values()
+    )
+    assert (
+        float(
+            all_rows["periodic_mask"][
+                "cyclic_equivariance_fixed_baseline_relative_rms"
+            ]
+        )
+        > 0.5
+    )
     assert all(float(row["parameter_randomization_correlation"]) < 0.95 for row in all_rows.values())
 
 
@@ -102,6 +115,26 @@ def test_s06a_pilot_selection_artifact_records_baseline_instability() -> None:
     assert pilot["primary_path_gradient"] == "ig_medoid"
     assert production["primary_path_gradient"] == "ig_low_pass"
     assert pilot["rule"] == production["rule"]
+
+
+def test_s06a_selected_faithfulness_margins_have_grouped_intervals() -> None:
+    with (ARTIFACTS / "grouped_uncertainty.csv").open(
+        newline="", encoding="utf-8"
+    ) as handle:
+        rows = list(csv.DictReader(handle))
+    margins = [
+        row
+        for row in rows
+        if row["function"] == "invariant_tilde_f"
+        and row["method"] in {"ig_low_pass", "periodic_mask"}
+        and row["statistic"]
+        in {"deletion_margin_vs_random", "insertion_margin_vs_random"}
+    ]
+    assert len(margins) == 2 * 2 * 3
+    assert all(row["resampling_unit"] == "equilibrium_files" for row in margins)
+    assert all(int(row["replicates"]) == 500 for row in margins)
+    assert all(float(row["ci_lower"]) <= float(row["estimate"]) for row in margins)
+    assert all(float(row["estimate"]) <= float(row["ci_upper"]) for row in margins)
 
 
 def test_s06a_review_maps_are_native_member_level_and_axis_labeled() -> None:

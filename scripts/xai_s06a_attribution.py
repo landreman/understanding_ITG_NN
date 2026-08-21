@@ -554,7 +554,8 @@ def _select_methods(
             > float(rule["minimum_deletion_margin"])
             and float(row["insertion_margin_vs_random"])
             > float(rule["minimum_insertion_margin"])
-            and float(row["parameter_randomization_correlation"]) < 0.95
+            and float(row["parameter_randomization_correlation"])
+            < float(rule["maximum_parameter_randomization_correlation"])
         )
 
     def choose(candidates: list[str]) -> str | None:
@@ -580,6 +581,74 @@ def _select_methods(
         "rule": rule,
         "eligible": {method: eligible(method) for method in METHOD_NAMES},
         "passed": primary_path is not None and primary_perturbation is not None,
+    }
+
+
+def _curve_margin(
+    curves: list[dict[str, Any]], sample_rows: np.ndarray, direction: str
+) -> float:
+    aggregated: list[dict[str, float]] = []
+    output_keys = (
+        "deletion_output",
+        "insertion_output",
+        "random_deletion_output",
+        "random_insertion_output",
+    )
+    for curve in curves:
+        aggregated.append(
+            {
+                "fraction": float(curve["fraction"]),
+                "original_output": float(
+                    np.mean(curve["original_output_per_sample"][sample_rows])
+                ),
+                "baseline_output": float(
+                    np.mean(curve["baseline_output_per_sample"][sample_rows])
+                ),
+                **{
+                    key: float(np.mean(curve[f"{key}_per_sample"][sample_rows]))
+                    for key in output_keys
+                },
+            }
+        )
+    if direction == "deletion":
+        return curve_area(aggregated, "random_deletion_output") - curve_area(
+            aggregated, "deletion_output"
+        )
+    if direction == "insertion":
+        return curve_area(aggregated, "insertion_output") - curve_area(
+            aggregated, "random_insertion_output"
+        )
+    raise ValueError(f"unknown faithfulness direction {direction}")
+
+
+def _grouped_curve_margin_interval(
+    curves: list[dict[str, Any]],
+    equilibrium_files: np.ndarray,
+    sample_rows: np.ndarray,
+    *,
+    direction: str,
+    replicates: int,
+    seed: int,
+) -> dict[str, float | int | str]:
+    groups = np.asarray(equilibrium_files)
+    selected_groups = groups[sample_rows]
+    unique_groups = np.unique(selected_groups)
+    group_rows = [
+        sample_rows[np.flatnonzero(selected_groups == group)] for group in unique_groups
+    ]
+    rng = np.random.default_rng(int(seed))
+    samples = np.empty(int(replicates), dtype=np.float64)
+    for replicate in range(int(replicates)):
+        chosen = rng.integers(0, len(group_rows), size=len(group_rows))
+        resampled_rows = np.concatenate([group_rows[index] for index in chosen])
+        samples[replicate] = _curve_margin(curves, resampled_rows, direction)
+    lower, upper = np.quantile(samples, (0.025, 0.975))
+    return {
+        "estimate": _curve_margin(curves, sample_rows, direction),
+        "ci_lower": float(lower),
+        "ci_upper": float(upper),
+        "replicates": int(replicates),
+        "resampling_unit": "equilibrium_files",
     }
 
 
@@ -857,21 +926,41 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
                         drives_ln[:symmetry_count],
                     )
 
-                    def symmetry_attributor(values: torch.Tensor) -> AttributionMap:
-                        shifted_input = not torch.equal(values, symmetry_geometry)
-                        active_baselines = shifted_baselines if shifted_input else symmetry_baselines
+                    def fixed_baseline_attributor(values: torch.Tensor) -> AttributionMap:
                         return _run_method(
                             method,
                             symmetry_forward,
                             values,
-                            active_baselines,
+                            symmetry_baselines,
+                            scales,
+                            config,
+                            seed=int(config["seed"]) + 1409 + method_index,
+                        )
+
+                    def co_shifted_baseline_attributor(
+                        values: torch.Tensor,
+                    ) -> AttributionMap:
+                        return _run_method(
+                            method,
+                            symmetry_forward,
+                            values,
+                            shifted_baselines,
                             scales,
                             config,
                             seed=int(config["seed"]) + 1409 + method_index,
                         )
 
                     row["cyclic_equivariance_relative_rms"] = attribution_equivariance_error(
-                        symmetry_attributor,
+                        fixed_baseline_attributor,
+                        symmetry_geometry,
+                        shift=int(config["symmetry_shift"]),
+                        shifted_attributor=co_shifted_baseline_attributor,
+                    )
+                    row["cyclic_equivariance_baseline_convention"] = "co_shifted"
+                    row[
+                        "cyclic_equivariance_fixed_baseline_relative_rms"
+                    ] = attribution_equivariance_error(
+                        fixed_baseline_attributor,
                         symmetry_geometry,
                         shift=int(config["symmetry_shift"]),
                     )
@@ -1014,6 +1103,71 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
     if not selection["passed"]:
         raise RuntimeError(f"no primary method pair passed the registered rule: {selection}")
 
+    selected_names = (
+        str(selection["primary_path_gradient"]),
+        str(selection["primary_perturbation"]),
+    )
+    canonical_forward = _forward(
+        member, CANONICAL_FUNCTION, drives_lt, drives_ln
+    )
+    for selected_index, method in enumerate(selected_names):
+        method_index = METHOD_NAMES.index(method)
+        result = maps[(CANONICAL_FUNCTION, method)]
+        baseline = _method_baseline(method, baselines)
+        sample_curves = deletion_insertion_curves(
+            canonical_forward,
+            geometry,
+            baseline,
+            result.values,
+            fractions=config["deletion_fractions"],
+            robust_scales=scales,
+            seed=int(config["seed"]) + 1201 + method_index,
+            include_per_sample=True,
+        )
+        for stratum_index, (stratum, mask) in enumerate(
+            (
+                ("all", np.ones(len(geometry), dtype=bool)),
+                ("stable_or_near_floor", metadata["stable_or_near_floor"]),
+                ("unstable", ~metadata["stable_or_near_floor"]),
+            )
+        ):
+            sample_rows = np.flatnonzero(mask)
+            for direction_index, direction in enumerate(("deletion", "insertion")):
+                interval = _grouped_curve_margin_interval(
+                    sample_curves,
+                    metadata["equilibrium_file"],
+                    sample_rows,
+                    direction=direction,
+                    replicates=int(config["bootstrap_replicates"]),
+                    seed=(
+                        int(config["seed"])
+                        + 1901
+                        + 100 * selected_index
+                        + 10 * stratum_index
+                        + direction_index
+                    ),
+                )
+                expected = next(
+                    row
+                    for row in metric_rows
+                    if row["function"] == CANONICAL_FUNCTION
+                    and row["method"] == method
+                    and row["stratum"] == stratum
+                )[f"{direction}_margin_vs_random"]
+                if not np.isclose(float(interval["estimate"]), float(expected), atol=1e-9):
+                    raise RuntimeError(
+                        f"bootstrap point estimate disagrees for {method} {stratum} {direction}"
+                    )
+                bootstrap_rows.append(
+                    {
+                        "function": CANONICAL_FUNCTION,
+                        "method": method,
+                        "stratum": stratum,
+                        "statistic": f"{direction}_margin_vs_random",
+                        **interval,
+                    }
+                )
+
     metrics_path = artifacts.write_text("benchmark_metrics.csv", _csv_text(metric_rows))
     curves_path = artifacts.write_text("faithfulness_curves.csv", _csv_text(curve_rows))
     bootstrap_path = artifacts.write_text(
@@ -1051,10 +1205,6 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
     plot_path = artifacts.register_existing("benchmark.png")
 
     publish_count = min(int(config["review_publish_rows"]), len(panel.row_indices))
-    selected_names = (
-        str(selection["primary_path_gradient"]),
-        str(selection["primary_perturbation"]),
-    )
     selected_indices = [METHOD_NAMES.index(name) for name in selected_names]
     review_map = map_array[:, selected_indices, :, :publish_count]
     review_difference = map_difference[selected_indices, :, :publish_count]

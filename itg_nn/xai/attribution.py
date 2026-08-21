@@ -254,11 +254,12 @@ def attribution_equivariance_error(
     inputs: torch.Tensor,
     *,
     shift: int,
+    shifted_attributor: Callable[[torch.Tensor], AttributionMap] | None = None,
 ) -> float:
     _validate_geometry(inputs)
     reference = attributor(inputs).values
     shifted = torch.roll(inputs, shifts=int(shift), dims=1)
-    shifted_map = attributor(shifted).values
+    shifted_map = (shifted_attributor or attributor)(shifted).values
     expected = torch.roll(reference, shifts=int(shift), dims=1)
     difference_rms = torch.sqrt(torch.mean((shifted_map - expected).square()))
     scale = torch.sqrt(torch.mean(expected.square())).clamp_min(
@@ -408,7 +409,8 @@ def deletion_insertion_curves(
     robust_scales: torch.Tensor,
     seed: int,
     support_scorer: Callable[[np.ndarray], Mapping[str, np.ndarray]] | None = None,
-) -> list[dict[str, float | str]]:
+    include_per_sample: bool = False,
+) -> list[dict[str, Any]]:
     values, reference = _validated_inputs_and_baseline(inputs, baseline)
     if attribution.shape != values.shape:
         raise ValueError("attribution and inputs must have equal shape")
@@ -451,9 +453,11 @@ def deletion_insertion_curves(
         return float(np.mean(np.asarray(score["warning_score"], dtype=np.float64)))
 
     with torch.no_grad():
-        original_output = float(_forward_vector(forward, values).mean().cpu())
-        baseline_output = float(_forward_vector(forward, reference).mean().cpu())
-    rows: list[dict[str, float | str]] = []
+        original_values = _forward_vector(forward, values).detach().cpu().numpy()
+        baseline_values = _forward_vector(forward, reference).detach().cpu().numpy()
+        original_output = float(np.mean(original_values))
+        baseline_output = float(np.mean(baseline_values))
+    rows: list[dict[str, Any]] = []
     for fraction in fractions_array:
         count = min(flat_count, int(math.ceil(float(fraction) * flat_count)))
         deletion = edited(importance_order, count, insert=False)
@@ -461,38 +465,54 @@ def deletion_insertion_curves(
         random_deletion = edited(random_order, count, insert=False)
         random_insertion = edited(random_order, count, insert=True)
         with torch.no_grad():
-            rows.append(
-                {
-                    "fraction": float(fraction),
-                    "original_output": original_output,
-                    "baseline_output": baseline_output,
-                    "deletion_output": float(
-                        _forward_vector(forward, deletion).mean().cpu()
-                    ),
-                    "insertion_output": float(
-                        _forward_vector(forward, insertion).mean().cpu()
-                    ),
-                    "random_deletion_output": float(
-                        _forward_vector(forward, random_deletion).mean().cpu()
-                    ),
-                    "random_insertion_output": float(
-                        _forward_vector(forward, random_insertion).mean().cpu()
-                    ),
-                    "deletion_support_drift_rms": drift(deletion, values),
-                    "insertion_support_drift_rms": drift(insertion, reference),
-                    "random_deletion_support_drift_rms": drift(
-                        random_deletion, values
-                    ),
-                    "random_insertion_support_drift_rms": drift(
-                        random_insertion, reference
-                    ),
-                    "deletion_support_warning": support_warning(deletion),
-                    "insertion_support_warning": support_warning(insertion),
-                    "random_deletion_support_warning": support_warning(random_deletion),
-                    "random_insertion_support_warning": support_warning(random_insertion),
-                    "validity_tag": ValidityTag.OFF_MANIFOLD.value,
-                }
-            )
+            output_arrays = {
+                "deletion_output": _forward_vector(forward, deletion)
+                .detach()
+                .cpu()
+                .numpy(),
+                "insertion_output": _forward_vector(forward, insertion)
+                .detach()
+                .cpu()
+                .numpy(),
+                "random_deletion_output": _forward_vector(forward, random_deletion)
+                .detach()
+                .cpu()
+                .numpy(),
+                "random_insertion_output": _forward_vector(forward, random_insertion)
+                .detach()
+                .cpu()
+                .numpy(),
+            }
+            row: dict[str, Any] = {
+                "fraction": float(fraction),
+                "original_output": original_output,
+                "baseline_output": baseline_output,
+                **{
+                    key: float(np.mean(array))
+                    for key, array in output_arrays.items()
+                },
+                "deletion_support_drift_rms": drift(deletion, values),
+                "insertion_support_drift_rms": drift(insertion, reference),
+                "random_deletion_support_drift_rms": drift(random_deletion, values),
+                "random_insertion_support_drift_rms": drift(
+                    random_insertion, reference
+                ),
+                "deletion_support_warning": support_warning(deletion),
+                "insertion_support_warning": support_warning(insertion),
+                "random_deletion_support_warning": support_warning(random_deletion),
+                "random_insertion_support_warning": support_warning(random_insertion),
+                "validity_tag": ValidityTag.OFF_MANIFOLD.value,
+            }
+            if include_per_sample:
+                row["original_output_per_sample"] = original_values
+                row["baseline_output_per_sample"] = baseline_values
+                row.update(
+                    {
+                        f"{key}_per_sample": array
+                        for key, array in output_arrays.items()
+                    }
+                )
+            rows.append(row)
     return rows
 
 

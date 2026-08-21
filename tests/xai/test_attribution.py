@@ -58,6 +58,21 @@ def test_integrated_gradients_recovers_wrapped_toy_and_null_control() -> None:
     assert result.method == "integrated_gradients_fallback"
 
 
+def test_fallback_integrated_gradients_matches_nonlinear_analytic_path() -> None:
+    geometry = torch.randn((2, 96, 7), generator=torch.Generator().manual_seed(21))
+    result = integrated_gradients(
+        _invariant_quadratic_forward,
+        geometry,
+        torch.zeros_like(geometry),
+        steps=9,
+        backend="fallback",
+    )
+    expected = torch.zeros_like(geometry)
+    expected[:, :, 1] = geometry[:, :, 1].square() / 96
+    expected[:, :, 4] = 0.5 * geometry[:, :, 4] / 96
+    torch.testing.assert_close(result.values, expected, atol=2e-7, rtol=0)
+
+
 def test_native_scaled_gradients_explain_clipped_log_units_not_exp_output() -> None:
     geometry = torch.zeros((2, 96, 7), dtype=torch.float32)
     scales = torch.as_tensor((1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0))
@@ -145,6 +160,33 @@ def test_completeness_and_cyclic_equivariance_are_measured_in_map_coordinates() 
 
     error = attribution_equivariance_error(attributor, geometry, shift=17)
     assert error < 2e-6
+
+
+def test_equivariance_distinguishes_fixed_and_co_shifted_baselines() -> None:
+    geometry = torch.randn((2, 96, 7), generator=torch.Generator().manual_seed(31))
+    baseline = torch.randn((2, 96, 7), generator=torch.Generator().manual_seed(32))
+    shift = 17
+
+    def with_baseline(reference: torch.Tensor):
+        return lambda values: integrated_gradients(
+            _invariant_quadratic_forward,
+            values,
+            reference,
+            steps=17,
+            backend="fallback",
+        )
+
+    fixed = attribution_equivariance_error(
+        with_baseline(baseline), geometry, shift=shift
+    )
+    co_shifted = attribution_equivariance_error(
+        with_baseline(baseline),
+        geometry,
+        shift=shift,
+        shifted_attributor=with_baseline(torch.roll(baseline, shift, dims=1)),
+    )
+    assert co_shifted < 2e-6
+    assert fixed > 0.5
 
 
 def test_cyclic_occlusion_recovers_wrapped_window_and_ignores_null_channel() -> None:
@@ -259,6 +301,21 @@ def test_deletion_insertion_reports_random_controls_and_support_drift_every_dose
     assert curves[-1]["insertion_output"] == pytest.approx(
         curves[-1]["original_output"], abs=1e-7
     )
+
+
+def test_deletion_insertion_ranks_mixed_sign_maps_by_absolute_magnitude() -> None:
+    geometry = torch.as_tensor((1.0, -10.0, 0.0, 0.0)).reshape(1, 4, 1)
+    rows = deletion_insertion_curves(
+        lambda values: values.sum(dim=(1, 2)),
+        geometry,
+        torch.zeros_like(geometry),
+        geometry.clone(),
+        fractions=(0.0, 0.25, 1.0),
+        robust_scales=torch.ones(1),
+        seed=3,
+    )
+    assert float(rows[1]["deletion_output"]) == 1.0
+    assert float(rows[1]["insertion_output"]) == -10.0
 
 
 def test_curve_area_orients_outputs_when_original_is_below_baseline() -> None:

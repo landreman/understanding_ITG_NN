@@ -54,6 +54,7 @@
     "minimum_toy_position_average_precision": 0.75,
     "minimum_deletion_margin": 0.0,
     "minimum_insertion_margin": 0.0,
+    "maximum_parameter_randomization_correlation": 0.95,
     "tie_break": "lowest_normalized_infidelity_then_runtime"
   },
   "pilot": {
