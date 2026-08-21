@@ -55,6 +55,12 @@ qualification: the mask was optimized using the same replacement operation that
 this curve scores, so its very large margin is an in-sample optimization result,
 not an independent validation.
 
+The positive margins are also uncertain. When whole equilibria are resampled,
+11 of the 12 confidence intervals across method, stability group, and deletion
+or insertion include zero. Only mask deletion on the stable group stays
+positive. The registered point-estimate rule selects the methods reproducibly,
+but this panel does not establish that they reliably beat random ordering.
+
 The Integrated Gradients margins are normalized by a small native-unit change.
 The low-pass reference changes the canonical output by median 0.0014 and mean
 0.0175 across the registered rows. Its median numerical completeness error is
@@ -65,14 +71,23 @@ flux effect.
 Finally, the explanations changed when all learned parameters were reset. Their
 rank correlation with the randomized-network maps was 0.406 for Integrated
 Gradients and 0.099 for the mask; a value near 1 would have meant the map barely
-noticed that learning had been erased.
+noticed that learning had been erased. The 0.406 result is the weakest among the
+eligible Integrated Gradients baselines. Moreover, the simple difference between
+the input and its low-pass reference correlates more strongly with the
+randomized-network map (0.816) than with the trained-network map (0.477). Thus
+the selected map still responds to learning, but much of its structure is
+imposed by the baseline itself.
 
 ## The symmetry check
 
 Rotating all seven geometry channels together is physically the same field line
 with a different starting point. A good map for the canonical network should
-rotate with the input and otherwise remain unchanged. The selected methods pass:
-their relative rotation errors are about $10^{-4}$ and $3\times10^{-7}$.
+rotate with the input and otherwise remain unchanged. Low-pass Integrated
+Gradients passes when its input-derived reference rotates with the input. The
+mask also passes only when its matched-observed background is rotated too
+(error about $3\times10^{-7}$). The maps intended for S06b keep that background
+fixed; under that convention the mask error is 1.009, so fixed-background mask
+equivariance fails.
 
 The original network's errors are about 0.82 for both methods. That is not a new
 bug—it is the pooling-phase dependence established in S02. It demonstrates why
@@ -84,9 +99,10 @@ The first caveat is **baseline sensitivity**. Integrated Gradients needs a
 starting geometry, and different plausible choices give meaningfully different
 maps. The selected low-pass map has rank correlation only 0.432 with the map
 from a robust constant reference. The 64-row pilot even selected a medoid
-reference, while the fixed rule selected low-pass on 128 rows; the two panels
-overlapped by only 7 rows. S06b must carry the other baselines as sensitivity
-analyses; the chosen map is not a unique, baseline-free truth.
+reference because low-pass deletion was worse than random, while the fixed rule
+selected low-pass on 128 rows; the two panels overlapped by only 7 rows. S06b
+must carry the other baselines as sensitivity analyses; the chosen map is not a
+unique, baseline-free truth.
 
 The second caveat is **physical validity**. Smoothing a geometry or replacing
 individual cells does not generally produce another realizable magnetic
@@ -120,6 +136,13 @@ interpretation when a stable prediction lay below its baseline. Each was fixed,
 tested, and the pilot and production artifacts were regenerated. The corrected
 Expected Gradients result remained eligible but did not replace either selected
 method.
+
+Later review added three controls that materially sharpen the conclusion: a
+mixed-sign example now pins absolute-magnitude deletion ordering, a nonlinear
+example pins the fallback integration rule, and symmetry is reported separately
+for co-shifted and fixed baselines. It also forced confidence intervals onto the
+faithfulness margins; their breadth is why the selected methods should be
+treated as candidates for S06b, not validated explanations.
 
 ## What comes next
 

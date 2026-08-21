@@ -4,7 +4,7 @@
     "deletion_auc": 0.025,
     "insertion_auc": 0.975,
     "position_average_precision": 0.6125,
-    "random_deletion_auc": 0.5572035899592216,
+    "random_deletion_auc": 0.5572035987213502,
     "random_insertion_auc": 0.4427964707498119
   },
   "expected_gradients": {
@@ -12,7 +12,7 @@
     "deletion_auc": 0.025,
     "insertion_auc": 0.975,
     "position_average_precision": 1.0,
-    "random_deletion_auc": 0.5572035899592216,
+    "random_deletion_auc": 0.5572035987213502,
     "random_insertion_auc": 0.4427964707498119
   },
   "ig_low_pass": {
@@ -20,7 +20,7 @@
     "deletion_auc": 0.025,
     "insertion_auc": 0.975,
     "position_average_precision": 1.0,
-    "random_deletion_auc": 0.5572035899592216,
+    "random_deletion_auc": 0.5572035987213502,
     "random_insertion_auc": 0.4427964707498119
   },
   "ig_matched_observed": {
@@ -28,7 +28,7 @@
     "deletion_auc": 0.025,
     "insertion_auc": 0.975,
     "position_average_precision": 1.0,
-    "random_deletion_auc": 0.5572035899592216,
+    "random_deletion_auc": 0.5572035987213502,
     "random_insertion_auc": 0.4427964707498119
   },
   "ig_medoid": {
@@ -36,7 +36,7 @@
     "deletion_auc": 0.025,
     "insertion_auc": 0.975,
     "position_average_precision": 1.0,
-    "random_deletion_auc": 0.5572035899592216,
+    "random_deletion_auc": 0.5572035987213502,
     "random_insertion_auc": 0.4427964707498119
   },
   "ig_robust_constant": {
@@ -44,7 +44,7 @@
     "deletion_auc": 0.025,
     "insertion_auc": 0.975,
     "position_average_precision": 1.0,
-    "random_deletion_auc": 0.5572035899592216,
+    "random_deletion_auc": 0.5572035987213502,
     "random_insertion_auc": 0.4427964707498119
   },
   "periodic_mask": {
@@ -52,7 +52,7 @@
     "deletion_auc": 0.025,
     "insertion_auc": 0.975,
     "position_average_precision": 1.0,
-    "random_deletion_auc": 0.5572035899592216,
+    "random_deletion_auc": 0.5572035987213502,
     "random_insertion_auc": 0.4427964707498119
   },
   "random_map_control": {
@@ -60,15 +60,15 @@
     "deletion_auc": 0.4828983128446396,
     "insertion_auc": 0.5171017372246665,
     "position_average_precision": 0.044190332556569456,
-    "random_deletion_auc": 0.4670559713755781,
-    "random_insertion_auc": 0.5329441049801135
+    "random_deletion_auc": 0.4670559613617169,
+    "random_insertion_auc": 0.5329440949662523
   },
   "scaled_gradient": {
     "channel_top1": 1.0,
     "deletion_auc": 0.025,
     "insertion_auc": 0.975,
     "position_average_precision": 1.0,
-    "random_deletion_auc": 0.5572035899592216,
+    "random_deletion_auc": 0.5572035987213502,
     "random_insertion_auc": 0.4427964707498119
   },
   "tsr_ig_robust_constant": {
@@ -76,7 +76,7 @@
     "deletion_auc": 0.025,
     "insertion_auc": 0.975,
     "position_average_precision": 1.0,
-    "random_deletion_auc": 0.5572035899592216,
+    "random_deletion_auc": 0.5572035987213502,
     "random_insertion_auc": 0.4427964707498119
   },
   "tsr_scaled_gradient": {
@@ -84,7 +84,7 @@
     "deletion_auc": 0.025,
     "insertion_auc": 0.975,
     "position_average_precision": 1.0,
-    "random_deletion_auc": 0.5572035899592216,
+    "random_deletion_auc": 0.5572035987213502,
     "random_insertion_auc": 0.4427964707498119
   },
   "vargrad": {
@@ -92,7 +92,7 @@
     "deletion_auc": 0.025,
     "insertion_auc": 0.975,
     "position_average_precision": 1.0,
-    "random_deletion_auc": 0.5572035899592216,
+    "random_deletion_auc": 0.5572035987213502,
     "random_insertion_auc": 0.4427964707498119
   }
 }

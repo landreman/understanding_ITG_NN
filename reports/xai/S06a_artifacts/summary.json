@@ -52,6 +52,7 @@
     "primary_path_gradient": "ig_low_pass",
     "primary_perturbation": "periodic_mask",
     "rule": {
+      "maximum_parameter_randomization_correlation": 0.95,
       "minimum_deletion_margin": 0.0,
       "minimum_insertion_margin": 0.0,
       "minimum_toy_channel_top1": 1.0,

@@ -33,6 +33,9 @@ def test_s06a_published_manifest_and_small_artifact_hashes_are_exact() -> None:
     assert manifest["dataset"]["sha256"] == (
         "9d8fa52f93f2782ad9948a38bf46943c0cd6df78cd08b94a006dad4e06c1c8ad"
     )
+    assert manifest["config"]["attribution_module_sha256"] == sha256_file(
+        "itg_nn/xai/attribution.py"
+    )
     for name in (
         "benchmark_metrics.csv",
         "faithfulness_curves.csv",
@@ -64,6 +67,10 @@ def test_s06a_metrics_keep_functions_strata_signs_and_validity_machine_readable(
     assert {row["signed"] for row in rows} == {"True", "False"}
     assert {row["contribution_valued"] for row in rows} == {"True", "False"}
     assert all(row["artifact_method"] for row in rows)
+    expected = next(row for row in rows if row["method"] == "expected_gradients")
+    assert expected["batch_layout_adapter"] == "captum_sample_major_to_step_major"
+    mask = next(row for row in rows if row["method"] == "periodic_mask")
+    assert mask["deterministic_optimizer"] == "True"
 
 
 def test_s06a_selected_methods_pass_both_faithfulness_directions_in_each_stratum() -> None:
@@ -101,6 +108,13 @@ def test_s06a_selected_methods_pass_both_faithfulness_directions_in_each_stratum
         )
         > 0.5
     )
+    assert float(
+        all_rows["ig_low_pass"][
+            "randomized_map_input_baseline_abs_rank_correlation"
+        ]
+    ) > float(
+        all_rows["ig_low_pass"]["trained_map_input_baseline_abs_rank_correlation"]
+    )
     assert all(float(row["parameter_randomization_correlation"]) < 0.95 for row in all_rows.values())
 
 
@@ -115,6 +129,12 @@ def test_s06a_pilot_selection_artifact_records_baseline_instability() -> None:
     assert pilot["primary_path_gradient"] == "ig_medoid"
     assert production["primary_path_gradient"] == "ig_low_pass"
     assert pilot["rule"] == production["rule"]
+    with (ARTIFACTS / "pilot_candidate_metrics.csv").open(
+        newline="", encoding="utf-8"
+    ) as handle:
+        candidates = {row["method"]: row for row in csv.DictReader(handle)}
+    assert float(candidates["ig_low_pass"]["deletion_margin_vs_random"]) < 0
+    assert float(candidates["ig_low_pass"]["insertion_margin_vs_random"]) > 0
 
 
 def test_s06a_selected_faithfulness_margins_have_grouped_intervals() -> None:

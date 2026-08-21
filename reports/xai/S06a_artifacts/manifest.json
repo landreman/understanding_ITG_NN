@@ -9,6 +9,7 @@
     "scripts/xai_s06a_attribution.py"
   ],
   "config": {
+    "attribution_module_sha256": "1aa459b3c393ba066dc75008ea350656f51d1b2eca865424e46a7627f0576a9a",
     "baseline_registry": "reports/xai/S03_artifacts/baseline_registry.json",
     "baseline_registry_sha256": "02fe7603df714a6544e19ebca0024783a7de8f7fc72c0c514af48e073837ff62",
     "batch_size": 64,
@@ -67,9 +68,10 @@
     "randomization_rows": 8,
     "review_publish_rows": 16,
     "run_id": "attribution-benchmark-top1-panel128",
-    "script_sha256": "541108f26797052152ed786f4f0cc1fb6cd7d0b7611ff336695bb5a69dc56729",
+    "script_sha256": "5f0046fd6637c339d02504d3828461bf469b1700e122c64b1b0495cced449341",
     "seed": 20260821,
     "selection_rule": {
+      "maximum_parameter_randomization_correlation": 0.95,
       "minimum_deletion_margin": 0.0,
       "minimum_insertion_margin": 0.0,
       "minimum_toy_channel_top1": 1.0,
@@ -108,10 +110,10 @@
     "sha256": "9d8fa52f93f2782ad9948a38bf46943c0cd6df78cd08b94a006dad4e06c1c8ad"
   },
   "device": "cpu",
-  "git_commit": "aaa88a24e3be39cc228967a193e4374ae9520e30",
+  "git_commit": "11767df051bb8bd142b67d7cb5d96e56457d12f0",
   "git_dirty": true,
   "git_tracked_dirty": true,
-  "git_tree": "0629d28f1b8d0563fefeab2345ef494e0bb5e958",
+  "git_tree": "05552d6b37451511874fc9e89b9bf0ab531b1171",
   "gradient_set": "varied",
   "member_ids": [
     "2864601_0.437"
@@ -119,14 +121,14 @@
   "output_hashes": {
     "attribution_maps.h5": "9773d0a61cfc131c16b701db0cc5001d02c8e22a9212789991f09bdc23569451",
     "benchmark.png": "b47105266adb3bb9fb6b9a58c736d755897100fd03a450e8ef61fab10213246e",
-    "benchmark_metrics.csv": "97ec672bdb5d855a580d21fe0dc3b60ceec9a6b9c31b4c2d5d993608702d987e",
-    "faithfulness_curves.csv": "bd29424be642f7e39e54553e1273fa8eb09f3d9c29a03f1bd1fdd8927986ab97",
-    "grouped_uncertainty.csv": "ef2d8c8d21051e636fd728892c8f92fe87d719d0196aaf0977810f12583ceafa",
+    "benchmark_metrics.csv": "082e19b2180f7b9d2bad26b7fd22fc16fa45e6a4d6658630db8236d393b74c99",
+    "faithfulness_curves.csv": "453ce0a9636d8597fe37a7f6302a1cb41e903d23f7c69d9aa42010c501245840",
+    "grouped_uncertainty.csv": "7e9d52f87058833120d0fa3d2e7245de4d3555e52f55dac8a3eb15c83d2e5c2e",
     "ig_convergence.csv": "92c916c1626228acd64dacfaa9aa5e5740476ce0860ffb03c68453684143a424",
-    "selected_methods.json": "43cc6998a81c0ce143a44d0f1bf8b5e2ccdbdd4223243f9179d82b9bd9404027",
+    "selected_methods.json": "affaebac1121e0c6f80b343c5a530c359a2a5fecc82de0ebc6673f84d9feb104",
     "selected_review_maps.h5": "3e492772a2a7cc2fa9de75327d34811c6acb4f6233ec27329f0f9e70ac58766b",
-    "summary.json": "749f986373576fd00c9acb735d0dcbce9aa00acb34c990142e9e7ff1d681f066",
-    "toy_controls.json": "2a75471282d6643a520c70af2bed78ede9cf84b3f82719fccb952275f4466089"
+    "summary.json": "1d4eb12bbef14b6c5e1ffca2c193c2ae659f037842ed2ba17bae44a50b62456b",
+    "toy_controls.json": "e366ec3b22bb4b8f7a95c034f782fe071e70f793d5a2c5f9985cf00e43cf0d0c"
   },
   "package_versions": {
     "captum": "0.9.0",
@@ -270,5 +272,5 @@
     100493
   ],
   "seed": 20260821,
-  "wall_time_seconds": 218.40843537499313
+  "wall_time_seconds": 255.84717799999635
 }
