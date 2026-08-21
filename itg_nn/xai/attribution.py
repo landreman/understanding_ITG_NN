@@ -128,6 +128,22 @@ def expected_gradients(
     if selected_backend == "captum":
         from captum.attr import GradientShap
 
+        panel_size = len(inputs)
+
+        def captum_forward(expanded: torch.Tensor) -> torch.Tensor:
+            if len(expanded) % panel_size:
+                raise ValueError("Captum batch is not a multiple of panel rows")
+            repetitions = len(expanded) // panel_size
+            if repetitions == 1:
+                return _forward_vector(forward, expanded)
+            step_major = (
+                expanded.reshape(panel_size, repetitions, *expanded.shape[1:])
+                .transpose(0, 1)
+                .reshape_as(expanded)
+            )
+            output = _forward_vector(forward, step_major)
+            return output.reshape(repetitions, panel_size).transpose(0, 1).reshape(-1)
+
         devices = [inputs.device.index] if inputs.is_cuda else []
         numpy_state = np.random.get_state()
         try:
@@ -138,7 +154,7 @@ def expected_gradients(
                 # and restore NumPy so this estimator is deterministic without
                 # contaminating later benchmark randomness.
                 np.random.seed(int(seed))
-                attribution = GradientShap(forward).attribute(
+                attribution = GradientShap(captum_forward).attribute(
                     inputs, baselines=baselines, n_samples=int(samples), stdevs=0.0
                 ).detach()
         finally:
@@ -169,6 +185,11 @@ def expected_gradients(
             "seed": int(seed),
             "background_count": int(len(baselines)),
             "contribution_valued": True,
+            "batch_layout_adapter": (
+                "captum_sample_major_to_step_major"
+                if selected_backend == "captum"
+                else "none"
+            ),
         },
     )
 

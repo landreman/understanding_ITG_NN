@@ -386,6 +386,38 @@ def test_captum_expected_gradients_seeds_numpy_and_is_shift_equivariant() -> Non
     )
 
 
+def test_captum_expected_gradients_preserves_panel_drive_alignment() -> None:
+    pytest.importorskip("captum")
+
+    class DriveMember:
+        def original(
+            self,
+            geometry: torch.Tensor,
+            a_over_lt: torch.Tensor,
+            a_over_ln: torch.Tensor,
+        ) -> torch.Tensor:
+            del a_over_ln
+            return geometry[:, 0, 0] * a_over_lt
+
+    geometry = torch.zeros((2, 96, 7))
+    geometry[:, 0, 0] = torch.as_tensor((2.0, 3.0))
+    baselines = torch.zeros((3, 96, 7))
+    forward = _forward(
+        DriveMember(),  # type: ignore[arg-type]
+        "original_f",
+        torch.as_tensor((5.0, 11.0)),
+        torch.zeros(2),
+    )
+
+    captum = expected_gradients(
+        forward, geometry, baselines, samples=4, seed=5, backend="captum"
+    )
+    fallback = expected_gradients(
+        forward, geometry, baselines, samples=4, seed=5, backend="fallback"
+    )
+    torch.testing.assert_close(captum.values, fallback.values, atol=1e-7, rtol=0)
+
+
 def test_s06a_cli_exposes_required_reproducibility_overrides() -> None:
     parser = build_parser()
     destinations = {action.dest for action in parser._actions}
