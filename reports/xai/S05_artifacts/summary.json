@@ -1,0 +1,79 @@
+{
+  "artifacts": {
+    "large": [
+      "densities.h5",
+      "concept_traces.h5",
+      "natural_motifs.h5",
+      "first_layer_transfer.h5"
+    ],
+    "published": [
+      "unit_density_summary.csv",
+      "unit_concept_alignment.csv",
+      "unit_motifs.csv",
+      "natural_exemplars.csv",
+      "motif_clusters.csv",
+      "receptive_fields.csv",
+      "native_function_comparison.csv",
+      "native_bottleneck_comparison.csv",
+      "shift_consistency.csv",
+      "first_layer_kernels.csv",
+      "first_layer_transfer.csv",
+      "density_atlas.png",
+      "filter_transfer_catalog.png",
+      "motif_clusters.png"
+    ]
+  },
+  "bootstrap": {
+    "replicates": 500,
+    "unit": "equilibrium_files"
+  },
+  "cohort": {
+    "gradient_set": "varied",
+    "panel_rows": 1000,
+    "stable_or_near_floor": 240,
+    "unique_equilibrium_files": 1000,
+    "unstable": 760
+  },
+  "concept_count": 75,
+  "deferred": [
+    "window surrogate for unresolved units: both MVD members have globally connected 96-position final receptive fields, so the nominal 672-input surrogate is not a small local regression; defer model choice to a later step rather than tune it on the registered panel",
+    "NMF or sparse dictionary learning: the natural two-cluster summaries do not establish a coherent shared motif family, so a learned dictionary remains deferred rather than being tuned on the registered panel"
+  ],
+  "estimand": "member-level signed rho for invariant_tilde_f plus native original_f comparison in max(log Q, -2)",
+  "live_units": {
+    "2864601_0.371": 20,
+    "2864601_0.437": 9
+  },
+  "maximum_concept_shift_error": 0.0,
+  "maximum_density_shift_error": 1.0013580322265625e-05,
+  "maximum_invariant_output_shift_error": 1.1920928955078125e-06,
+  "median_halfmax_support_positions": 96.0,
+  "members": [
+    "2864601_0.437",
+    "2864601_0.371"
+  ],
+  "mode": "production",
+  "natural_exemplars_per_unit": 16,
+  "selection_null": {
+    "minimum_observed_to_q95_ratio": 4.094419784199468,
+    "permutations_per_supported_unit": 8,
+    "scope": "maximum absolute mean Pearson correlation over 75 concepts x 96 lags",
+    "unit": "sample-row permutation"
+  },
+  "step": "S05",
+  "supported_named_motifs": 6,
+  "toy_checks": {
+    "known_concept_best_lag": 7,
+    "known_concept_lag_correlation": 0.9999999999999999,
+    "native_signed_delta_min": -0.19999999999999996,
+    "null_lag_correlation": 0.06050385432752776,
+    "passed": true,
+    "shift_consistency_error": 0.0
+  },
+  "unresolved_units": 23,
+  "validity_tags": {
+    "concept_alignment": "observed-comparison",
+    "density_shift": "exact-symmetry",
+    "natural_exemplars": "observed-comparison"
+  }
+}
