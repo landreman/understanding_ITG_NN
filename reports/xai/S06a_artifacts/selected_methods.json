@@ -7,15 +7,19 @@
     "ig_medoid": true,
     "ig_robust_constant": true,
     "periodic_mask": true,
-    "scaled_gradient": true,
+    "scaled_gradient": false,
     "tsr_ig_robust_constant": true,
     "tsr_scaled_gradient": true,
-    "vargrad": true
+    "vargrad": false
   },
   "passed": true,
   "primary_path_gradient": "ig_low_pass",
   "primary_perturbation": "periodic_mask",
   "rule": {
+    "faithfulness_strata": [
+      "stable_or_near_floor",
+      "unstable"
+    ],
     "maximum_parameter_randomization_correlation": 0.95,
     "minimum_deletion_margin": 0.0,
     "minimum_insertion_margin": 0.0,

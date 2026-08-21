@@ -47,19 +47,28 @@ perfect position-recovery score (1.0). A random map scored 0.044.
 The methods also passed “faithfulness” tests. The benchmark removes cells in the
 order a method calls important and compares that curve with removing cells in a
 random order; insertion performs the reverse experiment. On the canonical
-128-row panel, low-pass Integrated Gradients beat its random control by 0.572 on
-deletion and 0.416 on insertion. The mask beat random by 5.247 and 5.293. Both
-directions also remained positive when the 33 stable/near-floor rows and 95
-unstable rows were analyzed separately. The mask result needs an important
-qualification: the mask was optimized using the same replacement operation that
-this curve scores, so its very large margin is an in-sample optimization result,
-not an independent validation.
+128-row panel, the registered gate is evaluated separately on the 33
+stable/near-floor rows and 95 unstable rows. Low-pass Integrated Gradients beat
+random by 1.503/0.211 on deletion/insertion in the stable group and 0.420/0.420
+in the unstable group. The mask's corresponding margins were 0.431/0.055 and
+1.744/1.527. The mask was optimized using the same replacement operation that
+this curve scores, so its margins are in-sample optimization results, not an
+independent validation.
 
-The positive margins are also uncertain. When whole equilibria are resampled,
-11 of the 12 confidence intervals across method, stability group, and deletion
-or insertion include zero. Only mask deletion on the stable group stays
-positive. The registered point-estimate rule selects the methods reproducibly,
-but this panel does not establish that they reliably beat random ordering.
+The previous pooled mask margins, 5.247/5.293, are not interpretable headline
+numbers. The stable and unstable endpoint differences have opposite signs
+(-0.4915 and +0.2349 native units), so pooling leaves a small denominator and
+inflates the ratio. The corrected gate uses each stratum and leaves the selected
+pair unchanged.
+
+Uncertainty is also reported without dividing by that unstable denominator.
+The native-unit low-pass gaps include zero in all four stratum/direction
+comparisons. Three of the mask's four gaps exclude zero; stable-group insertion
+does not. The old ratio intervals are much wider because the low-pass stable
+denominator is below 0.005 in about 70% of bootstrap samples and changes sign in
+about 23%. Thus the low-pass advantage is unresolved on this panel, while the
+stronger mask result remains an in-sample diagnostic rather than independent
+validation.
 
 The Integrated Gradients margins are normalized by a small native-unit change.
 The low-pass reference changes the canonical output by median 0.0014 and mean
@@ -98,9 +107,11 @@ the canonical invariant network must remain the primary explained function.
 The first caveat is **baseline sensitivity**. Integrated Gradients needs a
 starting geometry, and different plausible choices give meaningfully different
 maps. The selected low-pass map has rank correlation only 0.432 with the map
-from a robust constant reference. The 64-row pilot even selected a medoid
-reference because low-pass deletion was worse than random, while the fixed rule
-selected low-pass on 128 rows; the two panels overlapped by only 7 rows. S06b
+from a robust constant reference. The historical 64-row pilot used the now-
+superseded pooled gate and selected a medoid reference because low-pass deletion
+was worse than random. Retrospectively applying the corrected stratum gate leaves
+that pilot with no eligible perturbation method, while the production panel
+selects low-pass; the two panels overlapped by only 7 rows. S06b
 must carry the other baselines as sensitivity analyses; the chosen map is not a
 unique, baseline-free truth.
 
@@ -122,8 +133,10 @@ and quantify member and equilibrium uncertainty.
 
 The simple cyclic occlusion method was not good enough. It recovered the correct
 toy channel but its position score was only 0.613, below the registered 0.75
-threshold, and its real deletion curve was worse than random. Integrated
-Gradients from a matched observed geometry also failed deletion faithfulness.
+threshold. Its real deletion margins are actually positive in both strata; the
+former negative pooled value was a denominator-cancellation artifact.
+Integrated Gradients from a matched observed geometry failed deletion in the
+unstable stratum.
 An observed endpoint does not make the artificial path between two geometries
 physically valid or numerically useful.
 
@@ -137,18 +150,20 @@ tested, and the pilot and production artifacts were regenerated. The corrected
 Expected Gradients result remained eligible but did not replace either selected
 method.
 
-Later review added three controls that materially sharpen the conclusion: a
+Later review added controls that materially sharpen the conclusion: a
 mixed-sign example now pins absolute-magnitude deletion ordering, a nonlinear
 example pins the fallback integration rule, and symmetry is reported separately
-for co-shifted and fixed baselines. It also forced confidence intervals onto the
-faithfulness margins; their breadth is why the selected methods should be
-treated as candidates for S06b, not validated explanations.
+for co-shifted and fixed baselines. It also exposed the pooled denominator
+cancellation, moved the gate to the two floor strata, published denominator-free
+intervals, and pinned whole-equilibrium resampling with sibling flux tubes.
 
 ## What comes next
 
 S06b should apply low-pass Integrated Gradients and the periodic mask to the
 registered top 10 networks, with medoid and robust-reference Integrated
-Gradients retained as baseline checks. It will then ask whether the signed maps
+Gradients retained as baseline checks. The fixed-background mask should remain
+a secondary perturbation sensitivity method, not be described as a symmetry-
+conforming primary map. It will then ask whether the signed maps
 agree across networks, how that agreement changes between stable and unstable
 conditions, and whether explanation stability has much relationship to the
 networks' validation ranking. Only after that ensemble-level agreement exists

@@ -47,6 +47,10 @@ def test_s06a_published_manifest_and_small_artifact_hashes_are_exact() -> None:
         "toy_controls.json",
     ):
         assert sha256_file(ARTIFACTS / name) == manifest["output_hashes"][name]
+    for name in ("pilot_candidate_metrics.csv", "pilot_selected_methods.json"):
+        assert sha256_file(ARTIFACTS / name) == manifest[
+            "supplementary_artifact_hashes"
+        ][name]
 
 
 def test_s06a_metrics_keep_functions_strata_signs_and_validity_machine_readable() -> None:
@@ -71,6 +75,7 @@ def test_s06a_metrics_keep_functions_strata_signs_and_validity_machine_readable(
     assert expected["batch_layout_adapter"] == "captum_sample_major_to_step_major"
     mask = next(row for row in rows if row["method"] == "periodic_mask")
     assert mask["deterministic_optimizer"] == "True"
+    assert mask["registered_baseline_convention"] == "fixed_matched_observed"
 
 
 def test_s06a_selected_methods_pass_both_faithfulness_directions_in_each_stratum() -> None:
@@ -81,6 +86,10 @@ def test_s06a_selected_methods_pass_both_faithfulness_directions_in_each_stratum
     assert selection["primary_path_gradient"] == "ig_low_pass"
     assert selection["primary_perturbation"] == "periodic_mask"
     assert selection["rule"]["maximum_parameter_randomization_correlation"] == 0.95
+    assert selection["rule"]["faithfulness_strata"] == [
+        "stable_or_near_floor",
+        "unstable",
+    ]
     selected = {
         selection["primary_path_gradient"],
         selection["primary_perturbation"],
@@ -109,6 +118,9 @@ def test_s06a_selected_methods_pass_both_faithfulness_directions_in_each_stratum
         > 0.5
     )
     assert float(
+        all_rows["periodic_mask"]["cyclic_equivariance_relative_rms"]
+    ) < 1e-4
+    assert float(
         all_rows["ig_low_pass"][
             "randomized_map_input_baseline_abs_rank_correlation"
         ]
@@ -128,7 +140,11 @@ def test_s06a_pilot_selection_artifact_records_baseline_instability() -> None:
     assert pilot["passed"] is True
     assert pilot["primary_path_gradient"] == "ig_medoid"
     assert production["primary_path_gradient"] == "ig_low_pass"
-    assert pilot["rule"] == production["rule"]
+    assert pilot["rule"]["faithfulness_strata"] == ["all"]
+    assert production["rule"]["faithfulness_strata"] == [
+        "stable_or_near_floor",
+        "unstable",
+    ]
     with (ARTIFACTS / "pilot_candidate_metrics.csv").open(
         newline="", encoding="utf-8"
     ) as handle:
@@ -155,6 +171,20 @@ def test_s06a_selected_faithfulness_margins_have_grouped_intervals() -> None:
     assert all(int(row["replicates"]) == 500 for row in margins)
     assert all(float(row["ci_lower"]) <= float(row["estimate"]) for row in margins)
     assert all(float(row["estimate"]) <= float(row["ci_upper"]) for row in margins)
+    assert all(float(row["native_gap_ci_lower"]) <= float(row["native_gap_estimate"]) for row in margins)
+    assert all(float(row["native_gap_estimate"]) <= float(row["native_gap_ci_upper"]) for row in margins)
+    assert all(
+        float(row["oriented_native_gap_ci_lower"])
+        <= float(row["oriented_native_gap_estimate"])
+        <= float(row["oriented_native_gap_ci_upper"])
+        for row in margins
+    )
+    assert all(row["denominator_estimate"] for row in margins)
+    assert all(0 <= float(row["denominator_negative_fraction"]) <= 1 for row in margins)
+    assert all(
+        0 <= float(row["denominator_abs_below_0_005_fraction"]) <= 1
+        for row in margins
+    )
 
 
 def test_s06a_review_maps_are_native_member_level_and_axis_labeled() -> None:

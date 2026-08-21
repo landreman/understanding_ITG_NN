@@ -24,7 +24,15 @@ from itg_nn.xai.attribution import (
     vargrad,
 )
 from itg_nn.xai.perturbations import ValidityTag
-from scripts.xai_s06a_attribution import _forward, build_parser
+from scripts.xai_s06a_attribution import (
+    METHOD_NAMES,
+    _curve_margin_components,
+    _forward,
+    _grouped_curve_margin_interval,
+    _resolve,
+    _select_methods,
+    build_parser,
+)
 
 
 def _linear_periodic_forward(values: torch.Tensor) -> torch.Tensor:
@@ -367,6 +375,115 @@ def test_grouped_bootstrap_resamples_equilibrium_files_and_is_deterministic() ->
     assert set(np.round(first.samples, 12)).issubset(set(np.round(tuple(allowed), 12)))
 
 
+def test_curve_margin_interval_resamples_sibling_tubes_as_equilibrium_groups() -> None:
+    fractions = (0.0, 0.5, 1.0)
+    original = np.asarray((1.0, 1.0, 1.0, 2.0, 3.0, 3.0))
+    baseline = np.zeros(6)
+    midpoint_gap = np.asarray((0.0, 0.0, 0.0, 3.0, 8.0, 8.0))
+    curves = []
+    for fraction in fractions:
+        if fraction == 0.0:
+            method = original
+            random = original
+        elif fraction == 0.5:
+            method = np.zeros(6)
+            random = midpoint_gap
+        else:
+            method = baseline
+            random = baseline
+        curves.append(
+            {
+                "fraction": fraction,
+                "original_output_per_sample": original,
+                "baseline_output_per_sample": baseline,
+                "deletion_output_per_sample": method,
+                "random_deletion_output_per_sample": random,
+                "insertion_output_per_sample": method,
+                "random_insertion_output_per_sample": random,
+            }
+        )
+
+    groups = np.asarray(("eq0", "eq0", "eq0", "eq1", "eq2", "eq2"))
+    rows = np.arange(6)
+    actual = _grouped_curve_margin_interval(
+        curves,
+        groups,
+        rows,
+        direction="deletion",
+        replicates=200,
+        seed=42,
+    )
+
+    group_rows = [np.flatnonzero(groups == group) for group in np.unique(groups)]
+    grouped_rng = np.random.default_rng(42)
+    grouped_gaps = []
+    for _ in range(200):
+        chosen = grouped_rng.integers(0, len(group_rows), size=len(group_rows))
+        sampled = np.concatenate([group_rows[index] for index in chosen])
+        grouped_gaps.append(
+            _curve_margin_components(curves, sampled, "deletion")["native_gap"]
+        )
+    grouped_interval = np.quantile(grouped_gaps, (0.025, 0.975))
+
+    row_rng = np.random.default_rng(42)
+    row_gaps = [
+        _curve_margin_components(
+            curves, row_rng.integers(0, len(rows), size=len(rows)), "deletion"
+        )["native_gap"]
+        for _ in range(200)
+    ]
+    row_interval = np.quantile(row_gaps, (0.025, 0.975))
+
+    np.testing.assert_allclose(
+        (actual["native_gap_ci_lower"], actual["native_gap_ci_upper"]),
+        grouped_interval,
+    )
+    assert actual["oriented_native_gap_estimate"] > 0
+    assert not np.allclose(grouped_interval, row_interval)
+    assert actual["resampling_unit"] == "equilibrium_files"
+
+
+def test_s06a_selection_requires_positive_faithfulness_in_each_floor_stratum() -> None:
+    rows = []
+    toy = {}
+    for method in METHOD_NAMES:
+        toy[method] = {
+            "channel_top1": 1.0,
+            "position_average_precision": 1.0,
+        }
+        for stratum in ("all", "stable_or_near_floor", "unstable"):
+            rows.append(
+                {
+                    "function": "invariant_tilde_f",
+                    "method": method,
+                    "stratum": stratum,
+                    "deletion_margin_vs_random": 1.0,
+                    "insertion_margin_vs_random": 1.0,
+                    "parameter_randomization_correlation": 0.0,
+                    "normalized_infidelity": 1.0,
+                    "runtime_seconds": 1.0,
+                }
+            )
+    for row in rows:
+        if row["method"] == "ig_low_pass" and row["stratum"] == "stable_or_near_floor":
+            row["deletion_margin_vs_random"] = -0.1
+
+    rule = {
+        "path_candidates": ["ig_low_pass", "ig_medoid"],
+        "perturbation_candidates": ["periodic_mask"],
+        "faithfulness_strata": ["stable_or_near_floor", "unstable"],
+        "minimum_toy_channel_top1": 1.0,
+        "minimum_toy_position_average_precision": 0.75,
+        "minimum_deletion_margin": 0.0,
+        "minimum_insertion_margin": 0.0,
+        "maximum_parameter_randomization_correlation": 0.95,
+        "tie_break": "lowest_normalized_infidelity_then_runtime",
+    }
+    selected = _select_methods(rows, toy, rule)
+    assert selected["eligible"]["ig_low_pass"] is False
+    assert selected["primary_path_gradient"] == "ig_medoid"
+
+
 def test_infidelity_sensitivity_and_randomized_map_agreement_have_controls() -> None:
     generator = torch.Generator().manual_seed(44)
     geometry = torch.randn((3, 12, 3), generator=generator)
@@ -500,6 +617,21 @@ def test_s06a_cli_exposes_required_reproducibility_overrides() -> None:
         "resume",
         "output_dir",
     }.issubset(destinations)
+
+
+def test_s06a_pilot_replays_historical_pooled_gate() -> None:
+    parser = build_parser()
+    args = parser.parse_args(["--pilot"])
+    config = {
+        "pilot": {"run_id": "pilot"},
+        "selection_rule": {"faithfulness_strata": ["stable_or_near_floor", "unstable"]},
+    }
+    resolved = _resolve(config, args)
+    assert resolved["selection_rule"]["faithfulness_strata"] == ["all"]
+    assert config["selection_rule"]["faithfulness_strata"] == [
+        "stable_or_near_floor",
+        "unstable",
+    ]
 
 
 def test_s06a_forward_repeats_drives_for_captum_step_major_batches() -> None:

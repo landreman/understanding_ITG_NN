@@ -16,6 +16,9 @@
   "primary_path_gradient": "ig_medoid",
   "primary_perturbation": "periodic_mask",
   "rule": {
+    "faithfulness_strata": [
+      "all"
+    ],
     "maximum_parameter_randomization_correlation": 0.95,
     "minimum_deletion_margin": 0.0,
     "minimum_insertion_margin": 0.0,

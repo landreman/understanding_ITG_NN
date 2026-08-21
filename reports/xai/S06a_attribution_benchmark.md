@@ -2,7 +2,7 @@
 
 ## Result
 
-For the registered top member `2864601_0.437`, the preregistered quantitative
+For the registered top member `2864601_0.437`, the registered stratum-aware
 selection rule chose **64-step Integrated Gradients from the low-pass S03
 reference** as the primary path/gradient method and a **periodic extremal mask**
 as the primary perturbation method. Both explain the member's native
@@ -18,24 +18,26 @@ for random order, and insertion AUC is **0.975** versus **0.443**. On the
 toy, 10 of 11 methods attain the same perfect recovery and AUC values, so this
 registered threshold is a sanity-check floor rather than a useful ranking among
 the passing methods. On the
-128-row canonical panel benchmark, low-pass IG beats random order by **0.572**
-deletion-AUC units and **0.416** insertion-AUC units; the periodic mask's margins
-are **5.247** and **5.293**. The mask is optimized per sample with the same
+128-row canonical panel benchmark, the rule is evaluated separately on the 33
+stable/near-floor and 95 unstable rows, not on a pooled normalized ratio.
+Low-pass IG deletion/insertion margins are **1.503/0.211** in the stable stratum
+and **0.420/0.420** in the unstable stratum. Periodic-mask margins are
+**0.431/0.055** and **1.744/1.527**, respectively. The mask is optimized per
+sample with the same
 replacement operator that its deletion curve scores, so those unusually large
 mask margins are in-sample optimization results, not independent faithfulness
 evidence. The mask curve also overshoots its baseline at 10% and 25% replacement.
 These normalized AUCs are comparable to each method's own random-order control,
 not across methods with different baselines.
 
-The point estimates remain positive in the required floor split. Low-pass IG
-deletion/insertion margins are **1.503/0.211** on 33 stable or near-floor rows and **0.420/0.420**
-on 95 unstable rows. Periodic-mask margins are **0.431/0.055** and
-**1.744/1.527**, respectively. The smaller stable-mask insertion margin is kept
-as a weakness, not pooled away. These are point estimates. Grouped 95% intervals
-cross zero for 11 of the 12 selected-method/stratum/direction margins; only the
-stable-mask deletion interval remains positive. Thus the registered
-point-estimate gate passes, but the advantage over random order is not resolved
-at 95% for nearly all headline faithfulness comparisons.
+The former pooled mask ratios, **5.247/5.293**, are retained in the artifact but
+are not headline evidence. Their matched-observed endpoint denominators have
+opposite signs in the two strata: **-0.4915** stable and **+0.2349** unstable,
+leaving only **+0.04765** after pooling. The resulting ratio lies outside both
+stratum-specific results. This cancellation also made pooled cyclic occlusion
+look worse than random even though its deletion margins are positive in both
+strata. The corrected gate therefore requires positive deletion and insertion
+margins in each stratum; the selected pair is unchanged.
 
 Both selected methods respond to complete parameter randomization: absolute-map
 rank correlation with the randomized member is **0.406** for low-pass IG and
@@ -140,8 +142,9 @@ endpoint difference $\tilde f(X)-\tilde f(B)$ has median **0.0014** and mean
 **0.0175** native units; the batch-mean prediction moves from 0.4462 to 0.4287
 over the full deletion sweep. The median completeness residual
 $7.90\times10^{-5}$ is therefore about **5.6%** of the median endpoint
-difference. The normalized margins are directionally robust, but their scale
-must be read together with this native-unit effect size.
+difference. The normalized margins retain the intended point-estimate
+orientation, but their uncertainty is not robust to a near-zero denominator;
+the native-unit gaps below carry the interval interpretation.
 
 ## Baseline sensitivity
 
@@ -153,10 +156,12 @@ physically correct. Low-pass was selected because it passed both faithfulness
 directions, randomization, toy, and symmetry checks and then had the lowest
 infidelity under the fixed tie-break; its endpoint and path remain off manifold.
 
-The 64-row pilot selected medoid IG because low-pass deletion was worse than its
-random control there (-0.028), despite positive insertion margin 1.334. The same
-fixed rule selected low-pass IG on the registered
-128 rows. The pilot and production panels overlap by 7 rows (11% of the pilot).
+The historical 64-row pilot used the superseded pooled gate and selected medoid
+IG because low-pass deletion was worse than its random control there (-0.028),
+despite positive insertion margin 1.334. Retrospectively applying the corrected
+stratum gate leaves that pilot without an eligible perturbation method, while
+the production gate selects low-pass IG plus the mask on the registered 128
+rows. The pilot and production panels overlap by 7 rows (11% of the pilot).
 The committed [pilot selection](S06a_artifacts/pilot_selected_methods.json)
 and [candidate rows](S06a_artifacts/pilot_candidate_metrics.csv) record the
 medoid result and its cause. This pilot-to-production instability is a negative
@@ -189,14 +194,25 @@ Each of these 128 panel rows has a distinct `equilibrium_files` value, so groupe
 and row bootstrap distributions coincide in S06a; grouping becomes substantive
 when S06b includes sibling flux tubes.
 
-The same artifact now bootstraps deletion and insertion margins for the selected
-pair in every floor stratum. All-row low-pass intervals are **-0.110–1.352**
-(deletion) and **-1.204–1.117** (insertion); all-row mask intervals are
-**-25.17–19.64** and **-20.93–22.64**. The stable-mask insertion interval is
-**-0.121–0.202** around point estimate 0.055. Eleven of twelve intervals cross
-zero; stable-mask deletion, **0.138–1.596**, is the sole exception. These broad
-intervals are a central negative result and prevent interpreting positive point
-estimates as settled superiority over random order.
+The same artifact bootstraps deletion and insertion evidence for the selected
+pair in every floor stratum. It publishes the normalized ratio, its native-unit
+numerator, an oriented native-unit gap whose positive sign always means “better
+than random,” and the endpoint denominator distribution. The old ratio
+intervals cross zero for 11 of 12 comparisons, but their width is dominated by
+the normalizer rather than cleanly measuring uncertainty in the effect. For
+low-pass deletion, the stable denominator is only **0.00273** native units;
+**22.6%** of resamples reverse its sign and **70.2%** have magnitude below
+0.005. Even all-row low-pass has **3.2%** negative and **8.0%** near-zero
+denominators.
+
+The denominator-free oriented gaps are better behaved. For low-pass IG they are
+**0.00411** (-0.00232–0.01087) stable and **0.00949**
+(-0.00094–0.02306) unstable for deletion; insertion is **0.00058**
+(-0.00419–0.00603) and **0.00950** (-0.00287–0.02263). All four intervals cross
+zero. For the mask, deletion gaps are **0.2118** (0.0610–0.4115) stable and
+**0.4098** (0.1806–0.6106) unstable; insertion gaps are **0.0271**
+(-0.0332–0.1075) and **0.3588** (0.2196–0.5185). Three of four stratum-specific
+mask gaps exclude zero, but they remain in-sample optimization diagnostics.
 
 S06a has exactly one preregistered member, so these intervals cover equilibrium
 sampling only. The full S06 acceptance clause requiring both member and
@@ -244,6 +260,14 @@ or method records:
    lacked intervals. The 0.95 maximum is now part of the registered rule in
    config, pilot, production selection, and manifest, and grouped margin
    intervals are committed for both selected methods and all floor strata.
+10. Review found that pooled faithfulness divided by a denominator in which the
+    floor strata cancel. The production gate now requires both directions to be
+    positive in each stratum. Native-unit gaps and denominator diagnostics are
+    published, and a sibling-tube fixture pins whole-equilibrium resampling.
+    The selected production pair survives. The historical 64-row pilot used the
+    superseded pooled gate; retrospectively applying the corrected gate leaves
+    it with no eligible perturbation method, so that pilot is retained as a
+    failed development result rather than relabeled.
 
 Three deliberate post-run mutations turned the focused suite red and were
 reverted: dropping robust channel scales failed the exact scaled-gradient test;
@@ -254,12 +278,14 @@ negative-direction curve test.
 ## Negative results and interpretation limits
 
 - Cyclic grouped occlusion fails the toy position threshold: average precision
-  is 0.6125 versus the registered 0.75 minimum. On the real canonical panel its
-  deletion margin is -1.620, despite a positive insertion margin, so it is not
-  selected.
-- Matched-observed IG also fails real deletion faithfulness (margin -2.070), even
-  though its endpoint is an observed geometry. An observed endpoint does not
-  make the interpolation path physical.
+  is 0.6125 versus the registered 0.75 minimum. Its real deletion margins are
+  actually positive in both strata, **0.641** stable and **0.074** unstable;
+  the former pooled value -1.620 was a denominator-cancellation artifact and is
+  not a reason for exclusion.
+- Matched-observed IG passes deletion in the stable stratum (**0.500**) but fails
+  it in the unstable stratum (**-0.263**). Its pooled -2.070 is likewise not
+  interpreted. An observed endpoint does not make the interpolation path
+  physical.
 - Baseline agreement is only moderate; selected low-pass IG correlates 0.432
   with robust-reference IG.
 - Low-pass IG has the weakest parameter-randomization response among eligible IG
@@ -267,9 +293,10 @@ negative-direction curve test.
   Gradients). Its baseline factor is more correlated with the randomized map
   (0.816) than the trained map (0.477), so 0.406 is a qualified pass, not clean
   evidence that the explanation is dominated by learned parameters.
-- Eleven of twelve grouped faithfulness-margin intervals cross zero. The
-  positive point-estimate eligibility gate is reproducible, but almost none of
-  the selected margins is statistically resolved against random order here.
+- Ratio intervals are unstable because their endpoint denominator can approach
+  or cross zero. Denominator-free gaps leave all four low-pass comparisons and
+  stable-mask insertion unresolved; three other stratum-specific mask gaps are
+  positive, subject to the mask's in-sample optimization caveat.
 - Canonical and original maps are not interchangeable: their rank correlation
   is 0.875 for low-pass IG and 0.605 for the mask, and original-$f$ maps fail
   exact equivariance as S02 predicts.
@@ -280,7 +307,9 @@ negative-direction curve test.
 - The mask is equivariant only when its matched-observed background is co-shifted
   with the input (error $2.70\times10^{-7}$). Holding the registered background
   fixed gives error 1.009, so S06b cannot claim fixed-background map
-  equivariance.
+  equivariance. This does not disqualify the mask as a perturbation sensitivity
+  method, but S06b must treat it as secondary to the symmetry-conforming
+  low-pass map and label the fixed-background convention explicitly.
 - Parameter randomization is a full reset rather than the more granular
   layer-by-layer cascade; it establishes response, not where that response
   begins.
@@ -289,7 +318,7 @@ negative-direction curve test.
 
 | PLAN criterion | S06a verdict and evidence |
 | --- | --- |
-| Selected methods beat random/control maps on toy recovery and faithfulness | **Pass by the registered point-estimate gate, with unresolved uncertainty.** Both selected methods have toy channel top-1 1.0 and position AP 1.0 versus random AP 0.0442; canonical all/stable/unstable deletion and insertion point margins are positive. Grouped 95% intervals cross zero for 11 of 12 margins, so superiority over random order is not statistically settled. |
+| Selected methods beat random/control maps on toy recovery and faithfulness | **Pass by the registered stratum-specific point-estimate gate, with qualified uncertainty.** Both selected methods have toy channel top-1 1.0 and position AP 1.0 versus random AP 0.0442; deletion and insertion ratios are positive separately in stable and unstable rows. Denominator-free intervals cross zero for all four low-pass comparisons and stable-mask insertion; the other three mask comparisons are positive but in-sample. Pooled ratios are not used for selection. |
 | Selected methods respond to parameter randomization | **Pass, qualified.** Canonical absolute-map rank correlation is 0.406 for low-pass IG and 0.099 for the mask. Low-pass is weakest among eligible IG baselines, and its input-baseline factor correlates 0.816 with the randomized map. |
 | Baseline sensitivity is understood | **Pass, with a strong limitation.** Low-pass/robust map correlation is 0.432; all four IG baselines and Expected Gradients remain published sensitivity analyses. |
 | Methods meet symmetry behavior permitted by S02 | **Pass for co-shifted baselines; fail for the fixed-background mask.** Co-shifted canonical errors are $1.03\times10^{-4}$ and $2.70\times10^{-7}$; the mask's registered fixed-background error is 1.009. Original-$f$ co-shifted errors are 0.821 and 0.820 and are retained. |
@@ -332,10 +361,12 @@ median 0.0014 and mean 0.0175 native units and the full-sweep batch means
 rule are in `selected_methods.json`; all benchmark/stratum numbers are in
 `benchmark_metrics.csv`; all deletion/insertion doses and support warnings are
 in `faithfulness_curves.csv`; 500-draw equilibrium intervals are in
-`grouped_uncertainty.csv`; convergence is in `ig_convergence.csv`; analytic
+`grouped_uncertainty.csv`, including native-unit gaps and endpoint-denominator
+diagnostics; convergence is in `ig_convergence.csv`; analytic
 controls are in `toy_controls.json`; the pilot medoid selection is in
 `pilot_selected_methods.json`, with its two candidate rows in
-`pilot_candidate_metrics.csv`; hashes for the CLI and estimator module, package
+`pilot_candidate_metrics.csv`; both pilot exports are hash-pinned in the
+manifest. Hashes for the CLI and estimator module, package
 versions, rows, member, checkpoint, and dataset fingerprints are in the
 committed manifest. The artifact tests independently pin the production schemas
 and hashes.
@@ -348,7 +379,13 @@ reviewer proxy is to select non-panel slice rows as an alternative observed
 background, rerun the mask, and compare toy recovery, canonical equivariance,
 randomization response, and the sign of deletion/insertion margins; agreement
 would show the selection is not peculiar to the unavailable background, but it
-cannot reproduce the registered digits. Full 22-method maps are 9.6 MB in the
+cannot reproduce the registered digits. The robust-constant, medoid,
+matched-observed, and Expected-Gradients baselines also depend on that 512-row
+support cohort, as do the **0.432** low-pass/robust baseline-sensitivity
+correlation and all PCA-warning digits. The nearest slice proxy is to form each
+baseline from non-panel slice rows and compare the selected method and
+correlation ordering; qualitative agreement would support, but not reproduce,
+the registered sensitivity result. Full 22-method maps are 9.6 MB in the
 ignored run; only the selected 16-row maps are committed.
 
 ## Deferred

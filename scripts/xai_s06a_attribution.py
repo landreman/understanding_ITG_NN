@@ -117,6 +117,10 @@ def _resolve(config: dict[str, Any], args: argparse.Namespace) -> dict[str, Any]
     resolved = copy.deepcopy(config)
     if args.pilot:
         resolved.update(config["pilot"])
+        # Preserve the historical development gate. Production was corrected
+        # after review to avoid pooled denominator cancellation; rewriting the
+        # pilot selection would erase the instability that it exposed.
+        resolved["selection_rule"]["faithfulness_strata"] = ["all"]
     resolved["mode"] = "pilot" if args.pilot else "production"
     for name in ("device", "seed", "members"):
         value = getattr(args, name)
@@ -542,6 +546,12 @@ def _select_methods(
         for row in rows
         if row["function"] == "invariant_tilde_f" and row["stratum"] == "all"
     }
+    by_method_stratum = {
+        (row["method"], row["stratum"]): row
+        for row in rows
+        if row["function"] == "invariant_tilde_f"
+    }
+    faithfulness_strata = tuple(rule["faithfulness_strata"])
 
     def eligible(method: str) -> bool:
         metrics = toy[method]
@@ -550,10 +560,15 @@ def _select_methods(
             metrics["channel_top1"] >= float(rule["minimum_toy_channel_top1"])
             and metrics["position_average_precision"]
             >= float(rule["minimum_toy_position_average_precision"])
-            and float(row["deletion_margin_vs_random"])
-            > float(rule["minimum_deletion_margin"])
-            and float(row["insertion_margin_vs_random"])
-            > float(rule["minimum_insertion_margin"])
+            and all(
+                float(by_method_stratum[(method, stratum)]["deletion_margin_vs_random"])
+                > float(rule["minimum_deletion_margin"])
+                and float(
+                    by_method_stratum[(method, stratum)]["insertion_margin_vs_random"]
+                )
+                > float(rule["minimum_insertion_margin"])
+                for stratum in faithfulness_strata
+            )
             and float(row["parameter_randomization_correlation"])
             < float(rule["maximum_parameter_randomization_correlation"])
         )
@@ -584,9 +599,9 @@ def _select_methods(
     }
 
 
-def _curve_margin(
+def _curve_margin_components(
     curves: list[dict[str, Any]], sample_rows: np.ndarray, direction: str
-) -> float:
+) -> dict[str, float]:
     aggregated: list[dict[str, float]] = []
     output_keys = (
         "deletion_output",
@@ -611,14 +626,42 @@ def _curve_margin(
             }
         )
     if direction == "deletion":
-        return curve_area(aggregated, "random_deletion_output") - curve_area(
-            aggregated, "deletion_output"
+        positive_key = "random_deletion_output"
+        negative_key = "deletion_output"
+    elif direction == "insertion":
+        positive_key = "insertion_output"
+        negative_key = "random_insertion_output"
+    else:
+        raise ValueError(f"unknown faithfulness direction {direction}")
+    fractions = np.asarray([row["fraction"] for row in aggregated], dtype=np.float64)
+    native_difference = np.asarray(
+        [row[positive_key] - row[negative_key] for row in aggregated],
+        dtype=np.float64,
+    )
+    native_gap = float(
+        np.sum(
+            0.5
+            * (native_difference[:-1] + native_difference[1:])
+            * np.diff(fractions)
         )
-    if direction == "insertion":
-        return curve_area(aggregated, "insertion_output") - curve_area(
-            aggregated, "random_insertion_output"
-        )
-    raise ValueError(f"unknown faithfulness direction {direction}")
+    )
+    denominator = aggregated[0]["original_output"] - aggregated[0]["baseline_output"]
+    normalized_margin = (
+        native_gap / denominator
+        if abs(denominator) > np.finfo(np.float64).eps
+        else float("nan")
+    )
+    return {
+        "normalized_margin": float(normalized_margin),
+        "native_gap": native_gap,
+        "denominator": float(denominator),
+    }
+
+
+def _curve_margin(
+    curves: list[dict[str, Any]], sample_rows: np.ndarray, direction: str
+) -> float:
+    return _curve_margin_components(curves, sample_rows, direction)["normalized_margin"]
 
 
 def _grouped_curve_margin_interval(
@@ -638,15 +681,41 @@ def _grouped_curve_margin_interval(
     ]
     rng = np.random.default_rng(int(seed))
     samples = np.empty(int(replicates), dtype=np.float64)
+    native_gaps = np.empty(int(replicates), dtype=np.float64)
+    denominators = np.empty(int(replicates), dtype=np.float64)
     for replicate in range(int(replicates)):
         chosen = rng.integers(0, len(group_rows), size=len(group_rows))
         resampled_rows = np.concatenate([group_rows[index] for index in chosen])
-        samples[replicate] = _curve_margin(curves, resampled_rows, direction)
+        components = _curve_margin_components(curves, resampled_rows, direction)
+        samples[replicate] = components["normalized_margin"]
+        native_gaps[replicate] = components["native_gap"]
+        denominators[replicate] = components["denominator"]
     lower, upper = np.quantile(samples, (0.025, 0.975))
+    native_lower, native_upper = np.quantile(native_gaps, (0.025, 0.975))
+    denominator_lower, denominator_upper = np.quantile(denominators, (0.025, 0.975))
+    estimate = _curve_margin_components(curves, sample_rows, direction)
+    orientation = 1.0 if estimate["denominator"] >= 0 else -1.0
+    oriented_native_gaps = orientation * native_gaps
+    oriented_native_lower, oriented_native_upper = np.quantile(
+        oriented_native_gaps, (0.025, 0.975)
+    )
     return {
-        "estimate": _curve_margin(curves, sample_rows, direction),
+        "estimate": estimate["normalized_margin"],
         "ci_lower": float(lower),
         "ci_upper": float(upper),
+        "native_gap_estimate": estimate["native_gap"],
+        "native_gap_ci_lower": float(native_lower),
+        "native_gap_ci_upper": float(native_upper),
+        "oriented_native_gap_estimate": orientation * estimate["native_gap"],
+        "oriented_native_gap_ci_lower": float(oriented_native_lower),
+        "oriented_native_gap_ci_upper": float(oriented_native_upper),
+        "denominator_estimate": estimate["denominator"],
+        "denominator_ci_lower": float(denominator_lower),
+        "denominator_ci_upper": float(denominator_upper),
+        "denominator_negative_fraction": float(np.mean(denominators < 0)),
+        "denominator_abs_below_0_005_fraction": float(
+            np.mean(np.abs(denominators) < 0.005)
+        ),
         "replicates": int(replicates),
         "resampling_unit": "equilibrium_files",
     }
@@ -659,7 +728,16 @@ def _plot_benchmark(rows: list[dict[str, Any]], selection: dict[str, Any], path:
         if row["function"] == "invariant_tilde_f" and row["stratum"] == "all"
     ]
     labels = [str(row["method"]).replace("_", "\n") for row in selected_rows]
-    margins = [float(row["deletion_margin_vs_random"]) for row in selected_rows]
+    margins = [
+        min(
+            float(candidate["deletion_margin_vs_random"])
+            for candidate in rows
+            if candidate["function"] == "invariant_tilde_f"
+            and candidate["method"] == row["method"]
+            and candidate["stratum"] in selection["rule"]["faithfulness_strata"]
+        )
+        for row in selected_rows
+    ]
     randomization = [1 - float(row["parameter_randomization_correlation"]) for row in selected_rows]
     colors = [
         "#2474b5"
@@ -671,8 +749,8 @@ def _plot_benchmark(rows: list[dict[str, Any]], selection: dict[str, Any], path:
     figure, axes = plt.subplots(2, 1, figsize=(12, 8), sharex=True)
     axes[0].bar(np.arange(len(labels)), margins, color=colors)
     axes[0].axhline(0, color="black", linewidth=0.8)
-    axes[0].set_ylabel("random deletion AUC − method AUC")
-    axes[0].set_title("S06a canonical attribution benchmark")
+    axes[0].set_ylabel("minimum stratum-specific deletion margin")
+    axes[0].set_title("S06a canonical stratum-aware attribution benchmark")
     axes[1].bar(np.arange(len(labels)), randomization, color=colors)
     axes[1].set_ylabel("1 − randomized-map rank correlation")
     axes[1].set_xticks(np.arange(len(labels)), labels, fontsize=8)
@@ -879,6 +957,16 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
                     "validity_tag": result.validity.value,
                     "baseline_family": METHOD_BASELINES[method],
                     "baseline_validity_tag": BASELINE_VALIDITY[METHOD_BASELINES[method]],
+                    "registered_baseline_convention": (
+                        "co_shifted_input_derived"
+                        if method == "ig_low_pass"
+                        else "fixed_matched_observed"
+                        if method == "periodic_mask"
+                        else "fixed"
+                        if METHOD_BASELINES[method]
+                        not in ("none_local", "none_local_noise")
+                        else "not_applicable"
+                    ),
                     "faithfulness_replacement": "matched_observed"
                     if METHOD_BASELINES[method] in ("none_local", "none_local_noise")
                     else METHOD_BASELINES[method],

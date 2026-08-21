@@ -50,6 +50,7 @@
       "expected_gradients"
     ],
     "perturbation_candidates": ["cyclic_occlusion", "periodic_mask"],
+    "faithfulness_strata": ["stable_or_near_floor", "unstable"],
     "minimum_toy_channel_top1": 1.0,
     "minimum_toy_position_average_precision": 0.75,
     "minimum_deletion_margin": 0.0,
