@@ -47,6 +47,20 @@ look worse than random even though its deletion margins are positive in both
 strata. The corrected gate therefore requires positive deletion and insertion
 margins in each stratum; the selected pair is unchanged.
 
+Random ordering is a weak control because it preserves the selected map's cell
+magnitudes. The benchmark therefore also scores the network-free control map
+$|X-B|$ through the same trained-network replacement curves. On stable rows,
+low-pass IG does **not** beat that control: paired per-row-oriented gaps are
+**-0.00043** (-0.00376–0.00209) deletion and **-0.00202**
+(-0.00911–0.00241) insertion. On unstable rows it does: **0.00964**
+(0.00424–0.01588) and **0.01105** (0.00380–0.01865). For the mask, only unstable
+insertion resolves against its displacement control, **0.1374**
+(0.0114–0.2741); its other three stratum/direction intervals cross zero. Thus
+faithfulness versus a control map is stratum- and direction-specific, not a
+blanket pass. The selected pair is retained because this control diagnoses how
+much network information the chosen explanations add; it was not part of the
+post-run candidate-ranking rule.
+
 Both selected methods respond to complete parameter randomization: absolute-map
 rank correlation with the randomized member is **0.406** for low-pass IG and
 **0.099** for the mask. Low-pass IG has the weakest response among eligible IG
@@ -95,6 +109,9 @@ and dataset SHA-256
 `9d8fa52f93f2782ad9948a38bf46943c0cd6df78cd08b94a006dad4e06c1c8ad`.
 Production used CPU, Python 3.12.4, torch 2.4.1, numpy 1.26.4, h5py 3.11.0,
 and Captum 0.9.0.
+The run was generated from a tracked-dirty tree at commit `235f8fa`; the
+manifest's hashed script and attribution module match the eventual committed
+head byte-for-byte and pin the code used for these post-run diagnostics.
 
 ## Methods and artifacts
 
@@ -232,6 +249,9 @@ deletion gaps are **0.1296** (-0.0372–0.3287) stable and **0.3268**
 mask gaps remain in-sample optimization diagnostics. The reversal between
 cohort-mean and per-row orientation is itself a material aggregation
 sensitivity, now published rather than collapsed into one conclusion.
+These eight stratum/direction intervals are nested, strongly correlated
+comparisons on the same two maps and one panel, not independent hypothesis
+tests. No multiplicity correction is applied, so their coverage is descriptive.
 
 S06a has exactly one preregistered member, so these intervals cover equilibrium
 sampling only. The full S06 acceptance clause requiring both member and
@@ -292,14 +312,21 @@ or method records:
     per-row-oriented gaps and whole-equilibrium intervals alongside the
     cohort-mean convention; a negative-denominator analytic fixture pins the
     sign, and the two conventions' different conclusions are retained.
+12. A third review showed that random order was not a control map. The selected
+    methods are now paired against the network-free $|X-B|$ ranking in every
+    stratum and direction. Low-pass adds resolved network-dependent ordering on
+    unstable rows but not stable rows; most mask comparisons against its control
+    are unresolved.
 
-Five deliberate post-run mutations turned the focused suite red and were
+Six deliberate post-run mutations turned the focused suite red and were
 reverted: dropping robust channel scales failed the exact scaled-gradient test;
 resampling individual rows instead of `equilibrium_files` failed the grouped
 bootstrap support test; and restoring the absolute AUC denominator failed the
 negative-direction curve test. For the final review response, deleting the
 negative-denominator orientation sign failed its analytic control, and removing
 the production symmetry co-shift failed the script-level equivariance pair test.
+Dropping orientation from the row-favouring fraction also failed the
+negative-endpoint control.
 
 ## Negative results and interpretation limits
 
@@ -316,6 +343,11 @@ the production symmetry co-shift failed the script-level equivariance pair test.
   under the pooled rule to ineligible: their stable insertion margins are
   **-0.0742** and **-0.0823**. Neither was a selected candidate, but both verdict
   flips are retained.
+- Low-pass IG does not beat its network-free displacement control on stable
+  rows, although it does in both unstable directions. The mask beats its control
+  conclusively only for unstable insertion. Passing a random-order control is
+  therefore insufficient evidence that an attribution adds learned-network
+  information.
 - Baseline agreement is only moderate; selected low-pass IG correlates 0.432
   with robust-reference IG.
 - Low-pass IG has the weakest parameter-randomization response among eligible IG
@@ -350,7 +382,7 @@ the production symmetry co-shift failed the script-level equivariance pair test.
 
 | PLAN criterion | S06a verdict and evidence |
 | --- | --- |
-| Selected methods beat random/control maps on toy recovery and faithfulness | **Pass under a post-run, review-corrected stratum-specific gate, with aggregation sensitivity.** Both selected methods have toy channel top-1 1.0 and position AP 1.0 versus random AP 0.0442; deletion and insertion ratios are positive separately in stable and unstable rows. Per-row-oriented intervals are positive for all four low-pass comparisons and both unstable-mask comparisons; stable-mask intervals cross zero. Cohort-mean orientation gives a weaker conclusion and is retained. Pooled ratios are not used for selection. |
+| Selected methods beat random/control maps on toy recovery and faithfulness | **Partial; the full criterion is not met.** Both selected methods beat the random map on toy recovery and random ordering in the post-run faithfulness gate. Against the network-free $|X-B|$ control, low-pass wins both unstable comparisons but neither stable comparison; the mask resolves only for unstable insertion. The selected pair remains the benchmark pair, with this stratum-specific failure explicit. |
 | Selected methods respond to parameter randomization | **Pass, qualified.** Canonical absolute-map rank correlation is 0.406 for low-pass IG and 0.099 for the mask. Low-pass is weakest among eligible IG baselines, and its input-baseline factor correlates 0.816 with the randomized map. |
 | Baseline sensitivity is understood | **Pass, with a strong limitation.** Low-pass/robust map correlation is 0.432; all four IG baselines and Expected Gradients remain published sensitivity analyses. |
 | Methods meet symmetry behavior permitted by S02 | **Pass for co-shifted baselines; fail for the fixed-background mask.** Co-shifted canonical errors are $1.03\times10^{-4}$ and $2.70\times10^{-7}$; the mask's registered fixed-background error is 1.009. Original-$f$ co-shifted errors are 0.821 and 0.820 and are retained. |
@@ -394,8 +426,9 @@ rule are in `selected_methods.json`; all benchmark/stratum numbers are in
 `benchmark_metrics.csv`; all deletion/insertion doses and support warnings are
 in `faithfulness_curves.csv`; 500-draw equilibrium intervals are in
 `grouped_uncertainty.csv`, including cohort-mean and per-row-oriented native-unit
-gaps, row-favouring fractions, and endpoint-denominator diagnostics; convergence
-is in `ig_convergence.csv`; analytic
+gaps, row-favouring fractions, endpoint-denominator diagnostics, control-map
+gaps, and paired method-minus-control intervals; convergence is in
+`ig_convergence.csv`; analytic
 controls are in `toy_controls.json`; the pilot medoid selection is in
 `pilot_selected_methods.json`, with its 21 candidate/stratum rows in
 `pilot_candidate_metrics.csv`; both pilot exports are hash-pinned in the

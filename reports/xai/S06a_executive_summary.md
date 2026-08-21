@@ -51,10 +51,11 @@ On a synthetic circular example where the correct channel and four wrapped
 positions were known exactly, both methods found the right channel and achieved
 perfect position-recovery score (1.0). A random map scored 0.044.
 
-The methods also passed “faithfulness” tests. The benchmark removes cells in the
+The methods passed the random-order part of the “faithfulness” tests. The
+benchmark removes cells in the
 order a method calls important and compares that curve with removing cells in a
 random order; insertion performs the reverse experiment. On the canonical
-128-row panel, the registered gate is evaluated separately on the 33
+128-row panel, the post-run gate is evaluated separately on the 33
 stable/near-floor rows and 95 unstable rows. Low-pass Integrated Gradients beat
 random by 1.503/0.211 on deletion/insertion in the stable group and 0.420/0.420
 in the unstable group. The mask's corresponding margins were 0.431/0.055 and
@@ -77,6 +78,14 @@ intervals include zero. Orienting only by the cohort-mean endpoint instead gives
 a weaker low-pass result, so both conventions are published as a material
 aggregation sensitivity. The mask evidence remains an in-sample diagnostic
 rather than independent validation.
+
+A stronger network-free control ranks cells only by $|X-B|$, deleting the
+gradient or learned mask from the explanation. Low-pass IG does not beat this
+control on stable rows: the paired deletion and insertion intervals both cross
+zero. It beats the control decisively on unstable rows. The mask beats its
+displacement control conclusively only for unstable insertion. The full
+random/control-map acceptance criterion is therefore only partially met, even
+though the same method pair remains the most useful benchmark pair.
 
 The Integrated Gradients margins are normalized by a small native-unit change.
 The low-pass reference changes the canonical output by median 0.0014 and mean
@@ -164,7 +173,9 @@ example pins the fallback integration rule, and symmetry is reported separately
 for co-shifted and fixed baselines. It also exposed the pooled denominator
 cancellation, moved the gate to the two floor strata, published per-row-oriented
 denominator-free intervals, and pinned whole-equilibrium resampling with sibling
-flux tubes. A negative-endpoint analytic case pins the orientation sign.
+flux tubes. A negative-endpoint analytic case pins the orientation sign. A final
+network-free displacement control separates learned ordering on unstable rows
+from unresolved stable-row evidence.
 
 ## What comes next
 

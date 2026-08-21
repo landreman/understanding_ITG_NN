@@ -695,6 +695,7 @@ def _grouped_curve_margin_interval(
     direction: str,
     replicates: int,
     seed: int,
+    control_curves: list[dict[str, Any]] | None = None,
 ) -> dict[str, float | int | str]:
     groups = np.asarray(equilibrium_files)
     selected_groups = groups[sample_rows]
@@ -707,6 +708,8 @@ def _grouped_curve_margin_interval(
     native_gaps = np.empty(int(replicates), dtype=np.float64)
     denominators = np.empty(int(replicates), dtype=np.float64)
     per_row_oriented_gaps = np.empty(int(replicates), dtype=np.float64)
+    control_gaps = np.empty(int(replicates), dtype=np.float64)
+    method_minus_control = np.empty(int(replicates), dtype=np.float64)
     for replicate in range(int(replicates)):
         chosen = rng.integers(0, len(group_rows), size=len(group_rows))
         resampled_rows = np.concatenate([group_rows[index] for index in chosen])
@@ -717,6 +720,15 @@ def _grouped_curve_margin_interval(
         per_row_oriented_gaps[replicate] = components[
             "per_row_oriented_native_gap"
         ]
+        if control_curves is not None:
+            control = _curve_margin_components(
+                control_curves, resampled_rows, direction
+            )
+            control_gaps[replicate] = control["per_row_oriented_native_gap"]
+            method_minus_control[replicate] = (
+                components["per_row_oriented_native_gap"]
+                - control["per_row_oriented_native_gap"]
+            )
     lower, upper = np.quantile(samples, (0.025, 0.975))
     native_lower, native_upper = np.quantile(native_gaps, (0.025, 0.975))
     denominator_lower, denominator_upper = np.quantile(denominators, (0.025, 0.975))
@@ -729,7 +741,7 @@ def _grouped_curve_margin_interval(
     per_row_oriented_lower, per_row_oriented_upper = np.quantile(
         per_row_oriented_gaps, (0.025, 0.975)
     )
-    return {
+    result: dict[str, float | int | str] = {
         "estimate": estimate["normalized_margin"],
         "ci_lower": float(lower),
         "ci_upper": float(upper),
@@ -755,6 +767,41 @@ def _grouped_curve_margin_interval(
         "replicates": int(replicates),
         "resampling_unit": "equilibrium_files",
     }
+    if control_curves is not None:
+        control_estimate = _curve_margin_components(
+            control_curves, sample_rows, direction
+        )
+        control_lower, control_upper = np.quantile(control_gaps, (0.025, 0.975))
+        paired_lower, paired_upper = np.quantile(
+            method_minus_control, (0.025, 0.975)
+        )
+        result.update(
+            {
+                "control_map": "absolute_input_minus_baseline",
+                "control_map_normalized_margin_estimate": control_estimate[
+                    "normalized_margin"
+                ],
+                "control_map_per_row_oriented_native_gap_estimate": control_estimate[
+                    "per_row_oriented_native_gap"
+                ],
+                "control_map_per_row_oriented_native_gap_ci_lower": float(
+                    control_lower
+                ),
+                "control_map_per_row_oriented_native_gap_ci_upper": float(
+                    control_upper
+                ),
+                "control_map_row_favouring_fraction_estimate": control_estimate[
+                    "row_favouring_fraction"
+                ],
+                "method_minus_control_map_gap_estimate": estimate[
+                    "per_row_oriented_native_gap"
+                ]
+                - control_estimate["per_row_oriented_native_gap"],
+                "method_minus_control_map_gap_ci_lower": float(paired_lower),
+                "method_minus_control_map_gap_ci_upper": float(paired_upper),
+            }
+        )
+    return result
 
 
 def _attribution_equivariance_pair(
@@ -1303,6 +1350,21 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
                 seed=int(config["seed"]) + 1201 + method_index,
                 include_per_sample=True,
             )
+            control_curves = deletion_insertion_curves(
+                _forward(
+                    member,
+                    CANONICAL_FUNCTION,
+                    drives_lt[selected_rows],
+                    drives_ln[selected_rows],
+                ),
+                geometry[selected_rows],
+                baseline[selected_rows],
+                torch.abs(geometry[selected_rows] - baseline[selected_rows]),
+                fractions=config["deletion_fractions"],
+                robust_scales=scales,
+                seed=int(config["seed"]) + 1201 + method_index,
+                include_per_sample=True,
+            )
             for direction_index, direction in enumerate(("deletion", "insertion")):
                 interval = _grouped_curve_margin_interval(
                     sample_curves,
@@ -1317,18 +1379,27 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
                         + 10 * stratum_index
                         + direction_index
                     ),
+                    control_curves=control_curves,
                 )
-                expected = next(
+                metric_row = next(
                     row
                     for row in metric_rows
                     if row["function"] == CANONICAL_FUNCTION
                     and row["method"] == method
                     and row["stratum"] == stratum
-                )[f"{direction}_margin_vs_random"]
+                )
+                expected = metric_row[f"{direction}_margin_vs_random"]
                 if not np.isclose(float(interval["estimate"]), float(expected), atol=1e-9):
                     raise RuntimeError(
                         f"bootstrap point estimate disagrees for {method} {stratum} {direction}"
                     )
+                metric_row["control_map"] = interval["control_map"]
+                metric_row[
+                    f"{direction}_control_map_margin_vs_random"
+                ] = interval["control_map_normalized_margin_estimate"]
+                metric_row[f"{direction}_margin_vs_control_map"] = float(
+                    expected
+                ) - float(interval["control_map_normalized_margin_estimate"])
                 bootstrap_rows.append(
                     {
                         "function": CANONICAL_FUNCTION,

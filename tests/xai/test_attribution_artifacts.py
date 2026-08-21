@@ -104,6 +104,7 @@ def test_s06a_selected_methods_pass_both_faithfulness_directions_in_each_stratum
     assert all(float(row["insertion_margin_vs_random"]) > 0 for row in rows)
     assert all(float(row["toy_channel_top1"]) == 1 for row in rows)
     assert all(float(row["toy_position_average_precision"]) >= 0.75 for row in rows)
+    assert all(row["control_map"] == "absolute_input_minus_baseline" for row in rows)
     all_rows = {row["method"]: row for row in rows if row["stratum"] == "all"}
     assert all(
         row["cyclic_equivariance_baseline_convention"] == "co_shifted"
@@ -194,6 +195,19 @@ def test_s06a_selected_faithfulness_margins_have_grouped_intervals() -> None:
         for row in margins
     )
     assert all(0 <= float(row["row_favouring_fraction_estimate"]) <= 1 for row in margins)
+    assert all(row["control_map"] == "absolute_input_minus_baseline" for row in margins)
+    assert all(
+        float(row["control_map_per_row_oriented_native_gap_ci_lower"])
+        <= float(row["control_map_per_row_oriented_native_gap_estimate"])
+        <= float(row["control_map_per_row_oriented_native_gap_ci_upper"])
+        for row in margins
+    )
+    assert all(
+        float(row["method_minus_control_map_gap_ci_lower"])
+        <= float(row["method_minus_control_map_gap_estimate"])
+        <= float(row["method_minus_control_map_gap_ci_upper"])
+        for row in margins
+    )
     assert all(row["denominator_estimate"] for row in margins)
     assert all(0 <= float(row["denominator_negative_fraction"]) <= 1 for row in margins)
     assert all(

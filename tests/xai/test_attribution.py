@@ -490,6 +490,7 @@ def test_curve_margin_orientation_handles_original_below_baseline() -> None:
     assert components["native_gap"] < 0
     assert components["normalized_margin"] > 0
     assert components["per_row_oriented_native_gap"] > 0
+    assert components["row_favouring_fraction"] == 1.0
     interval = _grouped_curve_margin_interval(
         curves,
         np.asarray(("eq0", "eq1")),
@@ -502,6 +503,43 @@ def test_curve_margin_orientation_handles_original_below_baseline() -> None:
     assert interval["oriented_native_gap_ci_lower"] > 0
     assert interval["per_row_oriented_native_gap_estimate"] > 0
     assert interval["per_row_oriented_native_gap_ci_lower"] > 0
+    assert interval["row_favouring_fraction_estimate"] == 1.0
+
+
+def test_curve_margin_interval_pairs_method_with_control_map() -> None:
+    original = np.ones(3)
+    baseline = np.zeros(3)
+    curves = [
+        {
+            "fraction": fraction,
+            "original_output_per_sample": original,
+            "baseline_output_per_sample": baseline,
+            "deletion_output_per_sample": values,
+            "random_deletion_output_per_sample": random,
+            "insertion_output_per_sample": 1 - values,
+            "random_insertion_output_per_sample": 1 - random,
+        }
+        for fraction, values, random in (
+            (0.0, original, original),
+            (0.5, np.zeros(3), np.full(3, 0.5)),
+            (1.0, baseline, baseline),
+        )
+    ]
+    interval = _grouped_curve_margin_interval(
+        curves,
+        np.asarray(("eq0", "eq1", "eq2")),
+        np.arange(3),
+        direction="deletion",
+        replicates=40,
+        seed=8,
+        control_curves=curves,
+    )
+    assert interval["control_map_per_row_oriented_native_gap_estimate"] == pytest.approx(
+        interval["per_row_oriented_native_gap_estimate"]
+    )
+    assert interval["method_minus_control_map_gap_estimate"] == pytest.approx(0.0)
+    assert interval["method_minus_control_map_gap_ci_lower"] == pytest.approx(0.0)
+    assert interval["method_minus_control_map_gap_ci_upper"] == pytest.approx(0.0)
 
 
 def test_s06a_selection_requires_positive_faithfulness_in_each_floor_stratum() -> None:
