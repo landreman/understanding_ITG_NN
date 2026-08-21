@@ -1107,23 +1107,10 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
         str(selection["primary_path_gradient"]),
         str(selection["primary_perturbation"]),
     )
-    canonical_forward = _forward(
-        member, CANONICAL_FUNCTION, drives_lt, drives_ln
-    )
     for selected_index, method in enumerate(selected_names):
         method_index = METHOD_NAMES.index(method)
         result = maps[(CANONICAL_FUNCTION, method)]
         baseline = _method_baseline(method, baselines)
-        sample_curves = deletion_insertion_curves(
-            canonical_forward,
-            geometry,
-            baseline,
-            result.values,
-            fractions=config["deletion_fractions"],
-            robust_scales=scales,
-            seed=int(config["seed"]) + 1201 + method_index,
-            include_per_sample=True,
-        )
         for stratum_index, (stratum, mask) in enumerate(
             (
                 ("all", np.ones(len(geometry), dtype=bool)),
@@ -1131,11 +1118,27 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
                 ("unstable", ~metadata["stable_or_near_floor"]),
             )
         ):
-            sample_rows = np.flatnonzero(mask)
+            selected_rows = np.flatnonzero(mask)
+            sample_rows = np.arange(len(selected_rows))
+            sample_curves = deletion_insertion_curves(
+                _forward(
+                    member,
+                    CANONICAL_FUNCTION,
+                    drives_lt[selected_rows],
+                    drives_ln[selected_rows],
+                ),
+                geometry[selected_rows],
+                baseline[selected_rows],
+                result.values[selected_rows],
+                fractions=config["deletion_fractions"],
+                robust_scales=scales,
+                seed=int(config["seed"]) + 1201 + method_index,
+                include_per_sample=True,
+            )
             for direction_index, direction in enumerate(("deletion", "insertion")):
                 interval = _grouped_curve_margin_interval(
                     sample_curves,
-                    metadata["equilibrium_file"],
+                    metadata["equilibrium_file"][selected_rows],
                     sample_rows,
                     direction=direction,
                     replicates=int(config["bootstrap_replicates"]),
