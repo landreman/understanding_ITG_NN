@@ -646,7 +646,9 @@ def curve_area(rows: Sequence[dict[str, float | str]], key: str) -> float:
     scale = original - baseline
     if abs(scale) <= np.finfo(np.float64).eps:
         return float("nan")
-    return float(np.trapz((values - baseline) / scale, fraction))
+    normalized = (values - baseline) / scale
+    segment_area = 0.5 * (normalized[:-1] + normalized[1:]) * np.diff(fraction)
+    return float(np.sum(segment_area))
 
 
 def attribution_sparsity(attribution: torch.Tensor, *, mass_fraction: float = 0.9) -> float:
