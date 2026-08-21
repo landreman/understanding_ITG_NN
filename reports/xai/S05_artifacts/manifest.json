@@ -31,12 +31,14 @@
       "members": 1,
       "panel_varied_rows": 96,
       "run_id": "pilot-top1-panel96",
+      "selection_null_permutations": 4,
       "shift_check_rows": 24
     },
     "published_dir": "/Users/mattland/understanding_ITG_NN/understanding_ITG_NN/reports/xai/S05_artifacts",
     "run_id": "unit-semantics-top2-panel1000",
     "s04_ranking": "/Users/mattland/understanding_ITG_NN/understanding_ITG_NN/reports/xai/S04_artifacts/rank_comparison.csv",
     "seed": 20260821,
+    "selection_null_permutations": 8,
     "shift_check_rows": 32,
     "shift_checks": [
       1,
@@ -46,9 +48,9 @@
     "source_hashes": {
       "channel_scales_sha256": "aeb870f8fb3d47d786aaa06e27574f7a99c8ffd0e900958373445226e2d21c28",
       "cohorts_sha256": "edde45002a709a92ddbee7d0cf8697b2d966d5a14110895e217b2898bf4263f6",
-      "runner_sha256": "9b44fc06d132fba2bf57b17cb724deada348341c474d0dc9c5cb0c964e82b1e4",
+      "runner_sha256": "c9fd2882533fa984060764320e1cc301f3debcf18ff70d80e87926a947541a80",
       "s04_ranking_sha256": "67f3e9efd6b27be7c2ee8f7f1b1ad81fbeb5fc87f566f3b6885be14f432e5140",
-      "unit_semantics_library_sha256": "50db4322faf866465b354dae384ada9ee72eb17f63f432ce5ff13052bc351ff9"
+      "unit_semantics_library_sha256": "bc1e8e2fe41b5c5faac03ac4909e2a611b5617a1e3b5266ad137d7cab1da3c78"
     },
     "stable_threshold_log_Q": -1.9,
     "step": "S05",
@@ -65,10 +67,10 @@
     "sha256": "9d8fa52f93f2782ad9948a38bf46943c0cd6df78cd08b94a006dad4e06c1c8ad"
   },
   "device": "cpu",
-  "git_commit": "12aacacdf065cb2c69a75ac327a8624f105b509a",
+  "git_commit": "f0de95981c5063e38f45fb266c6c7b2f526713e7",
   "git_dirty": true,
-  "git_tracked_dirty": false,
-  "git_tree": "d584603b7bc5b9028364ebb18de7cc480c828192",
+  "git_tracked_dirty": true,
+  "git_tree": "cad014190a879eb0dfa30802b387bb85e5937baa",
   "gradient_set": "varied",
   "member_ids": [
     "2864601_0.437",
@@ -91,10 +93,10 @@
     "progress.json": "8fd1145ce6a5ac5dab472d3b4e5823ce073e76c9953a79ac6e0f70aa3b56ecb3",
     "receptive_fields.csv": "360d896c2e02e3b41e432b57a4622d2a5efdb7db1f2c4f831b7e684092db95f4",
     "shift_consistency.csv": "3c08901043b45c89aeda34e5db2db95a48740f6bfa783d2969b3a070b80f25f2",
-    "summary.json": "e145f1972357735a8ceaf80995fe7fb4526bd71f5e31ea306effff4918e17a00",
-    "unit_concept_alignment.csv": "387bbbd92d9bd335c76f5a6648cfa34f757dd1a586445235054afdc5113c733d",
+    "summary.json": "e702c8fefbe4fd16fa0190be334f457bd644fcb588343a44a6da94e90e565824",
+    "unit_concept_alignment.csv": "f0f8b9703d84987ac35f98343e85c3f740a7c40d9a082ce7ae0887aaf9cc0382",
     "unit_density_summary.csv": "605319b849428d8f0da15aaff50bd562dbb8418760161c760e03bb52e0a7a73f",
-    "unit_motifs.csv": "5cb873945537a01e327f2123687d643f94fab64d17cfc87a1151929af1db83eb"
+    "unit_motifs.csv": "8f26193e32e966184ed422e1d63fa70d1f3d78ee4fb29b8e8662372e5501e012"
   },
   "package_versions": {
     "captum": "0.9.0",
@@ -1110,5 +1112,5 @@
     100596
   ],
   "seed": 20260821,
-  "wall_time_seconds": 215.408394166996
+  "wall_time_seconds": 196.5953482909972
 }

@@ -30,18 +30,42 @@ a replicated identity for the dominant unit.
 
 Lag is essential rather than cosmetic. The six supported lags are
 **+18, +23, -39, -15, -1, and +11** grid points. For example, the dominant top
-member's zero-lag rank correlation with its selected $f_Q$ trace is only
-**-0.018**, while the lagged correlation is -0.369. All final receptive fields
+member's like-for-like zero-lag Pearson correlation with its selected $f_Q$
+trace is only **-0.006**, while the lagged Pearson correlation is -0.369 (its
+zero-lag Spearman correlation is -0.018). All final receptive fields
 wrap the entire 96-point domain (formal spans 180 and 330), so these large lags
 are structurally possible. They also mean that a unit's activation maximum
 should not be described as the same location as its matched physics feature.
 
-Even supported alignments are incomplete descriptions. At 5% fixed sparsity,
-their activation/concept overlap is only **0.0786–0.1302**, compared with 0.05
-expected for unrelated masks of equal size. Partial rank correlations after
-controlling for the seven local channel magnitudes remain similar to the
-lagged correlations (**absolute 0.253–0.386**), so raw amplitude alone does not
-explain them, but the low overlap prevents calling any unit a pure detector.
+The six observed correlations are **4.09–6.69 times** the 95th percentile of an
+eight-draw row-permutation null that repeats the full selection over all 75
+concepts and 96 lags. This is a selection-calibration diagnostic, not a
+low-resolution permutation $p$-value.
+
+Even supported alignments are incomplete descriptions. A tie-inclusive top-5%
+mask selects an average **6.81–36.41** density positions because many ReLU
+activations are tied at zero. Its concept overlap is **0.107–0.421**, but the
+corresponding row-specific chance baselines are already **0.071–0.379**:
+only **1.10–1.51-fold** enrichment. Density-local partial rank correlations
+after residualizing the seven channel-magnitude ranks range from **-0.442 to
++0.237**. Four remain at absolute correlation at least 0.33; the sparse
+replication unit `u011` falls to **+0.123**. These controls are evaluated at the
+density position, not at the lagged concept's source position, so they do not
+establish independence from source geometry.
+
+| unit | selected concept | lagged $r$ | defined rows / 1000 | $r$ on defined rows | density-local partial rank $r$ | overlap / chance | selection-null q95 |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| `.437:u000` | bad-curvature compression | -0.397 | 939 | -0.423 | -0.442 | 0.107 / 0.071 | 0.059 |
+| `.437:u001` | $f_Q$ integrand | -0.369 | 969 | -0.381 | -0.435 | 0.126 / 0.091 | 0.066 |
+| `.437:u008` | radial drift / geodesic curvature | -0.315 | 944 | -0.334 | -0.333 | 0.166 / 0.123 | 0.057 |
+| `.371:u000` | bad-curvature compression | -0.386 | 923 | -0.418 | -0.382 | 0.161 / 0.116 | 0.094 |
+| `.371:u011` | bad-curvature compression | +0.257 | 728 | +0.353 | +0.123 | 0.383 / 0.348 | 0.054 |
+| `.371:u018` | $f_Q$ integrand | +0.266 | 730 | +0.365 | +0.237 | 0.421 / 0.379 | 0.055 |
+
+The primary lagged statistic averages a row correlation of zero whenever the
+density or trace is spatially flat. The table exposes both the number of rows
+with a defined correlation and the defined-row-only mean; inactive rows are
+therefore visible rather than silently dropped.
 
 ## Estimand and cohort
 
@@ -67,16 +91,18 @@ spatial-origin-checked $\rho$ implementation; S04 supplies the importance
 ranking. Production and development read the external source HDF5 file, not
 `tests/data/review_slice.h5`.
 
-The registered run is `unit-semantics-top2-panel1000` at code commit `12aacac`.
+The registered run is `unit-semantics-top2-panel1000` at code commit `f0de959`.
 Its byte-for-byte published [manifest](S05_artifacts/manifest.json) records the
 external dataset SHA-256
 `9d8fa52f93f2782ad9948a38bf46943c0cd6df78cd08b94a006dad4e06c1c8ad`
 and unchanged checkpoint SHA-256
 `d5e092348514a5ee85b68bcdcf51dbb32eaa344beea1daa28f5aaeba9e86eefb`.
 It used CPU, seed 20260821, Python 3.12.4, torch 2.4.1, NumPy 1.26.4, h5py
-3.11.0, Captum 0.9.0, and took **215.4 s**. `git_tracked_dirty` is false;
-`git_dirty` records only the protected untracked `output/` tree and newly
-published report artifacts.
+3.11.0, Captum 0.9.0, and took **196.6 s**. `git_tracked_dirty` is true because
+the runner publishes the newly generated small tables before finalizing and
+hashing the manifest; its source hashes and `git_commit` identify the clean
+committed implementation used for the run. `git_dirty` also includes the
+protected untracked `output/` tree.
 
 ## Methods
 
@@ -123,12 +149,16 @@ real geometry, not interventions.
 
 For each unit/concept/stratum, the table records:
 
-1. within-tube zero-lag Spearman rank correlation;
-2. top-5% overlap after applying the separately recorded best lag and sign;
+1. within-tube zero-lag Pearson and Spearman rank correlations;
+2. tie-inclusive top-5% overlap after applying the separately recorded best
+   lag and sign, along with both mask sizes and the row-specific chance baseline;
 3. the circular lag that maximizes the absolute mean within-tube correlation;
-4. correlation at that lag; and
+4. correlation at that lag, both with flat rows assigned zero and over only
+   rows where correlation is defined; and
 5. partial within-tube rank association after linearly residualizing the seven
-   local channel-magnitude ranks.
+   channel-magnitude ranks at the density position. Because the concept has
+   been rolled, this last control is local to the density coordinate rather
+   than to the lagged concept's source coordinate.
 
 The point estimate chooses a lag on the full frozen panel. Bootstrap intervals
 and concept recurrence then hold each concept's point-estimate lag fixed and
@@ -144,6 +174,13 @@ compact [unit motif catalog](S05_artifacts/unit_motifs.csv) applies the two
 thresholds that were fixed in the config before the pilot and production run.
 A below-threshold winner remains visible as `best_observed_concept` but receives
 `claimed_concept=none`.
+
+For every supported winner, [unit_motifs.csv](S05_artifacts/unit_motifs.csv)
+also reports eight sample-row permutations. Each draw breaks density/concept
+pairing and records the maximum absolute mean Pearson correlation after
+searching all **75 concepts × 96 lags**. The observed-to-null-q95 ratio is
+4.09–6.69. Eight draws are enough to expose the scale of selection inflation,
+but not to estimate a tail probability.
 
 ### Natural exemplars and motif clusters
 
@@ -223,11 +260,28 @@ not a claim of equally stable mechanism selection at the clipped-log floor.
   the repeated-group multiplicity check; forcing every concept to lag zero
   failed the analytic lag-7 recovery; and omitting S01's robust channel scales
   failed the dimensionless parallel-scale control.
+- Automated review exposed that the original `_rank_last` allocated an
+  `empty_like` array with non-contiguous strides, so reshaping it could rank a
+  temporary copy and leave the returned partial-correlation ranks
+  uninitialized. The production run was discarded. A contiguous-allocation
+  regression now fails under that exact mutation, and the registered run and
+  reports were regenerated. Two further review-driven mutations—excluding
+  threshold ties and silently averaging only correlation-defined rows—also
+  turned their new tests red and were reverted.
 - Only six of 29 live units meet even the deliberately modest named-alignment
   thresholds, and only one of the second member's five most important units
   does. The dominant-unit name does not replicate.
-- Fixed-sparsity overlaps remain low (0.0786–0.1302) even for supported
-  alignments. Correlation plus recurrence is not purity.
+- Tie-inclusive fixed-sparsity overlap enrichment is only 1.10–1.51 over its
+  actual chance baseline even for supported alignments. Correlation plus
+  recurrence is not purity.
+- Sparse units have only 728–730 correlation-defined rows; the primary
+  all-panel statistic deliberately gives inactive rows zero weight, while the
+  defined-only values are published separately.
+- The density-local partial control weakens `2864601_0.371:u011` from +0.257 to
+  +0.123 and does not control geometry at the lagged concept source. It is a
+  sensitivity check, not proof of a distinct learned feature.
+- The selection null uses only eight permutations. Its 4.09–6.69 observed/q95
+  ratios are reassuring calibration, not permutation-test significance.
 - The second member's strongest unit misses the correlation threshold narrowly
   (+0.192) but is not rounded up or relabeled.
 - Natural clustering mostly isolates one or two outliers; no balanced,
@@ -293,11 +347,13 @@ slice_rows = load_review_slice_index().slice_rows(parent)
 
 Loading `slice_rows` from the slice reproduces the 240/760 strata, all 29
 densities, 75 concept traces, native/invariant outputs, density support,
-alignment/lag/partial/overlap rows, equilibrium bootstrap, exemplar source
-coordinates, and shift checks. Compare to columns in
+alignment/lag/density-local-partial/tie-inclusive-overlap rows, counts of
+correlation-defined rows, the row-permutation selection null, equilibrium
+bootstrap, exemplar source coordinates, and shift checks. Compare to columns in
 `unit_density_summary.csv`, `unit_concept_alignment.csv`,
 `native_function_comparison.csv`, `natural_exemplars.csv`, and
-`shift_consistency.csv`. The analytic mode-3, lag-7, null-concept, grouped-row,
+`shift_consistency.csv`. The analytic mode-3, lag-7, null-concept,
+non-contiguous-rank, tied-mask, flat-row, selection-null, grouped-row,
 wrapped-coordinate, deterministic-cluster, transfer-axis, and native-signed
 tests are independently runnable with `pytest tests/xai/test_unit_semantics.py`.
 
@@ -305,7 +361,7 @@ tests are independently runnable with `pytest tests/xai/test_unit_semantics.py`.
 all headline numbers above are in [summary.json](S05_artifacts/summary.json),
 [unit_motifs.csv](S05_artifacts/unit_motifs.csv), and the linked CSVs. The
 committed [manifest](S05_artifacts/manifest.json) records exact config, command,
-1000 parent row IDs, two member IDs, source hashes, package versions, clean code
+1000 parent row IDs, two member IDs, source hashes, package versions, source
 commit, dataset/checkpoint fingerprints, wall time, and 20 output hashes.
 
 **Not checkable off the researcher's machine, and why.** The checkout lacks the

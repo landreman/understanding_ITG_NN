@@ -37,7 +37,7 @@
   "concept_count": 75,
   "deferred": [
     "window surrogate for unresolved units: both MVD members have globally connected 96-position final receptive fields, so the nominal 672-input surrogate is not a small local regression; defer model choice to a later step rather than tune it on the registered panel",
-    "NMF or sparse dictionary learning: natural two-cluster summaries are coherent enough to retain as the preregistered first diagnostic"
+    "NMF or sparse dictionary learning: the natural two-cluster summaries do not establish a coherent shared motif family, so a learned dictionary remains deferred rather than being tuned on the registered panel"
   ],
   "estimand": "member-level signed rho for invariant_tilde_f plus native original_f comparison in max(log Q, -2)",
   "live_units": {
@@ -54,6 +54,12 @@
   ],
   "mode": "production",
   "natural_exemplars_per_unit": 16,
+  "selection_null": {
+    "minimum_observed_to_q95_ratio": 4.094419784199468,
+    "permutations_per_supported_unit": 8,
+    "scope": "maximum absolute mean Pearson correlation over 75 concepts x 96 lags",
+    "unit": "sample-row permutation"
+  },
   "step": "S05",
   "supported_named_motifs": 6,
   "toy_checks": {

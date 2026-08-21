@@ -43,9 +43,10 @@ lag.
 
 This changed the answer substantially. The six accepted matches had lags from
 -39 to +23 of the 96 grid points. For the strongest unit in the first network,
-the correlation at the same position was almost zero (-0.018), but it became
--0.369 after the correct 23-point shift. A plot that silently assumed zero lag
-would have missed the match or placed it at the wrong physical location.
+the Pearson correlation at the same position was almost zero (-0.006), but it
+became -0.369 after the correct 23-point shift. A plot that silently assumed
+zero lag would have missed the match or placed it at the wrong physical
+location.
 
 These large shifts are plausible because the final units can see the entire
 field line. They are also a warning: these are distributed computations, not
@@ -61,13 +62,17 @@ The accepted names passed several checks:
   different equilibria;
 - shifting the input around the periodic domain shifted the unit patterns with
   maximum numerical error only $1.0\times10^{-5}$; and
-- the relationships remained after accounting for the magnitudes of the seven
-  individual geometry channels.
+- each observed correlation was at least 4.09 times the 95th percentile of a
+  diagnostic null that repeated the complete search after permuting sample
+  pairings.
 
-But the names remain shorthand, not complete definitions. When we selected only
-the most active 5% of positions, unit and concept overlapped at just 7.9% to
-13.0% of positions. Random equal-sized masks would overlap at 5%. Thus the
-accepted concepts explain part of a unit's organization, but no unit is a pure
+But the names remain shorthand, not complete definitions. ReLU produces many
+ties at zero, so a tie-aware nominal top-5% mask often contains more than 5% of
+positions. After using each mask's actual size, unit/concept overlap is only
+1.10 to 1.51 times its chance baseline. A second check accounting for the seven
+channel magnitudes at the unit's activation position leaves four relationships
+strong, but weakens one sparse unit from +0.257 to +0.123. It does not control
+the geometry at the shifted feature's source position. Thus no unit is a pure
 "bad-curvature detector" or "$f_Q$ detector."
 
 ## Stable and unstable cases
@@ -100,12 +105,11 @@ original one.
 
 ## Bottom line
 
-S05 strengthens the case that the ensemble has learned the paper's main
+S05 strengthens the case that these two members have learned the paper's main
 geometric vocabulary—bad curvature, surface compression, and geodesic
-curvature. It also shows why that statement must remain at the ensemble or
-concept-family level. Individual important units are broad, shifted,
+curvature. It also shows why that statement must remain at the concept-family
+level. Individual important units are broad, shifted,
 member-specific mixtures, and most resist a reliable one-line name. That
 negative result is useful: later steps should test concepts across layers and
 members rather than assume that a unit label discovered in one network transfers
 to another.
-
