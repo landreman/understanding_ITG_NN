@@ -50,7 +50,17 @@ random order; insertion performs the reverse experiment. On the canonical
 128-row panel, low-pass Integrated Gradients beat its random control by 0.572 on
 deletion and 0.416 on insertion. The mask beat random by 5.247 and 5.293. Both
 directions also remained positive when the 33 stable/near-floor rows and 95
-unstable rows were analyzed separately.
+unstable rows were analyzed separately. The mask result needs an important
+qualification: the mask was optimized using the same replacement operation that
+this curve scores, so its very large margin is an in-sample optimization result,
+not an independent validation.
+
+The Integrated Gradients margins are normalized by a small native-unit change.
+The low-pass reference changes the canonical output by median 0.0014 and mean
+0.0175 across the registered rows. Its median numerical completeness error is
+about 5.6% of that median difference. The direction of the faithfulness result
+reproduces, but the normalized headline should not be mistaken for a large heat-
+flux effect.
 
 Finally, the explanations changed when all learned parameters were reset. Their
 rank correlation with the randomized-network maps was 0.406 for Integrated
@@ -74,16 +84,18 @@ The first caveat is **baseline sensitivity**. Integrated Gradients needs a
 starting geometry, and different plausible choices give meaningfully different
 maps. The selected low-pass map has rank correlation only 0.432 with the map
 from a robust constant reference. The 64-row pilot even selected a medoid
-reference, while the fixed rule selected low-pass on 128 rows. S06b must carry
-the other baselines as sensitivity analyses; the chosen map is not a unique,
-baseline-free truth.
+reference, while the fixed rule selected low-pass on 128 rows; the two panels
+overlapped by only 7 rows. S06b must carry the other baselines as sensitivity
+analyses; the chosen map is not a unique, baseline-free truth.
 
 The second caveat is **physical validity**. Smoothing a geometry or replacing
 individual cells does not generally produce another realizable magnetic
-equilibrium. The mask edits travel as far as 3.8 robust input-scale units and
-receive high data-support warnings. These maps explain what the trained network
-does off its observed manifold. They do not show that changing a stellarator in
-that way would change the plasma.
+equilibrium. The mask edits travel as far as 3.8 robust input-scale units. The
+reported PCA warning cannot establish off-manifold drift—it is high even for
+some observed support rows—so the caveat rests on the artificial edits
+themselves, not that warning. These maps explain what the trained network does
+under those edits. They do not show that changing a stellarator in that way
+would change the plasma.
 
 The third caveat is that only one network was benchmarked. S06a can select
 methods, but it cannot say a feature is common across the ensemble. S06b must
@@ -99,11 +111,15 @@ Gradients from a matched observed geometry also failed deletion faithfulness.
 An observed endpoint does not make the artificial path between two geometries
 physically valid or numerically useful.
 
-The implementation itself caught three subtle failures: Captum expanded the
-input batch without expanding the two scalar drives; Expected Gradients used an
-unseeded NumPy random draw; and the first faithfulness normalization reversed
-the interpretation when a stable prediction lay below its baseline. Each was
-fixed, tested, and the pilot and production artifacts were regenerated.
+The implementation and automated review caught four subtle failures: Captum's
+Integrated Gradients expanded the input batch without expanding the two scalar
+drives; Captum's Expected Gradients used a different batch ordering that paired
+some paths with the wrong drives; Expected Gradients also used an unseeded NumPy
+random draw; and the first faithfulness normalization reversed the
+interpretation when a stable prediction lay below its baseline. Each was fixed,
+tested, and the pilot and production artifacts were regenerated. The corrected
+Expected Gradients result remained eligible but did not replace either selected
+method.
 
 ## What comes next
 

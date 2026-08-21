@@ -169,6 +169,19 @@ def test_cyclic_occlusion_recovers_wrapped_window_and_ignores_null_channel() -> 
     assert result.validity == ValidityTag.PLAUSIBLY_LOCAL
 
 
+def test_toy_recovery_counts_negative_contributions_as_relevant() -> None:
+    attribution = torch.zeros((2, 96, 7))
+    attribution[:, 95, 2] = -4.0
+    attribution[:, 0, 2] = 3.0
+    attribution[:, 20, 6] = 1.0
+    recovery = toy_recovery(
+        attribution,
+        relevant_channels=(2,),
+        relevant_positions=(95, 0),
+    )
+    assert recovery == {"channel_top1": 1.0, "position_average_precision": 1.0}
+
+
 def test_temporal_rescaling_retains_signs_and_separates_marginals() -> None:
     values = torch.zeros((2, 8, 3))
     values[:, 6:, 1] = torch.as_tensor(((1.0, -3.0), (2.0, -4.0)))

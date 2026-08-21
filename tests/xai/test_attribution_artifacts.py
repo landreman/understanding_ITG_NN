@@ -91,6 +91,19 @@ def test_s06a_selected_methods_pass_both_faithfulness_directions_in_each_stratum
     assert all(float(row["parameter_randomization_correlation"]) < 0.95 for row in all_rows.values())
 
 
+def test_s06a_pilot_selection_artifact_records_baseline_instability() -> None:
+    pilot = json.loads(
+        (ARTIFACTS / "pilot_selected_methods.json").read_text(encoding="utf-8")
+    )
+    production = json.loads(
+        (ARTIFACTS / "selected_methods.json").read_text(encoding="utf-8")
+    )
+    assert pilot["passed"] is True
+    assert pilot["primary_path_gradient"] == "ig_medoid"
+    assert production["primary_path_gradient"] == "ig_low_pass"
+    assert pilot["rule"] == production["rule"]
+
+
 def test_s06a_review_maps_are_native_member_level_and_axis_labeled() -> None:
     with h5py.File(ARTIFACTS / "selected_review_maps.h5", "r") as h5_file:
         assert h5_file.attrs["estimand"] == "native max(log Q, -2)"

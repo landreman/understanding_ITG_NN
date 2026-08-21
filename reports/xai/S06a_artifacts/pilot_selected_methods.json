@@ -1,0 +1,36 @@
+{
+  "eligible": {
+    "cyclic_occlusion": false,
+    "expected_gradients": true,
+    "ig_low_pass": false,
+    "ig_matched_observed": false,
+    "ig_medoid": true,
+    "ig_robust_constant": true,
+    "periodic_mask": true,
+    "scaled_gradient": true,
+    "tsr_ig_robust_constant": true,
+    "tsr_scaled_gradient": true,
+    "vargrad": true
+  },
+  "passed": true,
+  "primary_path_gradient": "ig_medoid",
+  "primary_perturbation": "periodic_mask",
+  "rule": {
+    "minimum_deletion_margin": 0.0,
+    "minimum_insertion_margin": 0.0,
+    "minimum_toy_channel_top1": 1.0,
+    "minimum_toy_position_average_precision": 0.75,
+    "path_candidates": [
+      "ig_robust_constant",
+      "ig_matched_observed",
+      "ig_medoid",
+      "ig_low_pass",
+      "expected_gradients"
+    ],
+    "perturbation_candidates": [
+      "cyclic_occlusion",
+      "periodic_mask"
+    ],
+    "tie_break": "lowest_normalized_infidelity_then_runtime"
+  }
+}

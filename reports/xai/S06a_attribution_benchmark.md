@@ -17,8 +17,12 @@ for the random-map control. Their toy deletion AUC is **0.025** versus **0.557**
 for random order, and insertion AUC is **0.975** versus **0.443**. On the
 128-row canonical panel benchmark, low-pass IG beats random order by **0.572**
 deletion-AUC units and **0.416** insertion-AUC units; the periodic mask's margins
-are **5.247** and **5.293**. These normalized AUCs are comparable to each
-method's own random-order control, not across methods with different baselines.
+are **5.247** and **5.293**. The mask is optimized per sample with the same
+replacement operator that its deletion curve scores, so those unusually large
+mask margins are in-sample optimization results, not independent faithfulness
+evidence. The mask curve also overshoots its baseline at 10% and 25% replacement.
+These normalized AUCs are comparable to each method's own random-order control,
+not across methods with different baselines.
 
 The result survives the required floor split. Low-pass IG deletion/insertion
 margins are **1.503/0.211** on 33 stable or near-floor rows and **0.420/0.420**
@@ -96,10 +100,15 @@ additive output contributions.
 [Faithfulness curves](S06a_artifacts/faithfulness_curves.csv) carry deletion,
 insertion, matched random-order controls, robust input displacement, and S03 PCA
 support warning at every registered fraction. The support warning does not
-certify physical validity. For low-pass IG, robust displacement rises from 0 to
-0.604 at full replacement and the warning remains 0.687–0.711 along the
-reported path. For the mask path, displacement reaches 3.809 robust RMS and the
-warning reaches 0.920. Those values reinforce the off-manifold tag.
+certify physical validity or off-manifold drift: it is a two-sided percentile
+diagnostic that can be high for central fit rows as well as tail rows. The
+low-pass warning is already 0.707 at the unedited observed geometry and remains
+0.687–0.711; the mask warning reaches 0.920 exactly when deletion reaches its
+matched-observed support-row endpoint. The useful effect-size diagnostic is the
+robust input displacement, which rises from 0 to 0.604 for low-pass IG and to
+3.809 robust RMS for the mask. The paths remain tagged off manifold because
+their smoothed/intermediate and cell-replaced geometries are not guaranteed to
+be observed or physically realizable, not because of the warning score.
 
 The [IG convergence table](S06a_artifacts/ig_convergence.csv) compares 64 with
 32 steps. Canonical rank correlation is **0.99925** for low-pass IG and
@@ -107,6 +116,14 @@ The [IG convergence table](S06a_artifacts/ig_convergence.csv) compares 64 with
 median $7.90\times10^{-5}$, q90 $9.34\times10^{-4}$, and maximum 0.00409 native
 units. Its normalized mask infidelity is **0.09697**, the lowest among eligible
 path methods.
+
+The normalization denominator is small. On the registered rows, the low-pass
+endpoint difference $\tilde f(X)-\tilde f(B)$ has median **0.0014** and mean
+**0.0175** native units; the batch-mean prediction moves from 0.4462 to 0.4287
+over the full deletion sweep. The median completeness residual
+$7.90\times10^{-5}$ is therefore about **5.6%** of the median endpoint
+difference. The normalized margins are directionally robust, but their scale
+must be read together with this native-unit effect size.
 
 ## Baseline sensitivity
 
@@ -120,9 +137,11 @@ infidelity under the fixed tie-break; its endpoint and path remain off manifold.
 
 The 64-row pilot selected medoid IG because low-pass insertion did not beat its
 random control there. The same fixed rule selected low-pass IG on the registered
-128 rows. This pilot-to-production instability is a negative result: S06b must
-retain medoid and robust-constant IG as baseline sensitivity analyses and must
-not treat the primary map as baseline-independent.
+128 rows. The pilot and production panels overlap by 7 rows (11% of the pilot).
+The committed [pilot selection](S06a_artifacts/pilot_selected_methods.json)
+records the medoid result. This pilot-to-production instability is a negative
+result: S06b must retain medoid and robust-constant IG as baseline sensitivity
+analyses and must not treat the primary map as baseline-independent.
 
 ## Stable/near-floor versus unstable rows
 
@@ -146,6 +165,9 @@ of whole `equilibrium_files` and reports sample-mean absolute attribution for
 every method, function, and floor stratum. For the selected canonical maps, the
 all-row estimates and 95% intervals are 0.001171 (0.000856–0.001465) for
 low-pass IG and 0.1123 (0.1103–0.1143) for the dimensionless mask.
+Each of these 128 panel rows has a distinct `equilibrium_files` value, so grouped
+and row bootstrap distributions coincide in S06a; grouping becomes substantive
+when S06b includes sibling flux tubes.
 
 S06a has exactly one preregistered member, so these intervals cover equilibrium
 sampling only. The full S06 acceptance clause requiring both member and
@@ -154,7 +176,7 @@ selected methods across the registered top 10 and a wider sensitivity sample.
 
 ## Failed checks and corrections
 
-Four failures were found before the final registered run and retained in tests
+Five failures were found before the final registered run and retained in tests
 or method records:
 
 1. Captum batches all IG steps together; the first real-model pilot exposed
@@ -172,6 +194,14 @@ or method records:
    lay below their baselines. The signed analytic control caught the error;
    pilot and production were both regenerated with
    $(f(\cdot)-f(B))/(f(X)-f(B))$.
+5. Automated review found that Captum 0.9 `GradientShap` expands panel rows in
+   sample-major order, unlike `IntegratedGradients`' step-major expansion. The
+   shared drive closure therefore paired some Expected Gradients paths with the
+   wrong $a/L_T$ and $a/L_n$. A drive-dependent Captum-versus-fallback test was
+   shown to fail, a sample-major adapter was added, and pilot and production
+   were regenerated. The corrected canonical Expected Gradients deletion and
+   insertion margins are 0.301 and 0.449 (previously 0.294 and 0.395); it stays
+   eligible but does not replace either selected method.
 
 Three deliberate post-run mutations turned the focused suite red and were
 reverted: dropping robust channel scales failed the exact scaled-gradient test;
@@ -193,9 +223,10 @@ negative-direction curve test.
 - Canonical and original maps are not interchangeable: their rank correlation
   is 0.875 for low-pass IG and 0.605 for the mask, and original-$f$ maps fail
   exact equivariance as S02 predicts.
-- The periodic mask's strong AUC margins occur on edits with robust displacement
-  up to 3.809 and high support warnings. They diagnose the trained function,
-  not a realizable plasma intervention.
+- The periodic mask's strong AUC margins are scored with the same replacement
+  operator used to optimize the mask and include baseline overshoot. Its edits
+  reach robust displacement 3.809. This is an in-sample network diagnostic, not
+  independent faithfulness evidence or a realizable plasma intervention.
 - Parameter randomization is a full reset rather than the more granular
   layer-by-layer cascade; it establishes response, not where that response
   begins.
@@ -207,7 +238,7 @@ negative-direction curve test.
 | Selected methods beat random/control maps on toy recovery and faithfulness | **Pass.** Both selected methods have toy channel top-1 1.0 and position AP 1.0 versus random AP 0.0442; canonical all/stable/unstable deletion and insertion margins are positive, with exact values above and in `benchmark_metrics.csv`. |
 | Selected methods respond to parameter randomization | **Pass.** Canonical absolute-map rank correlation is 0.406 for low-pass IG and 0.099 for the mask. |
 | Baseline sensitivity is understood | **Pass, with a strong limitation.** Low-pass/robust map correlation is 0.432; all four IG baselines and Expected Gradients remain published sensitivity analyses. |
-| Methods meet symmetry behavior permitted by S02 | **Pass.** Canonical equivariance relative RMS is $1.03\times10^{-4}$ and $2.70\times10^{-7}$ for the selected pair; original-$f$ errors are 0.821 and 0.820 and are retained. |
+| Methods meet symmetry behavior permitted by S02 | **Pass.** Recorded canonical equivariance relative RMS is $1.03\times10^{-4}$ and $2.70\times10^{-7}$ for the selected pair; the low-pass value is roundoff-limited and reproduced as $6.33\times10^{-8}$ on another platform. Original-$f$ errors are 0.821 and 0.820 and are retained. |
 | Uncertainty includes model and equilibrium sampling | **Pending S06b by the explicit S06a/S06b split.** S06a provides 500-draw equilibrium-file intervals for its one registered member; model sampling begins in S06b. |
 | Signed and absolute summaries are distinguishable | **Pass.** Full HDF5 maps retain signs; every metrics row has `signed` and `contribution_valued`; VarGrad and masks are marked magnitude-only. |
 | No feature is called common without agreement | **Pass.** S06a names no common feature; member agreement is deferred to S06b. |
@@ -232,17 +263,24 @@ rows in `tests/data/review_slice.h5`. Translate them with
 IDs directly to `load_hdf5_rows`. Low-pass IG uses only each analyzed geometry,
 its low-pass transform, the checkpoint, and the stored drives, so the reviewer
 can recompute its 128-row toy, completeness, symmetry, randomization, and
-faithfulness numbers exactly (within platform float tolerance). The first 16
-maps to compare are in `selected_review_maps.h5`, with explicit axes and row IDs.
+faithfulness numbers within ordinary platform tolerance. Near-zero canonical
+equivariance is roundoff-limited: the production artifact records
+$1.03\times10^{-4}$ for low-pass IG while the review runner obtained
+$6.33\times10^{-8}$, so only its effectively-zero order is expected to agree.
+The first 16 maps to compare are in `selected_review_maps.h5`, with explicit axes
+and row IDs. The same production path gives the low-pass endpoint denominator
+median 0.0014 and mean 0.0175 native units and the full-sweep batch means
+0.4462→0.4287.
 
 **Checkable from committed artifacts alone.** Method selection and its fixed
 rule are in `selected_methods.json`; all benchmark/stratum numbers are in
 `benchmark_metrics.csv`; all deletion/insertion doses and support warnings are
 in `faithfulness_curves.csv`; 500-draw equilibrium intervals are in
 `grouped_uncertainty.csv`; convergence is in `ig_convergence.csv`; analytic
-controls are in `toy_controls.json`; hashes, package versions, rows, member,
+controls are in `toy_controls.json`; the pilot medoid selection is in
+`pilot_selected_methods.json`; hashes, package versions, rows, member,
 checkpoint, and dataset fingerprints are in the committed manifest. The
-artifact tests independently pin these schemas and hashes.
+artifact tests independently pin the production schemas and hashes.
 
 **Not checkable off the researcher's machine, and why.** The exact periodic-mask
 map uses matched backgrounds selected from 512 equilibrium-unique S01 reference
