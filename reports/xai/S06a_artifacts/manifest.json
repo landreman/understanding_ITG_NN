@@ -50,6 +50,9 @@
       "convergence_rows": 8,
       "expected_backgrounds": 4,
       "expected_samples": 12,
+      "faithfulness_strata": [
+        "all"
+      ],
       "ig_steps": 32,
       "infidelity_rows": 8,
       "infidelity_trials": 6,
@@ -68,7 +71,7 @@
     "randomization_rows": 8,
     "review_publish_rows": 16,
     "run_id": "attribution-benchmark-top1-panel128",
-    "script_sha256": "75458799ad2d2699c3010341d959b377890bd80cf2568315d2e105ed399fa445",
+    "script_sha256": "c6abca40121083642848e9817f04c86e093788424441ed542e8f879987527ae4",
     "seed": 20260821,
     "selection_rule": {
       "faithfulness_strata": [
@@ -114,10 +117,10 @@
     "sha256": "9d8fa52f93f2782ad9948a38bf46943c0cd6df78cd08b94a006dad4e06c1c8ad"
   },
   "device": "cpu",
-  "git_commit": "44252696ea4ba33e786ad8398fa8093e12e91956",
+  "git_commit": "5605bb4e7299975de3231bc68887fc7b176c0289",
   "git_dirty": true,
   "git_tracked_dirty": true,
-  "git_tree": "d47d44bddb03851273fa45245df8a6bafbadbe5d",
+  "git_tree": "9cffb55519fb883a16de57caf6413b0c46b7d582",
   "gradient_set": "varied",
   "member_ids": [
     "2864601_0.437"
@@ -125,9 +128,9 @@
   "output_hashes": {
     "attribution_maps.h5": "9773d0a61cfc131c16b701db0cc5001d02c8e22a9212789991f09bdc23569451",
     "benchmark.png": "5f43593c53851dd109133d5e190e528cadd99cadfe186622e34a63d64deac210",
-    "benchmark_metrics.csv": "c684e5fad62f46db462664badf2982be81decba9392e616cf4da91bcc577a89e",
+    "benchmark_metrics.csv": "2b2542f4e163ecb674efdf3ef9e521bfca7cba2b5d6a9904d5bdf25aa4acc04a",
     "faithfulness_curves.csv": "453ce0a9636d8597fe37a7f6302a1cb41e903d23f7c69d9aa42010c501245840",
-    "grouped_uncertainty.csv": "eb227a2ac031098af48205c900d708bbd7d62b4fbcd57f4dd75e8fa38a7baf49",
+    "grouped_uncertainty.csv": "1cde4d9862b2bf63850ee340b327dc6ea72100c624febb3b3994e98310fadcb9",
     "ig_convergence.csv": "92c916c1626228acd64dacfaa9aa5e5740476ce0860ffb03c68453684143a424",
     "selected_methods.json": "0631deb6614e0d06e4e656eb0530f81ed0d610eddd47952af509869ae44da879",
     "selected_review_maps.h5": "3e492772a2a7cc2fa9de75327d34811c6acb4f6233ec27329f0f9e70ac58766b",
@@ -135,7 +138,7 @@
     "toy_controls.json": "e366ec3b22bb4b8f7a95c034f782fe071e70f793d5a2c5f9985cf00e43cf0d0c"
   },
   "supplementary_artifact_hashes": {
-    "pilot_candidate_metrics.csv": "e468930002120aa34ee18b937cfe2848e207f2ecf53f4bc5093c84afe2ff0b87",
+    "pilot_candidate_metrics.csv": "f216cbe4d04512dac8f78b684a171fc549f74da2768e6cc49e30e19494360f61",
     "pilot_selected_methods.json": "0a18f5f33288f5f7c3e4e3613de1ddf9d469e2672bedd25e7491ff4cb76b1116"
   },
   "package_versions": {
@@ -280,5 +283,5 @@
     100493
   ],
   "seed": 20260821,
-  "wall_time_seconds": 255.89790883300884
+  "wall_time_seconds": 265.65564866599743
 }

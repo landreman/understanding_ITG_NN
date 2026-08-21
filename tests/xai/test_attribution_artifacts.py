@@ -148,9 +148,17 @@ def test_s06a_pilot_selection_artifact_records_baseline_instability() -> None:
     with (ARTIFACTS / "pilot_candidate_metrics.csv").open(
         newline="", encoding="utf-8"
     ) as handle:
-        candidates = {row["method"]: row for row in csv.DictReader(handle)}
-    assert float(candidates["ig_low_pass"]["deletion_margin_vs_random"]) < 0
-    assert float(candidates["ig_low_pass"]["insertion_margin_vs_random"]) > 0
+        candidate_rows = list(csv.DictReader(handle))
+    assert len(candidate_rows) == 7 * 3
+    candidates = {
+        (row["method"], row["stratum"]): row for row in candidate_rows
+    }
+    low_pass_all = candidates[("ig_low_pass", "all")]
+    assert float(low_pass_all["deletion_margin_vs_random"]) < 0
+    assert float(low_pass_all["insertion_margin_vs_random"]) > 0
+    mask_stable = candidates[("periodic_mask", "stable_or_near_floor")]
+    assert float(mask_stable["deletion_margin_vs_random"]) > 0
+    assert float(mask_stable["insertion_margin_vs_random"]) < 0
 
 
 def test_s06a_selected_faithfulness_margins_have_grouped_intervals() -> None:
@@ -179,6 +187,13 @@ def test_s06a_selected_faithfulness_margins_have_grouped_intervals() -> None:
         <= float(row["oriented_native_gap_ci_upper"])
         for row in margins
     )
+    assert all(
+        float(row["per_row_oriented_native_gap_ci_lower"])
+        <= float(row["per_row_oriented_native_gap_estimate"])
+        <= float(row["per_row_oriented_native_gap_ci_upper"])
+        for row in margins
+    )
+    assert all(0 <= float(row["row_favouring_fraction_estimate"]) <= 1 for row in margins)
     assert all(row["denominator_estimate"] for row in margins)
     assert all(0 <= float(row["denominator_negative_fraction"]) <= 1 for row in margins)
     assert all(

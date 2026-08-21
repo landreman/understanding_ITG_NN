@@ -120,7 +120,9 @@ def _resolve(config: dict[str, Any], args: argparse.Namespace) -> dict[str, Any]
         # Preserve the historical development gate. Production was corrected
         # after review to avoid pooled denominator cancellation; rewriting the
         # pilot selection would erase the instability that it exposed.
-        resolved["selection_rule"]["faithfulness_strata"] = ["all"]
+        resolved["selection_rule"]["faithfulness_strata"] = list(
+            config["pilot"]["faithfulness_strata"]
+        )
     resolved["mode"] = "pilot" if args.pilot else "production"
     for name in ("device", "seed", "members"):
         value = getattr(args, name)
@@ -646,6 +648,25 @@ def _curve_margin_components(
         )
     )
     denominator = aggregated[0]["original_output"] - aggregated[0]["baseline_output"]
+    per_sample_difference = np.stack(
+        [
+            np.asarray(curve[f"{positive_key}_per_sample"])[sample_rows]
+            - np.asarray(curve[f"{negative_key}_per_sample"])[sample_rows]
+            for curve in curves
+        ]
+    )
+    per_sample_native_gap = np.sum(
+        0.5
+        * (per_sample_difference[:-1] + per_sample_difference[1:])
+        * np.diff(fractions).reshape(-1, 1),
+        axis=0,
+    )
+    per_sample_denominator = (
+        np.asarray(curves[0]["original_output_per_sample"])[sample_rows]
+        - np.asarray(curves[0]["baseline_output_per_sample"])[sample_rows]
+    )
+    per_sample_orientation = np.where(per_sample_denominator >= 0, 1.0, -1.0)
+    per_sample_oriented_gap = per_sample_orientation * per_sample_native_gap
     normalized_margin = (
         native_gap / denominator
         if abs(denominator) > np.finfo(np.float64).eps
@@ -655,6 +676,8 @@ def _curve_margin_components(
         "normalized_margin": float(normalized_margin),
         "native_gap": native_gap,
         "denominator": float(denominator),
+        "per_row_oriented_native_gap": float(np.mean(per_sample_oriented_gap)),
+        "row_favouring_fraction": float(np.mean(per_sample_oriented_gap > 0)),
     }
 
 
@@ -683,6 +706,7 @@ def _grouped_curve_margin_interval(
     samples = np.empty(int(replicates), dtype=np.float64)
     native_gaps = np.empty(int(replicates), dtype=np.float64)
     denominators = np.empty(int(replicates), dtype=np.float64)
+    per_row_oriented_gaps = np.empty(int(replicates), dtype=np.float64)
     for replicate in range(int(replicates)):
         chosen = rng.integers(0, len(group_rows), size=len(group_rows))
         resampled_rows = np.concatenate([group_rows[index] for index in chosen])
@@ -690,6 +714,9 @@ def _grouped_curve_margin_interval(
         samples[replicate] = components["normalized_margin"]
         native_gaps[replicate] = components["native_gap"]
         denominators[replicate] = components["denominator"]
+        per_row_oriented_gaps[replicate] = components[
+            "per_row_oriented_native_gap"
+        ]
     lower, upper = np.quantile(samples, (0.025, 0.975))
     native_lower, native_upper = np.quantile(native_gaps, (0.025, 0.975))
     denominator_lower, denominator_upper = np.quantile(denominators, (0.025, 0.975))
@@ -698,6 +725,9 @@ def _grouped_curve_margin_interval(
     oriented_native_gaps = orientation * native_gaps
     oriented_native_lower, oriented_native_upper = np.quantile(
         oriented_native_gaps, (0.025, 0.975)
+    )
+    per_row_oriented_lower, per_row_oriented_upper = np.quantile(
+        per_row_oriented_gaps, (0.025, 0.975)
     )
     return {
         "estimate": estimate["normalized_margin"],
@@ -709,6 +739,12 @@ def _grouped_curve_margin_interval(
         "oriented_native_gap_estimate": orientation * estimate["native_gap"],
         "oriented_native_gap_ci_lower": float(oriented_native_lower),
         "oriented_native_gap_ci_upper": float(oriented_native_upper),
+        "per_row_oriented_native_gap_estimate": estimate[
+            "per_row_oriented_native_gap"
+        ],
+        "per_row_oriented_native_gap_ci_lower": float(per_row_oriented_lower),
+        "per_row_oriented_native_gap_ci_upper": float(per_row_oriented_upper),
+        "row_favouring_fraction_estimate": estimate["row_favouring_fraction"],
         "denominator_estimate": estimate["denominator"],
         "denominator_ci_lower": float(denominator_lower),
         "denominator_ci_upper": float(denominator_upper),
@@ -719,6 +755,27 @@ def _grouped_curve_margin_interval(
         "replicates": int(replicates),
         "resampling_unit": "equilibrium_files",
     }
+
+
+def _attribution_equivariance_pair(
+    fixed_attributor: Any,
+    co_shifted_attributor: Any,
+    inputs: torch.Tensor,
+    *,
+    shift: int,
+) -> tuple[float, float]:
+    co_shifted = attribution_equivariance_error(
+        fixed_attributor,
+        inputs,
+        shift=shift,
+        shifted_attributor=co_shifted_attributor,
+    )
+    fixed = attribution_equivariance_error(
+        fixed_attributor,
+        inputs,
+        shift=shift,
+    )
+    return co_shifted, fixed
 
 
 def _plot_benchmark(rows: list[dict[str, Any]], selection: dict[str, Any], path: Path) -> None:
@@ -1044,20 +1101,17 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
                             seed=int(config["seed"]) + 1409 + method_index,
                         )
 
-                    row["cyclic_equivariance_relative_rms"] = attribution_equivariance_error(
+                    co_shifted_error, fixed_error = _attribution_equivariance_pair(
                         fixed_baseline_attributor,
+                        co_shifted_baseline_attributor,
                         symmetry_geometry,
                         shift=int(config["symmetry_shift"]),
-                        shifted_attributor=co_shifted_baseline_attributor,
                     )
+                    row["cyclic_equivariance_relative_rms"] = co_shifted_error
                     row["cyclic_equivariance_baseline_convention"] = "co_shifted"
                     row[
                         "cyclic_equivariance_fixed_baseline_relative_rms"
-                    ] = attribution_equivariance_error(
-                        fixed_baseline_attributor,
-                        symmetry_geometry,
-                        shift=int(config["symmetry_shift"]),
-                    )
+                    ] = fixed_error
                     random_count = min(int(config["randomization_rows"]), len(geometry))
                     random_baselines = _subset_baselines(baselines, random_count)
                     random_map = _run_method(

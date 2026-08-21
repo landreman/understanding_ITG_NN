@@ -2,14 +2,22 @@
 
 ## Result
 
-For the registered top member `2864601_0.437`, the registered stratum-aware
-selection rule chose **64-step Integrated Gradients from the low-pass S03
+For the registered top member `2864601_0.437`, **64-step Integrated Gradients
+from the low-pass S03
 reference** as the primary path/gradient method and a **periodic extremal mask**
 as the primary perturbation method. Both explain the member's native
 $\max(\log Q,-2)$ output, and both were evaluated for S02's canonical
 $\tilde f$ and the original $f$. The selected pair is a benchmark result about
 the network, not a physical-causality result: both paths are tagged
 `deliberately_off_manifold_diagnostic`.
+
+The faithfulness gate was revised **after the production run**, in response to
+review of the already-generated 128-row curves: the original pooled ratio hid
+opposite-signed stable and unstable denominators, so the corrected rule requires
+positive deletion and insertion ratios in each stratum. This is a post-run
+correction, not a preregistered choice. It leaves the selected pair unchanged,
+but changes `scaled_gradient` and `vargrad` from eligible to ineligible because
+their stable-stratum insertion margins are -0.0742 and -0.0823.
 
 On the analytic wrapped-window toy, both selected methods recover the relevant
 channel at top 1 and obtain position average precision **1.000**, versus **0.0442**
@@ -163,8 +171,11 @@ stratum gate leaves that pilot without an eligible perturbation method, while
 the production gate selects low-pass IG plus the mask on the registered 128
 rows. The pilot and production panels overlap by 7 rows (11% of the pilot).
 The committed [pilot selection](S06a_artifacts/pilot_selected_methods.json)
-and [candidate rows](S06a_artifacts/pilot_candidate_metrics.csv) record the
-medoid result and its cause. This pilot-to-production instability is a negative
+and [candidate rows](S06a_artifacts/pilot_candidate_metrics.csv) record all
+seven selection candidates in all three strata. They show both the medoid
+result and why the corrected gate retrospectively has no eligible perturbation:
+the mask's stable insertion margin is -0.0276. This pilot-to-production
+instability is a negative
 result: S06b must retain medoid and robust-constant IG as baseline sensitivity
 analyses and must not treat the primary map as baseline-independent.
 
@@ -196,8 +207,8 @@ when S06b includes sibling flux tubes.
 
 The same artifact bootstraps deletion and insertion evidence for the selected
 pair in every floor stratum. It publishes the normalized ratio, its native-unit
-numerator, an oriented native-unit gap whose positive sign always means “better
-than random,” and the endpoint denominator distribution. The old ratio
+numerator, a cohort-mean-oriented gap, a per-row-oriented native-unit gap, and
+the endpoint denominator distribution. The old ratio
 intervals cross zero for 11 of 12 comparisons, but their width is dominated by
 the normalizer rather than cleanly measuring uncertainty in the effect. For
 low-pass deletion, the stable denominator is only **0.00273** native units;
@@ -205,14 +216,22 @@ low-pass deletion, the stable denominator is only **0.00273** native units;
 0.005. Even all-row low-pass has **3.2%** negative and **8.0%** near-zero
 denominators.
 
-The denominator-free oriented gaps are better behaved. For low-pass IG they are
-**0.00411** (-0.00232–0.01087) stable and **0.00949**
-(-0.00094–0.02306) unstable for deletion; insertion is **0.00058**
-(-0.00419–0.00603) and **0.00950** (-0.00287–0.02263). All four intervals cross
-zero. For the mask, deletion gaps are **0.2118** (0.0610–0.4115) stable and
-**0.4098** (0.1806–0.6106) unstable; insertion gaps are **0.0271**
-(-0.0332–0.1075) and **0.3588** (0.2196–0.5185). Three of four stratum-specific
-mask gaps exclude zero, but they remain in-sample optimization diagnostics.
+The cohort-mean-oriented gaps are an aggregation sensitivity analysis, not the
+central interval: 38.3% of low-pass rows have negative endpoint differences, so
+orienting every row by the cohort mean still permits cancellation inside each
+stratum. Under that convention all four low-pass stratum intervals cross zero.
+
+The primary denominator-free summary instead orients each row by its own
+endpoint and then averages. Low-pass deletion gaps are **0.00625**
+(0.00086–0.01251) stable and **0.02032** (0.01035–0.03342) unstable; insertion
+is **0.00504** (0.00048–0.01094) and **0.02071** (0.00727–0.03298). All four
+exclude zero, and 75.8–80.0% of rows favour low-pass within the two strata. Mask
+deletion gaps are **0.1296** (-0.0372–0.3287) stable and **0.3268**
+(0.1180–0.5515) unstable; insertion is **0.0461** (-0.0155–0.1294) and
+**0.3405** (0.1824–0.4994). The two unstable-mask intervals exclude zero; all
+mask gaps remain in-sample optimization diagnostics. The reversal between
+cohort-mean and per-row orientation is itself a material aggregation
+sensitivity, now published rather than collapsed into one conclusion.
 
 S06a has exactly one preregistered member, so these intervals cover equilibrium
 sampling only. The full S06 acceptance clause requiring both member and
@@ -268,12 +287,19 @@ or method records:
     superseded pooled gate; retrospectively applying the corrected gate leaves
     it with no eligible perturbation method, so that pilot is retained as a
     failed development result rather than relabeled.
+11. A second review found the same cancellation within strata because native
+    gaps were oriented by the stratum-mean endpoint. The artifact now publishes
+    per-row-oriented gaps and whole-equilibrium intervals alongside the
+    cohort-mean convention; a negative-denominator analytic fixture pins the
+    sign, and the two conventions' different conclusions are retained.
 
-Three deliberate post-run mutations turned the focused suite red and were
+Five deliberate post-run mutations turned the focused suite red and were
 reverted: dropping robust channel scales failed the exact scaled-gradient test;
 resampling individual rows instead of `equilibrium_files` failed the grouped
 bootstrap support test; and restoring the absolute AUC denominator failed the
-negative-direction curve test.
+negative-direction curve test. For the final review response, deleting the
+negative-denominator orientation sign failed its analytic control, and removing
+the production symmetry co-shift failed the script-level equivariance pair test.
 
 ## Negative results and interpretation limits
 
@@ -286,6 +312,10 @@ negative-direction curve test.
   it in the unstable stratum (**-0.263**). Its pooled -2.070 is likewise not
   interpreted. An observed endpoint does not make the interpolation path
   physical.
+- The post-run stratum gate changes `scaled_gradient` and `vargrad` from eligible
+  under the pooled rule to ineligible: their stable insertion margins are
+  **-0.0742** and **-0.0823**. Neither was a selected candidate, but both verdict
+  flips are retained.
 - Baseline agreement is only moderate; selected low-pass IG correlates 0.432
   with robust-reference IG.
 - Low-pass IG has the weakest parameter-randomization response among eligible IG
@@ -293,10 +323,12 @@ negative-direction curve test.
   Gradients). Its baseline factor is more correlated with the randomized map
   (0.816) than the trained map (0.477), so 0.406 is a qualified pass, not clean
   evidence that the explanation is dominated by learned parameters.
-- Ratio intervals are unstable because their endpoint denominator can approach
-  or cross zero. Denominator-free gaps leave all four low-pass comparisons and
-  stable-mask insertion unresolved; three other stratum-specific mask gaps are
-  positive, subject to the mask's in-sample optimization caveat.
+- Ratio and cohort-mean-oriented intervals are unstable because endpoints can
+  approach, cross, and cancel around zero. Per-row orientation reverses the
+  low-pass conclusion: all four stratum-specific intervals are positive.
+  Stable-mask deletion and insertion remain unresolved under per-row
+  orientation, while both unstable-mask intervals are positive, subject to the
+  mask's in-sample optimization caveat.
 - Canonical and original maps are not interchangeable: their rank correlation
   is 0.875 for low-pass IG and 0.605 for the mask, and original-$f$ maps fail
   exact equivariance as S02 predicts.
@@ -318,7 +350,7 @@ negative-direction curve test.
 
 | PLAN criterion | S06a verdict and evidence |
 | --- | --- |
-| Selected methods beat random/control maps on toy recovery and faithfulness | **Pass by the registered stratum-specific point-estimate gate, with qualified uncertainty.** Both selected methods have toy channel top-1 1.0 and position AP 1.0 versus random AP 0.0442; deletion and insertion ratios are positive separately in stable and unstable rows. Denominator-free intervals cross zero for all four low-pass comparisons and stable-mask insertion; the other three mask comparisons are positive but in-sample. Pooled ratios are not used for selection. |
+| Selected methods beat random/control maps on toy recovery and faithfulness | **Pass under a post-run, review-corrected stratum-specific gate, with aggregation sensitivity.** Both selected methods have toy channel top-1 1.0 and position AP 1.0 versus random AP 0.0442; deletion and insertion ratios are positive separately in stable and unstable rows. Per-row-oriented intervals are positive for all four low-pass comparisons and both unstable-mask comparisons; stable-mask intervals cross zero. Cohort-mean orientation gives a weaker conclusion and is retained. Pooled ratios are not used for selection. |
 | Selected methods respond to parameter randomization | **Pass, qualified.** Canonical absolute-map rank correlation is 0.406 for low-pass IG and 0.099 for the mask. Low-pass is weakest among eligible IG baselines, and its input-baseline factor correlates 0.816 with the randomized map. |
 | Baseline sensitivity is understood | **Pass, with a strong limitation.** Low-pass/robust map correlation is 0.432; all four IG baselines and Expected Gradients remain published sensitivity analyses. |
 | Methods meet symmetry behavior permitted by S02 | **Pass for co-shifted baselines; fail for the fixed-background mask.** Co-shifted canonical errors are $1.03\times10^{-4}$ and $2.70\times10^{-7}$; the mask's registered fixed-background error is 1.009. Original-$f$ co-shifted errors are 0.821 and 0.820 and are retained. |
@@ -348,8 +380,8 @@ its low-pass transform, the checkpoint, and the stored drives, so the reviewer
 can recompute its 128-row toy, completeness, symmetry, randomization, and
 faithfulness numbers within ordinary platform tolerance. Near-zero canonical
 co-shifted equivariance is roundoff-limited: the production artifact records
-$1.03\times10^{-4}$ for low-pass IG while the review runner obtained
-$6.33\times10^{-8}$, so only its effectively-zero order is expected to agree.
+$1.03\times10^{-4}$ for low-pass IG while review runners obtain values of order
+$10^{-8}$, so only its effectively-zero order is expected to agree.
 The fixed-baseline columns use the same eight rows and are directly recomputable;
 they prevent confusing the mask's co-shifted and registered-background maps.
 The first 16 maps to compare are in `selected_review_maps.h5`, with explicit axes
@@ -361,10 +393,11 @@ median 0.0014 and mean 0.0175 native units and the full-sweep batch means
 rule are in `selected_methods.json`; all benchmark/stratum numbers are in
 `benchmark_metrics.csv`; all deletion/insertion doses and support warnings are
 in `faithfulness_curves.csv`; 500-draw equilibrium intervals are in
-`grouped_uncertainty.csv`, including native-unit gaps and endpoint-denominator
-diagnostics; convergence is in `ig_convergence.csv`; analytic
+`grouped_uncertainty.csv`, including cohort-mean and per-row-oriented native-unit
+gaps, row-favouring fractions, and endpoint-denominator diagnostics; convergence
+is in `ig_convergence.csv`; analytic
 controls are in `toy_controls.json`; the pilot medoid selection is in
-`pilot_selected_methods.json`, with its two candidate rows in
+`pilot_selected_methods.json`, with its 21 candidate/stratum rows in
 `pilot_candidate_metrics.csv`; both pilot exports are hash-pinned in the
 manifest. Hashes for the CLI and estimator module, package
 versions, rows, member, checkpoint, and dataset fingerprints are in the

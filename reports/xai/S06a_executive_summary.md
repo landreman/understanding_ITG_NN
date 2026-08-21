@@ -23,6 +23,13 @@ unstable cases.
 
 The benchmark chose one method from each of two different families.
 
+The final faithfulness gate was revised after the production curves had been
+generated. Review showed that the original pooled ratio cancelled stable and
+unstable endpoint differences, so the corrected gate checks both groups
+separately. This post-run correction leaves the selected pair unchanged, but it
+makes scaled gradient and VarGrad ineligible because both fail stable-group
+insertion.
+
 **Integrated Gradients from a low-pass reference** starts with the real geometry,
 smooths away its shorter-scale variation, and measures how the prediction
 changes while moving from that smoothed reference back to the original. It
@@ -62,13 +69,14 @@ inflates the ratio. The corrected gate uses each stratum and leaves the selected
 pair unchanged.
 
 Uncertainty is also reported without dividing by that unstable denominator.
-The native-unit low-pass gaps include zero in all four stratum/direction
-comparisons. Three of the mask's four gaps exclude zero; stable-group insertion
-does not. The old ratio intervals are much wider because the low-pass stable
-denominator is below 0.005 in about 70% of bootstrap samples and changes sign in
-about 23%. Thus the low-pass advantage is unresolved on this panel, while the
-stronger mask result remains an in-sample diagnostic rather than independent
-validation.
+Because 38% of low-pass rows have a negative endpoint difference, each row is
+oriented separately before averaging. Under this convention all four low-pass
+stable/unstable deletion/insertion intervals are positive, and 76–80% of rows
+favour the method. Both unstable-mask intervals are positive; both stable-mask
+intervals include zero. Orienting only by the cohort-mean endpoint instead gives
+a weaker low-pass result, so both conventions are published as a material
+aggregation sensitivity. The mask evidence remains an in-sample diagnostic
+rather than independent validation.
 
 The Integrated Gradients margins are normalized by a small native-unit change.
 The low-pass reference changes the canonical output by median 0.0014 and mean
@@ -154,8 +162,9 @@ Later review added controls that materially sharpen the conclusion: a
 mixed-sign example now pins absolute-magnitude deletion ordering, a nonlinear
 example pins the fallback integration rule, and symmetry is reported separately
 for co-shifted and fixed baselines. It also exposed the pooled denominator
-cancellation, moved the gate to the two floor strata, published denominator-free
-intervals, and pinned whole-equilibrium resampling with sibling flux tubes.
+cancellation, moved the gate to the two floor strata, published per-row-oriented
+denominator-free intervals, and pinned whole-equilibrium resampling with sibling
+flux tubes. A negative-endpoint analytic case pins the orientation sign.
 
 ## What comes next
 

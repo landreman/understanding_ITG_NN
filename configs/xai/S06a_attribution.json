@@ -60,6 +60,7 @@
   },
   "pilot": {
     "run_id": "pilot-top1-panel64",
+    "faithfulness_strata": ["all"],
     "panel_varied_rows": 64,
     "support_reference_rows": 256,
     "expected_backgrounds": 4,

@@ -26,6 +26,7 @@ from itg_nn.xai.attribution import (
 from itg_nn.xai.perturbations import ValidityTag
 from scripts.xai_s06a_attribution import (
     METHOD_NAMES,
+    _attribution_equivariance_pair,
     _curve_margin_components,
     _forward,
     _grouped_curve_margin_interval,
@@ -195,6 +196,15 @@ def test_equivariance_distinguishes_fixed_and_co_shifted_baselines() -> None:
     )
     assert co_shifted < 2e-6
     assert fixed > 0.5
+
+    script_co_shifted, script_fixed = _attribution_equivariance_pair(
+        with_baseline(baseline),
+        with_baseline(torch.roll(baseline, shift, dims=1)),
+        geometry,
+        shift=shift,
+    )
+    assert script_co_shifted == pytest.approx(co_shifted)
+    assert script_fixed == pytest.approx(fixed)
 
 
 def test_cyclic_occlusion_recovers_wrapped_window_and_ignores_null_channel() -> None:
@@ -443,6 +453,57 @@ def test_curve_margin_interval_resamples_sibling_tubes_as_equilibrium_groups() -
     assert actual["resampling_unit"] == "equilibrium_files"
 
 
+def test_curve_margin_orientation_handles_original_below_baseline() -> None:
+    original = np.full(2, -2.0)
+    baseline = np.full(2, 1.0)
+    curves = [
+        {
+            "fraction": 0.0,
+            "original_output_per_sample": original,
+            "baseline_output_per_sample": baseline,
+            "deletion_output_per_sample": original,
+            "random_deletion_output_per_sample": original,
+            "insertion_output_per_sample": baseline,
+            "random_insertion_output_per_sample": baseline,
+        },
+        {
+            "fraction": 0.5,
+            "original_output_per_sample": original,
+            "baseline_output_per_sample": baseline,
+            "deletion_output_per_sample": baseline,
+            "random_deletion_output_per_sample": np.full(2, -0.5),
+            "insertion_output_per_sample": original,
+            "random_insertion_output_per_sample": np.full(2, -0.5),
+        },
+        {
+            "fraction": 1.0,
+            "original_output_per_sample": original,
+            "baseline_output_per_sample": baseline,
+            "deletion_output_per_sample": baseline,
+            "random_deletion_output_per_sample": baseline,
+            "insertion_output_per_sample": original,
+            "random_insertion_output_per_sample": original,
+        },
+    ]
+    components = _curve_margin_components(curves, np.arange(2), "deletion")
+    assert components["denominator"] < 0
+    assert components["native_gap"] < 0
+    assert components["normalized_margin"] > 0
+    assert components["per_row_oriented_native_gap"] > 0
+    interval = _grouped_curve_margin_interval(
+        curves,
+        np.asarray(("eq0", "eq1")),
+        np.arange(2),
+        direction="deletion",
+        replicates=40,
+        seed=7,
+    )
+    assert interval["oriented_native_gap_estimate"] > 0
+    assert interval["oriented_native_gap_ci_lower"] > 0
+    assert interval["per_row_oriented_native_gap_estimate"] > 0
+    assert interval["per_row_oriented_native_gap_ci_lower"] > 0
+
+
 def test_s06a_selection_requires_positive_faithfulness_in_each_floor_stratum() -> None:
     rows = []
     toy = {}
@@ -623,7 +684,7 @@ def test_s06a_pilot_replays_historical_pooled_gate() -> None:
     parser = build_parser()
     args = parser.parse_args(["--pilot"])
     config = {
-        "pilot": {"run_id": "pilot"},
+        "pilot": {"run_id": "pilot", "faithfulness_strata": ["all"]},
         "selection_rule": {"faithfulness_strata": ["stable_or_near_floor", "unstable"]},
     }
     resolved = _resolve(config, args)
