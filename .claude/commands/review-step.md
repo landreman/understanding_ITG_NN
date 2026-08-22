@@ -160,6 +160,17 @@ Output a table of findings: severity (**blocking** / **should-fix** / **note**),
 location as `file:line`, what is wrong, and what to do about it. Then one line:
 **merge / fix first / needs researcher decision**.
 
+Write the review both for the researcher who merges, and for the implementing AI
+agent.
+The researcher is a plasma physicist, not a machine-learning expert, and reads
+every review verbatim. Follow `AGENTS.md`'s `## Writing on pull requests`
+section: gloss each ML term of art in plain language the first time it appears
+("attribution", "leakage", "baseline", "bootstrap", "permutation control", and
+the like), and for each finding say in one plain sentence why it matters — what
+would silently go wrong if it were left unfixed — next to the precise technical
+statement, not instead of it. A finding the researcher cannot follow is a
+finding they cannot adjudicate.
+
 Post the table even when you find nothing — say plainly that there are no blocking
 findings. Do not invent findings to seem thorough, and do not soften a blocking
 finding into a suggestion. Do not edit code, and do not merge.

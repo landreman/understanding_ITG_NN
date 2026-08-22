@@ -30,6 +30,34 @@ request. One step, one branch, one PR.
   `requirements/xai.lock`, with a compatibility smoke test and the tested version
   recorded in the step report.
 
+## Writing in pull requests: the audience includes both the researcher and an AI agent
+
+Everything posted to a PR — the PR body, review findings tables, and every
+comment or reply in a review exchange — is read by the researcher, a plasma
+physicist who is **not** a machine-learning expert. Write so they can follow the
+exchange without a glossary:
+
+- The first time an ML term of art appears in a PR body, review, or comment
+  thread, add a short plain-language gloss in parentheses — e.g. "Integrated
+  Gradients (an attribution method: it splits a prediction's change into
+  per-input-feature contributions)", "leakage (test rows influencing what was
+  fitted, which inflates the score)". Once glossed in a thread, use it freely.
+- Prefer the plain phrase when it loses nothing: "rows where the model predicts
+  the floor value" rather than "clipped-log-floor rows" the first time;
+  "resampling to estimate uncertainty" alongside "bootstrap".
+- When a review finding or a reply to one turns on an ML concept, one sentence
+  of *why it matters here* belongs next to *what is wrong* — "grouping by flux
+  tube instead of equilibrium lets near-duplicate rows land on both sides of the
+  split, so the score looks better than it is", not just "pseudoreplication".
+- Physics jargon (ITG, flux tube, equilibrium, geometry channels) needs no
+  gloss.
+- This does not mean dumbing down or omitting detail. Keep the precise term and
+  the exact numbers — add the gloss beside them rather than replacing them. An
+  AI agent implementing or reviewing the work will need access to these details.
+- For a model of the tone appropriate for the researcher to understand, see
+  `reports/xai/glossary.md` and the sections in the executive summaries by Claude:
+  technical content intact, no term left unexplained on first use.
+
 ## Do not touch
 
 - `models/cyclic_ensemble_pre2.pt` — hash it in manifests; never rewrite it.

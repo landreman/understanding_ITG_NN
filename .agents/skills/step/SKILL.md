@@ -168,8 +168,8 @@ Add `reports/xai/SNN_executive_summary.md` in plain language for the researcher,
 following the tone of the existing summaries. 
 The summary should explain what the step was about, what its purpose was, and what the conclusions were.
 The executive summaries are intended for a researcher who is not an expert in 
-machine learning, so do use a jargon word or phrase without defining it, and the executive summary
-should educate the reader on what he needs to know to understand the results
+machine learning, so do not use a jargon word or phrase without defining it, and the executive summary
+should educate the reader on what they need to know to understand the results.
 
 Keep contradictory and negative results in both the report and executive summary.
 
@@ -203,6 +203,11 @@ The PR body must contain, in this order:
 - confirmation that the model file, the dataset, and `paper/` are untouched; and
 - what you were least sure about and want the reviewer to attack hardest.
 
+The researcher reads the PR body and the whole review exchange, and is not a
+machine-learning expert. Follow `AGENTS.md`'s `## Writing on pull requests`
+section: gloss ML terms of art in plain language on first use, and keep the
+precise terms and numbers alongside the gloss rather than replacing them.
+
 ## 10. Answer the automated review
 
 The `Claude Code Review` workflow reviews the PR on open and on every push. Watch
@@ -212,6 +217,13 @@ Fix everything flagged **blocking** or **should-fix**, push, and iterate until t
 review posts neither. **note** items are your judgement. If you disagree with a
 finding, say so in a PR comment with concrete evidence — the artifact, the line,
 or the test that shows it is wrong — rather than silently ignoring it.
+
+Write those PR comments both for the reviewer, who is an AI coding agent,
+and for the researcher, who follows the whole exchange and
+is not a machine-learning expert: gloss ML terms on first use in the thread and
+open each reply with a plain-language sentence saying what the disagreement or
+fix amounts to, before the technical detail (see `AGENTS.md`'s
+`## Writing on pull requests`).
 
 When the review comes back with no blocking and no should-fix findings, stop. Do
 not merge. Do not start the next step.
