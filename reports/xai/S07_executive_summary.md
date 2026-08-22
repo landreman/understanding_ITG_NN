@@ -53,8 +53,10 @@ the full sign of Integrated Gradients, its correlations with $Q(z)$ are only **-
 -0.013, and -0.012** in the three members, with incompatible lags **-36, +47,
 and +48** on 760 unstable equilibria. Selecting the largest value from 96 lags
 can create a small peak by chance, so we also broke the equilibrium pairing 200
-times and repeated the full search. The -0.013 and -0.012 peaks do not clear
-that test. The -0.021 peak does, but is still negligible and does not replicate.
+times and repeated the full search. The -0.013 peak lies at the estimated null
+threshold, so its binary pass/fail label is not stable; the -0.012 peak is below
+the threshold. The -0.021 peak clears it, but is still negligible and does not
+replicate.
 
 If all negative contributions in the off-manifold diagnostic are thrown away, the correlations rise to
 **+0.266, +0.280, and +0.262** at lag 0 or +1. That is a genuine and repeatable
@@ -113,7 +115,8 @@ not an independent replication of the two named candidates. Moreover:
 
 - density signs and lags do not replicate across members;
 - complete signed off-manifold attributions have almost no spatial association
-  with $Q(z)$, and two of three peaks do not beat the 96-lag search null;
+  with $Q(z)$; one peak is below the 96-lag null, one is at its threshold, and
+  the resolved peak remains negligible;
 - the stronger attribution result appears only after negative evidence is
   removed;
 - the zonal-flow relationships change greatly with the drive panel; and

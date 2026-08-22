@@ -76,6 +76,13 @@ def test_s07_spatial_table_keeps_functions_strata_signs_lags_and_grouping() -> N
     masks = [row for row in rows if row["method"] == "periodic_mask"]
     assert {row["mode"] for row in masks} == {"positive_contribution"}
     assert all(row["feature_claims_permitted"] == "False" for row in masks)
+    assert all(row["plasma_claims_permitted"] == "False" for row in attribution)
+    density_unstable = [
+        row
+        for row in rows
+        if row["source_family"] == "s05_density" and row["stratum"] == "unstable"
+    ]
+    assert all(row["plasma_claims_permitted"] == "True" for row in density_unstable)
 
 
 def test_s07_headline_spatial_results_pin_signed_and_positive_conclusions() -> None:
@@ -195,7 +202,16 @@ def test_s07_zonal_pairing_cases_and_symmetry_keep_negative_results() -> None:
         row["validity_tag"] == "deliberately_off_manifold_diagnostic"
         for row in attribution_pairs
     )
-    assert all(row["feature_claims_permitted"] == "False" for row in attribution_pairs)
+    assert all(row["plasma_claims_permitted"] == "False" for row in attribution_pairs)
+    primary_both_unstable = [
+        row
+        for row in attribution_pairs
+        if row["method"] == "ig_low_pass" and row["stratum"] == "both_unstable"
+    ]
+    assert primary_both_unstable
+    assert all(
+        row["feature_claims_permitted"] == "True" for row in primary_both_unstable
+    )
 
     cases = _csv("case_studies.csv")
     assert len(cases) == 20

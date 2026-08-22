@@ -615,6 +615,7 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
                             "source_feature_claims_permitted": True,
                             "estimator_backend": "s02_atrous_equivariant_density",
                             "feature_claims_permitted": stratum == "unstable",
+                            "plasma_claims_permitted": stratum == "unstable",
                             "gx_quantity": "Q_avgs_vs_z",
                         }
                         key = (
@@ -669,6 +670,7 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
                                 "feature_claims_permitted": (
                                     stratum == "unstable" and method == "ig_low_pass"
                                 ),
+                                "plasma_claims_permitted": False,
                                 "gx_quantity": "Q_avgs_vs_z",
                             }
                             key = (
@@ -725,6 +727,11 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
                     "feature_claims_permitted": (
                         stratum == "unstable"
                         and bool(metadata.get("source_feature_claims_permitted", False))
+                    ),
+                    "plasma_claims_permitted": (
+                        stratum == "unstable"
+                        and bool(metadata.get("source_feature_claims_permitted", False))
+                        and metadata.get("validity_tag") == OBSERVED_VALIDITY
                     ),
                     "association_not_causation": True,
                 }
@@ -830,6 +837,11 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
                     "comparison_validity_tag": OBSERVED_VALIDITY,
                     "feature_claims_permitted": (
                         stratum == "both_unstable"
+                        and bool(metadata.get("source_feature_claims_permitted", False))
+                    ),
+                    "plasma_claims_permitted": (
+                        stratum == "both_unstable"
+                        and bool(metadata.get("source_feature_claims_permitted", False))
                         and metadata.get("validity_tag", OBSERVED_VALIDITY)
                         == OBSERVED_VALIDITY
                     ),
@@ -897,8 +909,10 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
                     "lag_recurrence": physical_pair.lag_recurrence,
                     "bootstrap_unit": physical_pair.bootstrap_group,
                     "validity_tag": OBSERVED_VALIDITY,
+                    "source_feature_claims_permitted": True,
                     "comparison_validity_tag": OBSERVED_VALIDITY,
                     "feature_claims_permitted": stratum == "both_unstable",
+                    "plasma_claims_permitted": stratum == "both_unstable",
                     "pair_stratum_definition": (
                         "near-floor if either observed native target is <= -1.9"
                     ),
@@ -925,6 +939,7 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
                         "member_id": member_id,
                         "mode": mode,
                         "validity_tag": OBSERVED_VALIDITY,
+                        "source_feature_claims_permitted": True,
                     },
                     fixed_result.per_sample_rank_correlation,
                     varied_result.per_sample_rank_correlation,
@@ -968,6 +983,7 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
                             "method": method,
                             "mode": mode,
                             "validity_tag": OFF_MANIFOLD_VALIDITY,
+                            "source_feature_claims_permitted": method == "ig_low_pass",
                         },
                         fixed_result.per_sample_rank_correlation,
                         varied_result.per_sample_rank_correlation,

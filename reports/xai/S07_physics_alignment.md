@@ -60,6 +60,10 @@ training target at each position.
 - **Validity:** fixed/varied GX rows, density comparisons, and case studies are
   naturally observed comparisons. Attribution sources retain the deliberately
   off-manifold S06b reference-path tag even when compared across observed rows.
+  `feature_claims_permitted` retains S06b's technical meaning (the explanation
+  method passed its own checks in an unstable stratum). The stricter
+  `plasma_claims_permitted` additionally requires an observed/on-manifold source;
+  it is therefore false for every attribution row.
 
 The production command was:
 
@@ -69,7 +73,7 @@ python scripts/xai_s07_physics_alignment.py \
   --config configs/xai/S07_physics_alignment.json
 ```
 
-Run `physics-alignment-top3-panel1000` took 302.06 seconds on CPU. The committed
+Run `physics-alignment-top3-panel1000` took 304.00 seconds on CPU. The committed
 [manifest](S07_artifacts/manifest.json) records the exact dataset, checkpoint,
 S04/S05 inputs, reused S06b attribution-map hash, package versions, command,
 row IDs, and output hashes.
@@ -196,8 +200,10 @@ unstable rows gives the following deliberately off-manifold network diagnostic:
 | `.371` | -0.013 [-0.022, -0.004], +47; 0.013 | +0.280 [0.260, 0.298], 0; 0.038 | 2.414 |
 | `.409` | -0.012 [-0.020, -0.003], +48; 0.013 | +0.262 [0.243, 0.282], 0; 0.037 | 2.439 |
 
-This is the central contradiction. The `.371` and `.409` signed maxima do not
-exceed the lag-search null; `.437` does, but its magnitude is only 0.021. The
+This is the central contradiction. The `.371` signed maximum lies at the
+estimated lag-search threshold (0.012764 versus q95 0.012817, too close for a
+stable binary verdict), while `.409` is below it; `.437` exceeds it, but its
+magnitude is only 0.021. The
 positive portions exceed their nulls by factors of 7.0–7.7 and occupy similar
 places to positive $Q(z)$, but the complete signed evidence is marginal and its
 lags do not agree. Because the reference path is deliberately off-manifold, even

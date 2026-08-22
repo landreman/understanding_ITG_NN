@@ -148,6 +148,35 @@ def test_tie_inclusive_overlap_and_lag_selection_null_are_pinned() -> None:
         ).max_abs_rank_correlation,
     )
 
+    # Independent slow oracle: repeat the same group permutations, but let the
+    # observed-statistic implementation search all 96 lags explicitly. This
+    # fails if the fast null silently evaluates lag zero only.
+    group_rows = tuple(
+        np.flatnonzero(paired_groups == group) for group in np.unique(paired_groups)
+    )
+    rng = np.random.default_rng(45)
+    direct_maxima = []
+    for _ in range(40):
+        group_permutation = rng.permutation(len(group_rows))
+        pairing = np.empty(len(paired_groups), dtype=np.int64)
+        for left_group, right_group in enumerate(group_permutation):
+            pairing[group_rows[left_group]] = group_rows[right_group]
+        direct = circular_alignment(
+            learned,
+            physical[pairing],
+            paired_groups,
+            mode="signed",
+            sparsity=0.1,
+            bootstrap_replicates=2,
+            seed=1,
+        )
+        direct_maxima.append(abs(direct.rank_correlation))
+    np.testing.assert_allclose(
+        signal_null.max_abs_rank_correlation,
+        np.asarray(direct_maxima),
+        atol=1e-12,
+    )
+
 
 def test_grouped_bootstraps_and_case_selection_are_deterministic() -> None:
     learned, physical, groups = _cyclic_fixture()

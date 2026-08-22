@@ -1086,7 +1086,7 @@
     "s05_motifs": "reports/xai/S05_artifacts/unit_motifs.csv",
     "s06b_manifest": "reports/xai/S06b_artifacts/manifest.json",
     "s06b_map": "output/xai/S06b/scaled-attribution-top10-panel2000-rank10-panel512/attribution_maps.h5",
-    "script_sha256": "5f338ced791cae5f54b4ae65b125a914b6c60617325c6377b0d4267756eaab1a",
+    "script_sha256": "4511f9d91c4ddb6fa5531af8f84dc552df6fff9f452aa3786b486f787f5785d5",
     "seed": 20260822,
     "selected_units_per_member": 3,
     "selection_null_permutations": 200,
@@ -1104,10 +1104,10 @@
     "sha256": "9d8fa52f93f2782ad9948a38bf46943c0cd6df78cd08b94a006dad4e06c1c8ad"
   },
   "device": "cpu",
-  "git_commit": "9228c5377f99eac82233616383f1534a8e00d4b6",
+  "git_commit": "5bc6655b261d1569a5e027f22799490c68447038",
   "git_dirty": true,
   "git_tracked_dirty": true,
-  "git_tree": "08e1e43613f38e71374b663b43478bd9350fcf78",
+  "git_tree": "8501868042b0bb97a28720371d9f47a7634e0c3d",
   "gradient_set": "fixed_and_varied_separate",
   "member_ids": [
     "2864601_0.437",
@@ -1118,12 +1118,12 @@
     "alignment_details.h5": "11a867e93d3728d64abcfaf2cf50b6bbad3659f9c34f5913b0e8d5952f2a308d",
     "case_studies.csv": "132103bb5647a803b504bde57ce22bbebe2fbbb3bcc160b60d9e6f92c43381b7",
     "case_studies.png": "04f78fca85f2501bec91bcf0569df4d8a7c09226babcffb8ed9f6b4a39fbad17",
-    "lag_curves.csv": "745be776bedfa11ad9a803a9f7c483b29821746c3ab55c9eeed6281979d42d54",
-    "paired_analysis.csv": "d451836ed11605ae59676e5b391b819a78134b85074d813df5b96b3a46472280",
+    "lag_curves.csv": "341b9975fec633eb1f4621fee721c2f316fa8868ebfa0d47ccd296824adea40c",
+    "paired_analysis.csv": "616daf4f630047ee01dd162cd06d1567d9011529e3ab664c25f9f3979f458829",
     "physics_alignment_atlas.png": "82de5b67c90b74a6666f733a5e2127c42ef03f893b7772935f6cb88622cb4300",
-    "spatial_alignment.csv": "05b3a252f5a603670ea9e25b04fdd5bac5eb7b5a1e5a71f4ed2834b888b2a9c6",
-    "summary.json": "451ae80aa6a5c255157dcbe736b77672a535de1774de3c8a7f854f2f3e0362f7",
-    "zonal_association.csv": "3a996323d95862bde49b7d0dc0ad58ee15ff17d630e349e6d46b1c6f27543a78"
+    "spatial_alignment.csv": "4dee605e9f5a227ab8a9b86bd3d034aad82389ff797abb11259989574824e4ca",
+    "summary.json": "5f2ff39da157c0f17f363937670ba01248d929c70968b9fcbbf07bf078ef5bad",
+    "zonal_association.csv": "ce8ca1b251dd37be72c9ee073d8cb1c09b635799428986fc1d78593c9192ff76"
   },
   "package_versions": {
     "captum": "0.9.0",
@@ -3139,5 +3139,5 @@
     100596
   ],
   "seed": 20260822,
-  "wall_time_seconds": 302.0647680420079
+  "wall_time_seconds": 303.9974855830078
 }
