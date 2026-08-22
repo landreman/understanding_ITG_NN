@@ -123,6 +123,25 @@ def test_tie_inclusive_overlap_and_lag_selection_null_are_pinned() -> None:
     assert tied_result.learned_mask_width_mean == pytest.approx(96.0)
     assert tied_result.gx_mask_width_mean == pytest.approx(96.0)
 
+    mixed_learned, mixed_physical, mixed_groups = _cyclic_fixture()
+    mixed_learned[::2] = 0.0
+    mixed_result = circular_alignment(
+        mixed_learned,
+        mixed_physical,
+        mixed_groups,
+        mode="signed",
+        sparsity=0.1,
+        bootstrap_replicates=20,
+        seed=44,
+    )
+    assert mixed_result.learned_constant_profile_count == 12
+    assert mixed_result.learned_active_profile_count == 12
+    assert mixed_result.rank_correlation == pytest.approx(0.5, abs=1e-12)
+    assert mixed_result.circular_spearman_active_learned_profiles == pytest.approx(
+        1.0, abs=1e-12
+    )
+    assert mixed_result.learned_mask_width_mean == pytest.approx(53.0)
+
     learned, physical, paired_groups = _cyclic_fixture()
     signal_null = lag_selection_permutation_null(
         learned,

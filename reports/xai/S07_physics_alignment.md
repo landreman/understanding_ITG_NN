@@ -94,7 +94,9 @@ from `>=` to `>` had initially remained green. Inverse-association and tied-mask
 fixtures were added; both mutations now turn the focused suite red. A later
 review found that replacing average ranks for tied values with arbitrary
 ordinal ranks also remained green. An analytic tied-profile fixture now pins
-mid-ranks and makes that mutation fail.
+mid-ranks and makes that mutation fail. A mixed active/silent fixture also
+separates the active-row association from the pooled value and makes replacing
+the former with the latter fail.
 
 ## Methods
 
@@ -297,6 +299,9 @@ shows both directions with equal space.
   resolved but negligible.
 - Signs and selected lags do not replicate across members. Member-level signed
   results are preserved before any summary, as required.
+- Three of nine selected densities are silent on 42–82% of unstable rows, so
+  their pooled magnitudes partly reflect the documented zero-correlation
+  convention. The active-row range remains mixed, from -0.369 to +0.182.
 - The positive-contribution result is stable but incomplete because it clips
   negative evidence. It supports a spatial resemblance, not the full signed
   prediction mechanism.
