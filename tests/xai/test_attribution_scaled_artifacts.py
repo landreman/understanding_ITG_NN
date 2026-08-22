@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 
 import h5py
+import numpy as np
 
 from itg_nn.xai.artifacts import sha256_file
 from itg_nn.xai.perturbations import ValidityTag
@@ -27,6 +28,10 @@ def test_s06b_manifest_hashes_every_published_scientific_artifact() -> None:
     assert len(manifest["config"]["sensitivity_member_ids"]) == 10
     assert len(manifest["row_ids"]) == 2000
     assert manifest["config"]["initial_production_wall_time_seconds"] == 4645.802209625021
+    assert manifest["config"]["estimator_backends"] == {
+        "ig_low_pass": "integrated_gradients_captum",
+        "periodic_mask": "periodic_extremal_mask",
+    }
     assert manifest["config"]["script_sha256"] == sha256_file(
         "scripts/xai_s06b_attribution.py"
     )
@@ -76,6 +81,10 @@ def test_s06b_review_maps_preserve_member_sample_channel_position_axes() -> None
             "ig_low_pass",
             "periodic_mask",
         ]
+        assert [value.decode() for value in h5_file["estimator_backend"][:]] == [
+            "integrated_gradients_captum",
+            "periodic_extremal_mask",
+        ]
         assert h5_file["signed"][:].tolist() == [True, False]
 
 
@@ -99,6 +108,10 @@ def test_s06b_consensus_distinguishes_signed_absolute_and_agreement() -> None:
     assert all(0.0 <= float(row["sign_agreement"]) <= 1.0 for row in rows)
     assert all(row["estimand"] == "native max(log Q, -2)" for row in rows)
     assert all(row["validity_tag"] in {tag.value for tag in ValidityTag} for row in rows)
+    assert {row["estimator_backend"] for row in rows} == {
+        "integrated_gradients_captum",
+        "periodic_extremal_mask",
+    }
     stable = [row for row in rows if row["stratum"] == "stable_or_near_floor"]
     assert all(row["feature_claims_permitted"] == "False" for row in stable)
 
@@ -128,6 +141,24 @@ def test_s06b_strata_rank_sensitivity_and_scalar_drives_are_complete() -> None:
     assert required.issubset({row["stratifier"] for row in strata})
     assert all(row["gradient_set"] in {"fixed", "varied"} for row in strata)
     assert all(int(row["sample_count"]) > 0 for row in strata)
+    assert all(int(row["sample_count_stable"]) == 0 for row in strata)
+    assert all(row["feature_claims_permitted"] == "True" for row in strata)
+    assert all(row["estimand"] == "native max(log Q, -2)" for row in strata)
+    assert all(row["validity_tag"] == ValidityTag.OFF_MANIFOLD.value for row in strata)
+    assert all(row["signed"] == "True" for row in strata)
+    assert all(
+        row["baseline_convention"]
+        == "input-derived low-pass; deliberately off-manifold diagnostic"
+        for row in strata
+    )
+    assert all(row["estimator_backend"] == "integrated_gradients_captum" for row in strata)
+
+    agreement = _csv("member_agreement.csv")
+    assert all(float(row["independent_sign_null"]) == 0.623046875 for row in agreement)
+    assert {row["estimator_backend"] for row in agreement} == {
+        "integrated_gradients_captum",
+        "periodic_extremal_mask",
+    }
 
     rank = _csv("rank_sensitivity.csv")
     assert len(rank) == 20
@@ -152,4 +183,22 @@ def test_s06b_strata_rank_sensitivity_and_scalar_drives_are_complete() -> None:
     assert all(row["baseline_convention"] for row in symmetry)
     assert all(float(row["prediction_invariance_relative_rms"]) >= 0 for row in symmetry)
     low_pass = [row for row in canonical if row["method"] == "ig_low_pass"]
-    assert all(float(row["co_shifted_equivariance_relative_rms"]) < 5e-3 for row in low_pass)
+    assert all(row["estimator_backend"] for row in symmetry)
+    assert np.median(
+        [float(row["co_shifted_equivariance_relative_rms"]) for row in low_pass]
+    ) < 2e-6
+    assert max(
+        float(row["co_shifted_equivariance_relative_rms"]) for row in low_pass
+    ) < 1e-4
+    original_low_pass = [
+        row
+        for row in symmetry
+        if row["function"] == "original_f" and row["method"] == "ig_low_pass"
+    ]
+    assert np.median(
+        [float(row["co_shifted_equivariance_relative_rms"]) for row in original_low_pass]
+    ) > 0.8
+    canonical_mask = [row for row in canonical if row["method"] == "periodic_mask"]
+    assert np.median(
+        [float(row["fixed_baseline_equivariance_relative_rms"]) for row in canonical_mask]
+    ) > 0.8

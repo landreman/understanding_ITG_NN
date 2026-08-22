@@ -40,8 +40,11 @@ They agree less strongly about the sign of every precise channel-position cell.
 Mean sign agreement is about 0.749 on varied rows and 0.745 on fixed rows. In
 plain terms, roughly three quarters of the members agree on whether a typical
 cell pushes the prediction up or down after each member's map has first been
-averaged over the chosen rows. That is substantial, but not enough to describe
-the ensemble as one shared position-by-position mechanism.
+averaged over the chosen rows. Because this statistic takes the larger of the
+positive and negative fractions, ten independent random signs already average
+0.623. The observed 0.749 is only about one third of the way from that null to
+perfect agreement, so it is not enough to describe the ensemble as one shared
+position-by-position mechanism.
 
 On varied unstable rows, `gbdrift0_over_shat` has the largest mean absolute
 response to restoring the short-scale content removed by the low-pass
@@ -66,12 +69,14 @@ the same direction: 0.00303, 0.00166, and 0.00115. This does **not** mean that
 geometry becomes less physically important at high flux; it means the network's
 prediction changes less along this smoothing path.
 
-The response is also larger on rows where members make larger errors or disagree
-more. On varied rows, the largest-channel value is about five times higher in
-the high-error third than in the low-error third, and about five times higher in
-the high-ensemble-spread third than in the low-spread third. That makes the maps
-potentially useful for the later disagreement study, but it does not establish
-cause: flux regime and stability status also differ across those groups.
+The response is also larger on unstable rows where members make larger errors or
+disagree more. The registered thirds are defined on the full panel and then all
+stable/near-floor rows are excluded from the feature calculation. On varied
+unstable rows, the largest-channel value is 0.00363 versus 0.00151 in the high-
+and low-error thirds (2.4-fold), and 0.00362 versus 0.00140 in the high- and
+low-ensemble-spread thirds (2.6-fold). That makes the maps potentially useful
+for the later disagreement study, but it does not establish cause: flux and
+other regimes still differ across those groups.
 
 ## Stable rows still cannot support feature claims
 

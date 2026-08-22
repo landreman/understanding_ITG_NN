@@ -7,6 +7,7 @@ from itg_nn.xai.attribution import integrated_gradients, toy_recovery
 from itg_nn.xai.attribution_scaled import (
     build_stratification_masks,
     hierarchical_group_bootstrap,
+    independent_sign_agreement_null,
     native_scalar_sensitivities,
     signed_consensus,
     validation_stability_correlation,
@@ -39,6 +40,32 @@ def test_scaled_attribution_recovers_wrapped_toy_and_keeps_null_channel_zero() -
     assert result.metadata["estimand"] == "native max(log Q, -2)"
 
 
+def test_captum_estimator_recovers_wrapped_toy_and_records_backend() -> None:
+    import captum  # noqa: F401  # This test must exercise the production backend.
+
+    toy = PeriodicWindowToy(channel=2, start=92, width=8)
+    geometry = torch.zeros(3, 96, 7)
+    geometry[:, toy.positions, 2] = 1.0
+    zeros = torch.zeros(len(geometry))
+
+    result = integrated_gradients(
+        lambda values: toy(values, zeros, zeros).squeeze(1),
+        geometry,
+        torch.zeros_like(geometry),
+        steps=16,
+        backend="captum",
+    )
+    recovery = toy_recovery(
+        result.values,
+        relevant_channels=toy.expectation.channels,
+        relevant_positions=toy.expectation.positions,
+    )
+
+    assert recovery == {"channel_top1": 1.0, "position_average_precision": 1.0}
+    assert result.method == "integrated_gradients_captum"
+    assert torch.count_nonzero(result.values[:, :, 6]) == 0
+
+
 def test_signed_consensus_is_member_first_and_exposes_opposing_mechanisms() -> None:
     maps = np.zeros((4, 3, 3, 4), dtype=np.float64)
     maps[:2, :, 0] = 2.0
@@ -56,6 +83,7 @@ def test_signed_consensus_is_member_first_and_exposes_opposing_mechanisms() -> N
     assert np.all(result.median_absolute[2] == 0.0)
     assert np.all(result.sign_agreement[2] == 1.0)
     assert len(result.pairwise_rank_correlations) == 6
+    assert independent_sign_agreement_null(10) == 0.623046875
 
 
 def test_hierarchical_bootstrap_resamples_members_and_whole_equilibria() -> None:
@@ -119,12 +147,14 @@ def test_native_scalar_sensitivity_explains_clipped_log_not_exponentiated_output
 
 def test_strata_never_pool_gradient_sets_or_floor_rows() -> None:
     masks = build_stratification_masks(
-        gradient_set=np.asarray(["varied", "varied", "fixed", "fixed"]),
-        target=np.asarray([-2.0, 1.0, -2.0, 2.0]),
-        a_over_lt=np.asarray([1.0, 3.0, 3.0, 3.0]),
-        a_over_ln=np.asarray([0.1, 0.9, 0.9, 0.9]),
-        equilibrium_class=np.asarray([0, 1, 0, 1]),
+        gradient_set=np.asarray(["varied"] * 4 + ["fixed"] * 4),
+        target=np.asarray([-2.0, 0.0, 1.0, 2.0, -2.0, 0.5, 1.5, 2.5]),
+        a_over_lt=np.arange(8, dtype=float),
+        a_over_ln=np.arange(8, dtype=float) / 10,
+        equilibrium_class=np.asarray([0, 0, 1, 1, 0, 0, 1, 1]),
         stable_threshold=-1.9,
+        member_absolute_error=np.arange(8, dtype=float),
+        ensemble_spread=np.arange(8, dtype=float)[::-1],
     )
 
     for gradient_set in ("varied", "fixed"):
@@ -137,6 +167,17 @@ def test_strata_never_pool_gradient_sets_or_floor_rows() -> None:
     assert not np.any(
         masks["gradient_set=varied|all"] & masks["gradient_set=fixed|all"]
     )
+    feature_fields = (
+        "a_over_lt=",
+        "a_over_ln=",
+        "equilibrium_class=",
+        "member_absolute_error=",
+        "ensemble_spread=",
+    )
+    stable_rows = np.asarray([True, False, False, False, True, False, False, False])
+    for key, mask in masks.items():
+        if any(field in key for field in feature_fields):
+            assert not np.any(mask & stable_rows), key
 
 
 def test_validation_stability_correlation_is_deterministic_and_rank_based() -> None:

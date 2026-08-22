@@ -24,10 +24,15 @@ import torch
 from itg_nn.data import InferenceData, load_hdf5_rows
 from itg_nn.ensemble import load_ensemble
 from itg_nn.xai.artifacts import RunArtifacts, sha256_file
-from itg_nn.xai.attribution import integrated_gradients, periodic_extremal_mask
+from itg_nn.xai.attribution import (
+    AttributionMap,
+    integrated_gradients,
+    periodic_extremal_mask,
+)
 from itg_nn.xai.attribution_scaled import (
     build_stratification_masks,
     hierarchical_group_bootstrap,
+    independent_sign_agreement_null,
     native_scalar_sensitivities,
     signed_consensus,
     validation_stability_correlation,
@@ -241,7 +246,7 @@ def _estimate(
     config: dict[str, Any],
     *,
     seed: int,
-) -> torch.Tensor:
+) -> AttributionMap:
     if method == "ig_low_pass":
         return integrated_gradients(
             forward,
@@ -249,7 +254,7 @@ def _estimate(
             baseline,
             steps=int(config["ig_steps"]),
             backend="auto",
-        ).values
+        )
     if method == "periodic_mask":
         return periodic_extremal_mask(
             forward,
@@ -259,7 +264,7 @@ def _estimate(
             steps=int(config["mask_steps"]),
             learning_rate=float(config["mask_learning_rate"]),
             seed=seed,
-        ).values
+        )
     raise ValueError(method)
 
 
@@ -314,8 +319,10 @@ def _run_member_maps(
                     config,
                     seed=seed + 1000 * function_index + 100 * method_index + start,
                 )
+                if estimate.method != config["estimator_backends"][method]:
+                    raise RuntimeError("estimator backend changed within one registered run")
                 maps[function_index, method_index, start:stop] = (
-                    estimate.detach().cpu().numpy().transpose(0, 2, 1)
+                    estimate.values.detach().cpu().numpy().transpose(0, 2, 1)
                 )
     return maps, predictions, scalar
 
@@ -427,7 +434,9 @@ def _symmetry_rows(
                     config,
                     seed=int(config["seed"]) + member_index,
                 )
-                expected = torch.roll(reference, shifts=shift, dims=1)
+                if not (reference.method == co_shifted.method == fixed.method):
+                    raise RuntimeError("estimator backend changed during symmetry checks")
+                expected = torch.roll(reference.values, shifts=shift, dims=1)
                 rows.append(
                     {
                         "member_id": member_id,
@@ -436,10 +445,11 @@ def _symmetry_rows(
                         "rows": count,
                         "shift": shift,
                         "prediction_invariance_relative_rms": prediction_error,
-                        "co_shifted_equivariance_relative_rms": _relative_error(expected, co_shifted),
-                        "fixed_baseline_equivariance_relative_rms": _relative_error(expected, fixed),
+                        "co_shifted_equivariance_relative_rms": _relative_error(expected, co_shifted.values),
+                        "fixed_baseline_equivariance_relative_rms": _relative_error(expected, fixed.values),
                         "baseline_convention": METHOD_BASELINE[method],
                         "validity_tag": METHOD_VALIDITY[method],
+                        "estimator_backend": reference.method,
                     }
                 )
     return rows
@@ -453,6 +463,18 @@ def _publish(artifacts: list[Path], published_dir: Path) -> None:
 
 def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
     set_deterministic_seed(int(config["seed"]))
+    probe = torch.ones(1, 2, 1)
+    probe_result = integrated_gradients(
+        lambda values: values.sum(dim=(1, 2)),
+        probe,
+        torch.zeros_like(probe),
+        steps=2,
+        backend="auto",
+    )
+    config["estimator_backends"] = {
+        "ig_low_pass": probe_result.method,
+        "periodic_mask": "periodic_extremal_mask",
+    }
     repository = Path(__file__).resolve().parents[1]
     dataset = Path(config["dataset"]).resolve()
     checkpoint = Path(config["checkpoint"]).resolve()
@@ -586,6 +608,9 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
                 "canonical_minus_original": headline_maps[1] - headline_maps[0],
                 "function_name": _strings(FUNCTIONS),
                 "method_name": _strings(METHODS),
+                "estimator_backend": _strings(
+                    [config["estimator_backends"][method] for method in METHODS]
+                ),
                 "member_id": _strings(headline_ids),
                 "gradient_set": _strings(GRADIENT_SETS),
                 "row_id": headline_rows,
@@ -596,6 +621,7 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
                 "canonical_minus_original": ("method", "member", "gradient_set", "sample", "channel", "z"),
                 "function_name": ("function",),
                 "method_name": ("method",),
+                "estimator_backend": ("method",),
                 "member_id": ("member",),
                 "gradient_set": ("gradient_set",),
                 "row_id": ("sample",),
@@ -609,11 +635,19 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
             compression="gzip",
         )
     else:
-        with h5py.File(output_dir / "attribution_maps.h5", "r") as h5_file:
+        with h5py.File(output_dir / "attribution_maps.h5", "r+") as h5_file:
             np.testing.assert_array_equal(h5_file["row_id"][:], headline_rows)
             if [value.decode() for value in h5_file["member_id"][:]] != headline_ids:
                 raise RuntimeError("cached map member IDs disagree with the registered cohort")
             headline_maps[...] = h5_file["attribution"][:]
+            if "estimator_backend" not in h5_file:
+                backend = h5_file.create_dataset(
+                    "estimator_backend",
+                    data=_strings(
+                        [config["estimator_backends"][method] for method in METHODS]
+                    ),
+                )
+                backend.attrs["axes"] = json.dumps(["method"])
         full_map_path = artifacts.register_existing("attribution_maps.h5")
         for member_index, member_id in enumerate(headline_ids):
             for gradient_index, gradient_set in enumerate(GRADIENT_SETS):
@@ -660,6 +694,8 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
                         "mean_cell_sign_agreement": float(consensus_all.sign_agreement.mean()),
                         "median_member_canonical_original_channel_rank_correlation": canonical_original,
                         "signed": METHOD_SIGNED[method],
+                        "estimator_backend": config["estimator_backends"][method],
+                        "independent_sign_null": independent_sign_agreement_null(len(headline_ids)),
                     }
                 )
                 for stratum_index, (stratum, mask) in enumerate(strata):
@@ -686,6 +722,7 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
                                 "validity_tag": METHOD_VALIDITY[method],
                                 "baseline_convention": METHOD_BASELINE[method],
                                 "feature_claims_permitted": stratum != "stable_or_near_floor",
+                                "estimator_backend": config["estimator_backends"][method],
                             }
                         )
                         values = np.abs(maps[:, :, channel]).mean(axis=2)
@@ -710,6 +747,7 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
                                 "replicates": len(interval.samples),
                                 "member_resampling_unit": interval.resampling_units[0],
                                 "sample_resampling_unit": interval.resampling_units[1],
+                                "estimator_backend": config["estimator_backends"][method],
                             }
                         )
 
@@ -739,13 +777,16 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
                 detail = key.split("|", 1)[1]
             elif "|equilibrium_class=" in key:
                 detail = key.split("|", 1)[1]
-            elif key.startswith("member_absolute_error=") or key.startswith("ensemble_spread="):
-                detail = key
+            elif "|member_absolute_error=" in key or "|ensemble_spread=" in key:
+                detail = key.split("|", 1)[1]
             else:
                 continue
             if not mask.any():
                 continue
             stratifier, value = detail.split("=", 1)
+            stable_sample_count = int(
+                np.count_nonzero(mask & (target.numpy() <= stable_threshold))
+            )
             consensus = signed_consensus(
                 headline_maps[1, 0, :, gradient_index][:, mask]
             )
@@ -763,6 +804,13 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
                         "median_signed": float(consensus.median_signed[channel].mean()),
                         "median_absolute": float(consensus.median_absolute[channel].mean()),
                         "sign_agreement": float(consensus.sign_agreement[channel].mean()),
+                        "sample_count_stable": stable_sample_count,
+                        "feature_claims_permitted": stable_sample_count == 0,
+                        "estimand": "native max(log Q, -2)",
+                        "validity_tag": METHOD_VALIDITY["ig_low_pass"],
+                        "signed": METHOD_SIGNED["ig_low_pass"],
+                        "baseline_convention": METHOD_BASELINE["ig_low_pass"],
+                        "estimator_backend": config["estimator_backends"]["ig_low_pass"],
                     }
                 )
 
@@ -846,6 +894,7 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
                 "correlation_metric": stability.metric,
                 "overall_spearman_rho": stability.spearman_rho,
                 "method": "ig_low_pass",
+                "estimator_backend": config["estimator_backends"]["ig_low_pass"],
                 "rows_per_gradient_set": len(sensitivity_rows),
             }
         )
@@ -873,6 +922,9 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
             "canonical_minus_original": headline_maps[1, :, :, :, :review_count] - headline_maps[0, :, :, :, :review_count],
             "function_name": _strings(FUNCTIONS),
             "method_name": _strings(METHODS),
+            "estimator_backend": _strings(
+                [config["estimator_backends"][method] for method in METHODS]
+            ),
             "member_id": _strings(headline_ids),
             "gradient_set": _strings(GRADIENT_SETS),
             "row_id": headline_rows[:review_count],
@@ -883,6 +935,7 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
             "canonical_minus_original": ("method", "member", "gradient_set", "sample", "channel", "z"),
             "function_name": ("function",),
             "method_name": ("method",),
+            "estimator_backend": ("method",),
             "member_id": ("member",),
             "gradient_set": ("gradient_set",),
             "row_id": ("sample",),
@@ -906,6 +959,7 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
         "original_function": "original_f",
         "selected_primary_path": "ig_low_pass",
         "selected_secondary_perturbation": "periodic_mask",
+        "estimator_backends": config["estimator_backends"],
         "perturbation_is_fallback": True,
         "headline_members": len(headline_ids),
         "headline_rows_per_gradient_set": len(headline_rows),

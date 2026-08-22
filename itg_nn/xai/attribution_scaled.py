@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import math
 from typing import Callable
 
 import numpy as np
@@ -44,6 +45,21 @@ class ValidationStabilityCorrelation:
     stability: np.ndarray
     spearman_rho: float
     metric: str = "spearman_validation_r2_vs_median_map_rank_agreement"
+
+
+def independent_sign_agreement_null(member_count: int) -> float:
+    """Expected majority agreement when member signs are independent fair coins."""
+
+    if member_count < 1:
+        raise ValueError("member_count must be positive")
+    return float(
+        sum(
+            max(positive, member_count - positive)
+            * math.comb(member_count, positive)
+            for positive in range(member_count + 1)
+        )
+        / (member_count * 2**member_count)
+    )
 
 
 def signed_consensus(maps: np.ndarray) -> SignedConsensus:
@@ -174,17 +190,27 @@ def build_stratification_masks(
     if not all(np.isfinite(array).all() for array in (targets, drive_lt, drive_ln)):
         raise ValueError("numeric stratification arrays must be finite")
 
+    optional_fields: dict[str, np.ndarray] = {}
+    for field, optional in (
+        ("member_absolute_error", member_absolute_error),
+        ("ensemble_spread", ensemble_spread),
+    ):
+        if optional is None:
+            continue
+        values = np.asarray(optional, dtype=np.float64)
+        if values.shape != (count,) or not np.isfinite(values).all():
+            raise ValueError(f"{field} must be a finite sample vector")
+        optional_fields[field] = values
+
     masks: dict[str, np.ndarray] = {}
     for name in ("varied", "fixed"):
         base = gradient == name
+        unstable = base & (targets > float(stable_threshold))
         masks[f"gradient_set={name}|all"] = base
         masks[f"gradient_set={name}|stability=stable_or_near_floor"] = base & (
             targets <= float(stable_threshold)
         )
-        masks[f"gradient_set={name}|stability=unstable"] = base & (
-            targets > float(stable_threshold)
-        )
-        unstable = base & (targets > float(stable_threshold))
+        masks[f"gradient_set={name}|stability=unstable"] = unstable
         if np.count_nonzero(unstable) >= 3 and np.ptp(targets[unstable]) > 0:
             cut1, cut2 = np.quantile(targets[unstable], (1 / 3, 2 / 3))
             for label, condition in (
@@ -195,6 +221,8 @@ def build_stratification_masks(
                 masks[f"gradient_set={name}|flux={label}"] = unstable & condition
         for field, values in (("a_over_lt", drive_lt), ("a_over_ln", drive_ln)):
             if np.count_nonzero(base) >= 3 and np.ptp(values[base]) > 0:
+                # Keep the registered full-panel tertile boundaries, then
+                # exclude floor rows from every feature-level summary.
                 cut1, cut2 = np.quantile(values[base], (1 / 3, 2 / 3))
                 bins = (
                     ("low", values <= cut1),
@@ -202,28 +230,21 @@ def build_stratification_masks(
                     ("high", values > cut2),
                 )
                 for label, condition in bins:
-                    masks[f"gradient_set={name}|{field}={label}"] = base & condition
-        for class_value in np.unique(classes[base]):
-            masks[f"gradient_set={name}|equilibrium_class={class_value}"] = base & (
+                    masks[f"gradient_set={name}|{field}={label}"] = unstable & condition
+        for class_value in np.unique(classes[unstable]):
+            masks[f"gradient_set={name}|equilibrium_class={class_value}"] = unstable & (
                 classes == class_value
             )
-
-    for field, optional in (
-        ("member_absolute_error", member_absolute_error),
-        ("ensemble_spread", ensemble_spread),
-    ):
-        if optional is None:
-            continue
-        values = np.asarray(optional, dtype=np.float64)
-        if values.shape != (count,) or not np.isfinite(values).all():
-            raise ValueError(f"{field} must be a finite sample vector")
-        cut1, cut2 = np.quantile(values, (1 / 3, 2 / 3))
-        for label, condition in (
-            ("low", values <= cut1),
-            ("medium", (values > cut1) & (values <= cut2)),
-            ("high", values > cut2),
-        ):
-            masks[f"{field}={label}"] = condition
+        for field, values in optional_fields.items():
+            if np.count_nonzero(base) < 3 or np.ptp(values[base]) == 0:
+                continue
+            cut1, cut2 = np.quantile(values[base], (1 / 3, 2 / 3))
+            for label, condition in (
+                ("low", values <= cut1),
+                ("medium", (values > cut1) & (values <= cut2)),
+                ("high", values > cut2),
+            ):
+                masks[f"gradient_set={name}|{field}={label}"] = unstable & condition
     return masks
 
 

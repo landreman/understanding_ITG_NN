@@ -1,6 +1,10 @@
 {
   "canonical_function": "invariant_tilde_f",
   "estimand": "native max(log Q, -2)",
+  "estimator_backends": {
+    "ig_low_pass": "integrated_gradients_captum",
+    "periodic_mask": "periodic_extremal_mask"
+  },
   "gradient_sets_reported_separately": [
     "varied",
     "fixed"

@@ -18,6 +18,10 @@
     "cohorts_sha256": "edde45002a709a92ddbee7d0cf8697b2d966d5a14110895e217b2898bf4263f6",
     "dataset": "/Users/mattland/20260523-01-files_for_Kosmos_interpreting_neural_networks/20250102-01_GX_stellarator_dataset.h5",
     "device": "cpu",
+    "estimator_backends": {
+      "ig_low_pass": "integrated_gradients_captum",
+      "periodic_mask": "periodic_extremal_mask"
+    },
     "functions": [
       "original_f",
       "invariant_tilde_f"
@@ -61,15 +65,15 @@
       "symmetry_rows": 4
     },
     "published_dir": "reports/xai/S06b_artifacts",
-    "resume_source_manifest_sha256": "101453888220b4cb4cdbcdabc34e8f142dd2b15f99085c16dd056f66de4fbc9b",
+    "resume_source_manifest_sha256": "c6f17b28e5b57a91c65929833f5979981f0395e8cfe991e3d3b3576d3a82611f",
     "review_publish_rows_per_gradient_set": 16,
     "run_id": "scaled-attribution-top10-panel2000-rank10-panel512",
     "scalar_robust_scales": [
       1.9156667724903467,
       0.9044588186548231
     ],
-    "scaled_module_sha256": "1c6a64c820ed4532fba4055823579fe5dc5de727c2cc98da1ad0e1bd410f3bd3",
-    "script_sha256": "1e85fec6ba4bcb6f9560c634620136635c7a17dfa6a061d2cfe066a35d62ce45",
+    "scaled_module_sha256": "3142513836636b22c64262e90d110fed90ba08999afb8fef8ebeeea20acb169b",
+    "script_sha256": "4609d0b26a86a4e0d86892c0771e2c237b6a61ceefe7d765798b995686215e09",
     "seed": 20260822,
     "selected_methods": "reports/xai/S06a_artifacts/selected_methods.json",
     "selected_methods_sha256": "74b350cd2df9b31f640271975276731dbfbdc0c01cf58cf6163f8ed4e58f9fc1",
@@ -101,10 +105,10 @@
     "sha256": "9d8fa52f93f2782ad9948a38bf46943c0cd6df78cd08b94a006dad4e06c1c8ad"
   },
   "device": "cpu",
-  "git_commit": "30fe8abe589265f372cf57bdc8fc30c64ad13ea5",
+  "git_commit": "1f09d91d0f050cb8c4bbc4503f9515db74a18f39",
   "git_dirty": true,
-  "git_tracked_dirty": false,
-  "git_tree": "18d87837f040ebc93b2b974fce8b2884414fbe91",
+  "git_tracked_dirty": true,
+  "git_tree": "205cdf896113c83861c0c3301c627562ba7c420a",
   "gradient_set": "fixed_and_varied_separate",
   "member_ids": [
     "2864601_0.437",
@@ -129,17 +133,17 @@
     "2864601_0.382"
   ],
   "output_hashes": {
-    "attribution_maps.h5": "354d047ded7dfee9d7dd56ce569ca277d5cc429a5e9f8799d5f93a4a9ef7befd",
-    "channel_consensus.csv": "6bd5ca2b325e2348fa4595b762f98c193eefca5981c81c4e93e534fc3953d8a6",
+    "attribution_maps.h5": "ab848646a7c0032fd3e2f40dab1498b3143114257ba19d36c6ae652175b8930b",
+    "channel_consensus.csv": "117804a3f96720377cbe06f49348ed06706280120f0c1c581da206a96badfc08",
     "consensus_atlas.png": "8001bc5afee8749fcf960d82706dfe20078de7486e7e58f3c7ab4450c6967be6",
-    "hierarchical_uncertainty.csv": "a7bf8e30f24a8b51a2e4f35899e9fe324bbfa92ff3cbab205b637d8de9d6b78a",
-    "member_agreement.csv": "324c2f9b4a0f7e49bcbce318535f2931663060ca3e9c81aa38c854fcf35a8e36",
-    "rank_sensitivity.csv": "9b848ae100299ab84b6450992a72bcc3a4952a01fe8ce4ef14a467ede543ad5d",
+    "hierarchical_uncertainty.csv": "e76a4b475887f967da84b0d18d12d3221cb8a5210ba2484bb40390f50500d665",
+    "member_agreement.csv": "67d6bf19f74ceea7e5b0bb17399b8e7ce5afb5aa04e0b71a26d85a7d3aafafd4",
+    "rank_sensitivity.csv": "0b62b9ccc7ca2896173bb82abfad083381d20b7e8e4e04acb1f0aa30963ea14c",
     "scalar_sensitivities.csv": "6ecd4d68b8f1f5cce2ed2f36addbf728a6e048f520981ab918db9041ebb512fe",
-    "selected_review_maps.h5": "c0302c87b35cbae8053f4f473e882d2af6b622da1cdefd020fac1d0d59ab0bc8",
-    "stratified_consensus.csv": "20e0696b827963f31bf2cc1b5812d0d9f12fa7fb59690c0cd32139717b5c1a85",
-    "summary.json": "c29a6a3bb40e306f95e7058c94b13c49ed2b7aca553d9486db3b7738df6fa705",
-    "symmetry_checks.csv": "48f909fdd13fd23693145d4212ee5979facb8124a5897b58163f885bd9c8f2f5"
+    "selected_review_maps.h5": "75ffb1f1d2e04812916a00f221676feb4a397cd2c6c5b0bfed734c8d9a8e59c2",
+    "stratified_consensus.csv": "fcba256cdd9f3e5bc109fdfc4c39f91f1c024dfb967bb91c4201908457b3ac81",
+    "summary.json": "6ab605a2be8f0bf3dd5b32c89f6a27d62f0756cee32930c9de56ec807458fdfc",
+    "symmetry_checks.csv": "0ef0038ade7885428feec95f3e44e76e38e32da8329d38658998a0815070e5c5"
   },
   "package_versions": {
     "captum": "0.9.0",
@@ -2155,5 +2159,5 @@
     100596
   ],
   "seed": 20260822,
-  "wall_time_seconds": 429.52196870799526
+  "wall_time_seconds": 436.1089305409987
 }
