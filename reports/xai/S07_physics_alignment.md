@@ -96,7 +96,9 @@ review found that replacing average ranks for tied values with arbitrary
 ordinal ranks also remained green. An analytic tied-profile fixture now pins
 mid-ranks and makes that mutation fail. A mixed active/silent fixture also
 separates the active-row association from the pooled value and makes replacing
-the former with the latter fail.
+the former with the latter fail. Its unequal 53-position learned and 10-position
+GX mean mask widths pin both overlap normalisations: swapping either the
+overlap denominator or the chance baseline now fails.
 
 ## Methods
 
@@ -280,9 +282,10 @@ than in the pooled table and cannot be promoted to plasma evidence.
 
 ### 5. Supporting and contradicting cases
 
-[case_studies.csv](S07_artifacts/case_studies.csv) contains 20 distinct
-equilibria: 5 supporting and 5 contradicting the population sign for each of
-the bad-curvature/flux-compression and geodesic-curvature hypotheses. The
+[case_studies.csv](S07_artifacts/case_studies.csv) contains 20 rows from 19
+distinct equilibria: 5 supporting and 5 contradicting the population sign for
+each of the bad-curvature/flux-compression and geodesic-curvature hypotheses.
+One flux tube contradicts both hypotheses. The
 contradicting examples are not weaker leftovers: for `.437:u001`, the five
 supporting row correlations reach -0.953 to -0.933 while the strongest
 contradiction is +0.864. The paired [case figure](S07_artifacts/case_studies.png)

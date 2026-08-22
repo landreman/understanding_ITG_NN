@@ -141,6 +141,9 @@ def test_tie_inclusive_overlap_and_lag_selection_null_are_pinned() -> None:
         1.0, abs=1e-12
     )
     assert mixed_result.learned_mask_width_mean == pytest.approx(53.0)
+    assert mixed_result.overlap_enrichment == pytest.approx(
+        1.8113207547169812, abs=1e-12
+    )
 
     learned, physical, paired_groups = _cyclic_fixture()
     signal_null = lag_selection_permutation_null(

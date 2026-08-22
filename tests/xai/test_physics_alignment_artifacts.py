@@ -70,10 +70,16 @@ def test_s07_spatial_table_keeps_functions_strata_signs_lags_and_grouping() -> N
     assert all(int(row["selection_null_permutations"]) == 200 for row in unstable)
     assert all(row["selection_null_q95"] for row in unstable)
     assert all(row["overlap_orientation"] for row in rows)
-    assert all(row["learned_constant_profile_count"] for row in rows)
-    assert all(row["learned_active_profile_count"] for row in rows)
-    assert all(row["learned_mask_width_mean"] for row in rows)
-    assert all(row["gx_mask_width_mean"] for row in rows)
+    assert all(int(row["learned_constant_profile_count"]) >= 0 for row in rows)
+    assert all(int(row["learned_active_profile_count"]) >= 0 for row in rows)
+    assert all(
+        int(row["learned_constant_profile_count"])
+        + int(row["learned_active_profile_count"])
+        == int(row["sample_count"])
+        for row in rows
+    )
+    assert all(float(row["learned_mask_width_mean"]) >= 10.0 for row in rows)
+    assert all(float(row["gx_mask_width_mean"]) >= 10.0 for row in rows)
     assert all(row["validity_tag"] for row in rows)
     stable = [row for row in rows if row["stratum"] == "stable_or_near_floor"]
     assert all(row["feature_claims_permitted"] == "False" for row in stable)
