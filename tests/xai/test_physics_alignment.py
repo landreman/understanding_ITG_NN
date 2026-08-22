@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from dataclasses import replace
+
 import numpy as np
 import pytest
 
@@ -11,6 +13,11 @@ from itg_nn.xai.physics_alignment import (
     paired_native_difference,
     scalar_rank_association,
     select_balanced_case_studies,
+)
+from scripts.xai_s07_physics_alignment import (
+    _alignment_row,
+    _association_bootstrap_stable,
+    _lag_within_tolerance_recurrence,
 )
 
 
@@ -266,6 +273,45 @@ def test_grouped_bootstraps_and_case_selection_are_deterministic() -> None:
     )
     assert negative_cases[0]["case_type"] == "supporting"
     assert float(negative_cases[0]["score"]) < 0
+
+
+def test_lag_stability_wrap_tolerance_and_reported_flags_are_pinned() -> None:
+    learned, physical, groups = _cyclic_fixture()
+    base = circular_alignment(
+        learned,
+        physical,
+        groups,
+        mode="signed",
+        sparsity=0.1,
+        bootstrap_replicates=4,
+        seed=82,
+    )
+    wrapped = replace(
+        base,
+        best_lag=1,
+        bootstrap_best_lag=np.asarray([95, 94, 5, 50], dtype=np.int16),
+    )
+    assert _lag_within_tolerance_recurrence(wrapped, 4) == pytest.approx(0.75)
+    assert _lag_within_tolerance_recurrence(wrapped, 3) == pytest.approx(0.5)
+
+    failing = replace(
+        wrapped,
+        rank_ci_lower=-0.1,
+        rank_ci_upper=0.2,
+        bootstrap_best_lag=np.asarray([50, 50, 50, 50], dtype=np.int16),
+    )
+    assert _association_bootstrap_stable(failing) is False
+    row = _alignment_row(
+        {},
+        failing,
+        sample_count=len(groups),
+        sparsity=0.1,
+        bootstrap_replicates=4,
+        minimum_recurrence=0.5,
+        lag_tolerance=4,
+    )
+    assert row["lag_bootstrap_stable"] is False
+    assert row["association_bootstrap_stable"] is False
 
 
 def test_scalar_and_paired_results_use_whole_equilibria_and_native_units() -> None:

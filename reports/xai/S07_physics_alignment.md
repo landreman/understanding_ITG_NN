@@ -198,6 +198,14 @@ stable: +22 recurs within four positions in 91.2% of resamples, and +44 in
 100.0% (the fixed-panel +21 and +42 lags recur within four positions in 84.2%
 and 100.0%).
 
+Agreement across the two GX panels is not universal among the nine selected
+densities: seven keep the same sign, while `.409:u021` changes from -0.162
+(varied) to +0.155 (fixed) and `.409:u027` changes from +0.134 to -0.148. All
+four associations exceed their own permutation-null thresholds. Because the
+density itself is unchanged and only the GX field differs, these confident
+sign reversals further limit how generally fixed-panel agreement supports a
+unit-level interpretation.
+
 Only `.437:u001` and `.437:u008` have S05 `supported_named_motif` status. Four
 other selected units in `.437`/`.371` were already unresolved in S05, and the
 three `.409` units were not characterised there at all. Conditional on this
@@ -257,6 +265,13 @@ unstable rows. The bad-curvature candidate `.437:u001` is unresolved on varied
 rows, **+0.032 [-0.040, +0.099]**, and positive on fixed rows,
 **+0.310 [+0.247, +0.372]**. The large drive dependence prevents a simple
 geometry-only interpretation.
+
+This amplification is not specific to either named candidate. Across all nine
+selected densities, fixed-panel unstable correlations have absolute magnitude
+0.310–0.564, compared with 0.029–0.182 on the varied panel. The largest fixed
+association is the unnamed and mostly silent `.437:u003` at -0.564, rather than
+the geodesic-curvature candidate. The zonal comparison therefore supports a
+panel-wide drive dependence, not a candidate-specific zonal mechanism.
 
 For deliberately off-manifold canonical low-pass Integrated Gradients, the signed cell sum has intervals
 crossing zero in every member (-0.026, -0.032, -0.054 point estimates). Absolute

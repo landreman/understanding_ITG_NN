@@ -47,8 +47,8 @@ A second unit previously associated with radial drift/geodesic curvature has
 correlation **-0.268 [-0.294, -0.241]** at lag **+44**. Its spatial offset is
 stable as well: 100% of resamples return within four positions of +44. The two
 candidate densities are nearly unchanged in the fixed-gradient comparison
-because density depends only
-on geometry; this is a robustness comparison against a second GX field, not an
+because density depends only on geometry; this is a robustness comparison
+against a second GX field, not an
 independent replication. These are credible activation-to-physics associations.
 
 A separate limitation affects three of the other seven selected units. They are
@@ -61,6 +61,12 @@ unit varies changes the nine-unit range from **-0.361 to +0.134** to **-0.369
 to +0.182**, which remains mixed in sign and lag. The two named candidates are
 constant on only 17/760 and 45/760 rows, so their result is essentially
 unchanged.
+
+The fixed-panel agreement is not general across the other selected densities:
+seven of nine units keep the same association sign, but `.409:u021` reverses
+from -0.162 to +0.155 and `.409:u027` from +0.134 to -0.148. Both reversals are
+well above their per-comparison lag-search nulls, strengthening the conclusion
+that there is no common member-level spatial interpretation.
 
 But the off-manifold attribution diagnostic gives a different picture. Keeping
 the full sign of Integrated Gradients, its correlations with $Q(z)$ are only **-0.021,
@@ -93,7 +99,9 @@ In the fixed-gradient panel it becomes much stronger, **-0.513 [-0.564,
 This drive dependence is scientifically useful negative evidence. It argues
 against reading either unit as a simple geometry-only monitor of zonal flow.
 The observed relationship depends strongly on which simulation drives are
-present.
+present. The effect is also not candidate-specific: all nine selected densities
+reach absolute fixed-panel correlations of 0.310–0.564, and the largest is the
+unnamed, mostly silent `.437:u003` at -0.564 rather than the geodesic candidate.
 
 ## What the fixed/varied pairs show
 
