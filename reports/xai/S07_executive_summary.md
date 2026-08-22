@@ -9,7 +9,9 @@ Earlier steps found two kinds of spatial pattern inside the neural network:
 2. An **attribution** is where an input cell receives credit or blame for a
    prediction. Here the primary attribution method is Integrated Gradients: it
    divides the prediction change from a reference geometry among the input
-   cells.
+   cells. That reference path is **off-manifold** (not guaranteed to consist of
+   valid plasma equilibria), so the result describes how the network behaves
+   along a constructed path, not how the plasma responds to a realizable edit.
 
 S07 compares both patterns with `Q_avgs_vs_z`, the heat flux as a function of
 position computed by GX. GX $Q(z)$ is a held-out physical diagnostic. The
@@ -34,23 +36,31 @@ correlation measures whether two curves order positions similarly; -1 is
 perfect reverse ordering and +1 is perfect matching ordering. The 95% interval
 is **[-0.388, -0.333]**, obtained by resampling whole equilibria to estimate
 uncertainty. The best match occurs at lag **+22** of 96 grid points, not at the
-same coordinate, and its top-10% regions overlap **1.63 times more than chance**.
+same coordinate. Its association is negative: high activation goes with low
+$Q(z)$. After sign-flipping $Q(z)$ to measure that inverse pattern, their
+top-10% regions overlap **1.63 times chance**. Without the sign flip, high
+activation and high $Q(z)$ overlap only **0.54 times chance**—they avoid one
+another more than chance predicts.
 
 A second unit previously associated with radial drift/geodesic curvature has
-correlation **-0.268 [-0.294, -0.241]** at lag **+44**. Both density results are
-nearly unchanged in the fixed-gradient simulations. These are credible
-activation-to-physics associations.
+correlation **-0.268 [-0.294, -0.241]** at lag **+44**. The same densities are
+nearly unchanged in the fixed-gradient comparison because density depends only
+on geometry; this is a robustness comparison against a second GX field, not an
+independent replication. These are credible activation-to-physics associations.
 
-But the attribution comparison gives a different picture. Keeping the full
-sign of Integrated Gradients, its correlations with $Q(z)$ are only **-0.021,
+But the off-manifold attribution diagnostic gives a different picture. Keeping
+the full sign of Integrated Gradients, its correlations with $Q(z)$ are only **-0.021,
 -0.013, and -0.012** in the three members, with incompatible lags **-36, +47,
-and +48**. Those values are distinguishable from zero with 1,000 equilibria,
-but too small and inconsistent to identify a shared spatial mechanism.
+and +48** on 760 unstable equilibria. Selecting the largest value from 96 lags
+can create a small peak by chance, so we also broke the equilibrium pairing 200
+times and repeated the full search. The -0.013 and -0.012 peaks do not clear
+that test. The -0.021 peak does, but is still negligible and does not replicate.
 
-If all negative contributions are thrown away, the correlations rise to
+If all negative contributions in the off-manifold diagnostic are thrown away, the correlations rise to
 **+0.266, +0.280, and +0.262** at lag 0 or +1. That is a genuine and repeatable
-resemblance: positively contributing input cells tend to sit where $Q(z)$ is
-positive. It is also only half the explanation. Negative contributions are
+resemblance along that constructed reference path: positively contributing
+input cells tend to sit where $Q(z)$ is positive. It is also only half the
+network explanation, not plasma evidence. Negative contributions are
 part of the model's prediction, so the positive-only result cannot replace the
 nearly null signed result.
 
@@ -70,10 +80,13 @@ present.
 ## What the fixed/varied pairs show
 
 For the same geometry, the fixed and varied simulations have substantially
-different heat flux. Fixed minus varied GX flux is **+1.559 [+1.434, +1.694]**
-in the native clipped-log units, and each member predicts almost the same
-difference. Their physical $Q(z)$ curves nevertheless remain strongly related:
-spatial rank correlation **0.736 [0.710, 0.760]** at lag 0.
+different heat flux. Across all rows, fixed minus varied GX flux is **+1.559
+[+1.434, +1.694]** in the native clipped-log units. It is +3.356 when either
+simulation is stable/near-floor and +0.957 when both are unstable, so the pooled
+value must not be read as a single-regime effect. Each member predicts almost
+the same all-row difference. The physical $Q(z)$ curves remain strongly related:
+spatial rank correlation **0.736 [0.710, 0.760]** over all rows and **0.874
+[0.860, 0.888]** over the 749 both-unstable pairs, both at lag 0.
 
 This is a natural paired comparison, not a constant-drive comparison within
 each pair. The fixed panel uses $(a/L_T,a/L_n)=(3,0.9)$ across geometries, while
@@ -92,11 +105,15 @@ one-to-one physical definition of the unit.
 ## Bottom line
 
 The networks contain activation patterns that track real GX structure, especially
-for the same bad-curvature/flux-compression and geodesic-curvature candidates
-found in S05. However:
+for the two bad-curvature/flux-compression and geodesic-curvature candidates
+supported in S05. Four other selected units were already unresolved in S05, and
+the three units from the third member were not studied there. The cross-member
+comparison is therefore conditional on an importance-ranked, mostly unnamed set,
+not an independent replication of the two named candidates. Moreover:
 
 - density signs and lags do not replicate across members;
-- complete signed attributions have almost no spatial association with $Q(z)$;
+- complete signed off-manifold attributions have almost no spatial association
+  with $Q(z)$, and two of three peaks do not beat the 96-lag search null;
 - the stronger attribution result appears only after negative evidence is
   removed;
 - the zonal-flow relationships change greatly with the drive panel; and

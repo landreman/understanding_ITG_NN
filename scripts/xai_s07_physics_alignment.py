@@ -27,6 +27,7 @@ from itg_nn.xai.artifacts import RunArtifacts, sha256_file
 from itg_nn.xai.physics_alignment import (
     CircularAlignment,
     circular_alignment,
+    lag_selection_permutation_null,
     paired_native_difference,
     scalar_rank_association,
     select_balanced_case_studies,
@@ -306,6 +307,7 @@ def _alignment_row(
         "overlap_at_fixed_sparsity": result.overlap,
         "overlap_chance_baseline": result.overlap_chance,
         "overlap_enrichment": result.overlap_enrichment,
+        "overlap_orientation": result.overlap_orientation,
         "alignment_sparsity": sparsity,
         "association_bootstrap_stable": association_stable,
         "bootstrap_stable": association_stable,
@@ -325,8 +327,6 @@ def _position_source(values: np.ndarray, method: str, mode: str) -> np.ndarray:
         if method != "ig_low_pass":
             raise ValueError("the periodic mask is magnitude-only, not signed")
         return values.sum(axis=1)
-    if method == "ig_low_pass":
-        return np.maximum(values, 0.0).sum(axis=1)
     return np.maximum(values, 0.0).sum(axis=1)
 
 
@@ -505,6 +505,7 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
     bootstrap_replicates = int(config["bootstrap_replicates"])
     minimum_recurrence = float(config["minimum_lag_recurrence"])
     lag_tolerance = int(config["lag_stability_tolerance_positions"])
+    selection_null_permutations = int(config["selection_null_permutations"])
 
     def add_alignment(
         key: tuple[Any, ...],
@@ -536,6 +537,47 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
             minimum_recurrence=minimum_recurrence,
             lag_tolerance=lag_tolerance,
         )
+        if metadata["stratum"] == "unstable":
+            selection_null = lag_selection_permutation_null(
+                source[mask],
+                q_profile[mask],
+                groups[mask],
+                mode=mode,
+                permutations=selection_null_permutations,
+                seed=int(config["seed"]) + 500000 + source_counter,
+            )
+            row.update(
+                {
+                    "selection_null_scope": (
+                        "permuted_equilibrium_pairing_max_abs_over_96_lags"
+                    ),
+                    "selection_null_permutations": selection_null_permutations,
+                    "selection_null_q95": selection_null.q95,
+                    "selection_null_max": selection_null.maximum,
+                    "observed_abs_correlation_to_selection_null_q95": (
+                        abs(result.rank_correlation)
+                        / max(selection_null.q95, np.finfo(np.float64).eps)
+                    ),
+                    "lag_search_null_resolved": (
+                        abs(result.rank_correlation) > selection_null.q95
+                    ),
+                    "selection_null_permutation_unit": (
+                        selection_null.permutation_group
+                    ),
+                }
+            )
+        else:
+            row.update(
+                {
+                    "selection_null_scope": "not_run_non_unstable_stratum",
+                    "selection_null_permutations": 0,
+                    "selection_null_q95": None,
+                    "selection_null_max": None,
+                    "observed_abs_correlation_to_selection_null_q95": None,
+                    "lag_search_null_resolved": None,
+                    "selection_null_permutation_unit": "equilibrium_files",
+                }
+            )
         spatial_rows.append(row)
         for lag in range(96):
             lag_rows.append(
@@ -743,6 +785,18 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
     paired_rows: list[dict[str, Any]] = []
     paired_counter = 200000
 
+    fixed_target = panel_data["fixed"].actual_log_heat_flux
+    varied_target = panel_data["varied"].actual_log_heat_flux
+    assert fixed_target is not None and varied_target is not None
+    either_near_floor = (fixed_target.numpy() <= threshold) | (
+        varied_target.numpy() <= threshold
+    )
+    pair_strata = (
+        ("all", np.ones(len(groups), dtype=bool)),
+        ("either_stable_or_near_floor", either_near_floor),
+        ("both_unstable", ~either_near_floor),
+    )
+
     def add_paired_difference(
         metadata: dict[str, Any],
         fixed: np.ndarray,
@@ -750,36 +804,45 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
         estimand: str,
     ) -> None:
         nonlocal paired_counter
-        result = paired_native_difference(
-            fixed,
-            varied,
-            groups,
-            bootstrap_replicates=bootstrap_replicates,
-            seed=int(config["seed"]) + paired_counter,
-            estimand=estimand,
-        )
-        paired_counter += 1
-        paired_rows.append(
-            {
-                **metadata,
-                "analysis_kind": "paired_fixed_minus_varied_same_geometry",
-                "estimate": result.estimate,
-                "ci95_lower": result.ci_lower,
-                "ci95_upper": result.ci_upper,
-                "bootstrap_replicates": bootstrap_replicates,
-                "bootstrap_unit": result.bootstrap_group,
-                "estimand": result.estimand,
-                "validity_tag": OBSERVED_VALIDITY,
-                "pairing_scope": (
-                    "same geometry; fixed panel holds drive at (3,0.9) across "
-                    "geometries, while within-pair varied drives may differ"
-                ),
-            }
-        )
+        for stratum, mask in pair_strata:
+            result = paired_native_difference(
+                fixed[mask],
+                varied[mask],
+                groups[mask],
+                bootstrap_replicates=bootstrap_replicates,
+                seed=int(config["seed"]) + paired_counter,
+                estimand=estimand,
+            )
+            paired_counter += 1
+            paired_rows.append(
+                {
+                    **metadata,
+                    "analysis_kind": "paired_fixed_minus_varied_same_geometry",
+                    "stratum": stratum,
+                    "sample_count": int(mask.sum()),
+                    "estimate": result.estimate,
+                    "ci95_lower": result.ci_lower,
+                    "ci95_upper": result.ci_upper,
+                    "bootstrap_replicates": bootstrap_replicates,
+                    "bootstrap_unit": result.bootstrap_group,
+                    "estimand": result.estimand,
+                    "validity_tag": metadata.get("validity_tag", OBSERVED_VALIDITY),
+                    "comparison_validity_tag": OBSERVED_VALIDITY,
+                    "feature_claims_permitted": (
+                        stratum == "both_unstable"
+                        and metadata.get("validity_tag", OBSERVED_VALIDITY)
+                        == OBSERVED_VALIDITY
+                    ),
+                    "pair_stratum_definition": (
+                        "near-floor if either observed native target is <= -1.9"
+                    ),
+                    "pairing_scope": (
+                        "same geometry; fixed panel holds drive at (3,0.9) across "
+                        "geometries, while within-pair varied drives may differ"
+                    ),
+                }
+            )
 
-    fixed_target = panel_data["fixed"].actual_log_heat_flux
-    varied_target = panel_data["varied"].actual_log_heat_flux
-    assert fixed_target is not None and varied_target is not None
     add_paired_difference(
         {"quantity": "observed_clipped_log_Q", "member_id": "none"},
         fixed_target.numpy(),
@@ -806,33 +869,44 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
             )
 
     for mode in MODES:
-        physical_pair = circular_alignment(
-            diagnostics["fixed"]["q_vs_z"],
-            diagnostics["varied"]["q_vs_z"],
-            groups,
-            mode=mode,
-            sparsity=sparsity,
-            bootstrap_replicates=bootstrap_replicates,
-            seed=int(config["seed"]) + paired_counter,
-        )
-        paired_counter += 1
-        paired_rows.append(
-            {
-                "analysis_kind": "physical_Qz_fixed_vs_varied_same_geometry",
-                "quantity": "Q_avgs_vs_z",
-                "mode": mode,
-                "member_id": "none",
-                "best_lag": _signed_lag(physical_pair.best_lag),
-                "circular_spearman": physical_pair.rank_correlation,
-                "ci95_lower": physical_pair.rank_ci_lower,
-                "ci95_upper": physical_pair.rank_ci_upper,
-                "overlap_at_fixed_sparsity": physical_pair.overlap,
-                "lag_recurrence": physical_pair.lag_recurrence,
-                "bootstrap_unit": physical_pair.bootstrap_group,
-                "validity_tag": OBSERVED_VALIDITY,
-                "pairing_scope": "same geometry, different registered simulation drives",
-            }
-        )
+        for stratum, mask in pair_strata:
+            physical_pair = circular_alignment(
+                diagnostics["fixed"]["q_vs_z"][mask],
+                diagnostics["varied"]["q_vs_z"][mask],
+                groups[mask],
+                mode=mode,
+                sparsity=sparsity,
+                bootstrap_replicates=bootstrap_replicates,
+                seed=int(config["seed"]) + paired_counter,
+            )
+            paired_counter += 1
+            paired_rows.append(
+                {
+                    "analysis_kind": "physical_Qz_fixed_vs_varied_same_geometry",
+                    "quantity": "Q_avgs_vs_z",
+                    "mode": mode,
+                    "member_id": "none",
+                    "stratum": stratum,
+                    "sample_count": int(mask.sum()),
+                    "best_lag": _signed_lag(physical_pair.best_lag),
+                    "circular_spearman": physical_pair.rank_correlation,
+                    "ci95_lower": physical_pair.rank_ci_lower,
+                    "ci95_upper": physical_pair.rank_ci_upper,
+                    "overlap_at_fixed_sparsity": physical_pair.overlap,
+                    "overlap_orientation": physical_pair.overlap_orientation,
+                    "lag_recurrence": physical_pair.lag_recurrence,
+                    "bootstrap_unit": physical_pair.bootstrap_group,
+                    "validity_tag": OBSERVED_VALIDITY,
+                    "comparison_validity_tag": OBSERVED_VALIDITY,
+                    "feature_claims_permitted": stratum == "both_unstable",
+                    "pair_stratum_definition": (
+                        "near-floor if either observed native target is <= -1.9"
+                    ),
+                    "pairing_scope": (
+                        "same geometry, different registered simulation drives"
+                    ),
+                }
+            )
 
     for member_index, member_id in enumerate(member_ids):
         for unit_id in selected_unit_ids[member_index]:
@@ -850,6 +924,7 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
                         "source_id": unit_id,
                         "member_id": member_id,
                         "mode": mode,
+                        "validity_tag": OBSERVED_VALIDITY,
                     },
                     fixed_result.per_sample_rank_correlation,
                     varied_result.per_sample_rank_correlation,
@@ -892,6 +967,7 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
                             "function": function_name,
                             "method": method,
                             "mode": mode,
+                            "validity_tag": OFF_MANIFOLD_VALIDITY,
                         },
                         fixed_result.per_sample_rank_correlation,
                         varied_result.per_sample_rank_correlation,

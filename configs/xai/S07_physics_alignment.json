@@ -10,6 +10,7 @@
   "stable_threshold_log_Q": -1.9,
   "alignment_sparsity": 0.1,
   "bootstrap_replicates": 500,
+  "selection_null_permutations": 200,
   "minimum_lag_recurrence": 0.5,
   "lag_stability_tolerance_positions": 4,
   "case_studies_per_direction": 5,
@@ -44,6 +45,7 @@
     "selected_units_per_member": 3,
     "panel_varied_rows": 128,
     "bootstrap_replicates": 100,
+    "selection_null_permutations": 50,
     "case_studies_per_direction": 2
   }
 }

@@ -5,6 +5,7 @@ import pytest
 
 from itg_nn.xai.physics_alignment import (
     circular_alignment,
+    lag_selection_permutation_null,
     paired_native_difference,
     scalar_rank_association,
     select_balanced_case_studies,
@@ -85,12 +86,67 @@ def test_alignment_is_joint_shift_invariant_and_positive_mode_clips_signs() -> N
 
     assert signed.best_lag == shifted.best_lag == 7
     assert signed.rank_correlation == pytest.approx(-1.0, abs=1e-12)
+    assert signed.overlap == pytest.approx(1.0)
+    assert signed.overlap_orientation == (
+        "gx_profile_sign_flipped_to_match_negative_association"
+    )
     assert shifted.rank_correlation == pytest.approx(signed.rank_correlation)
     np.testing.assert_allclose(
         shifted.rank_correlation_by_lag, signed.rank_correlation_by_lag
     )
     assert positive.mode == "positive_contribution"
     assert positive.rank_correlation > -0.9
+    assert positive.overlap_orientation == "gx_profile_unflipped"
+    assert positive.overlap < 0.1
+
+
+def test_tie_inclusive_overlap_and_lag_selection_null_are_pinned() -> None:
+    tied = np.zeros((12, 96), dtype=np.float64)
+    groups = np.asarray([f"eq{index}" for index in range(len(tied))])
+    tied_result = circular_alignment(
+        tied,
+        tied,
+        groups,
+        mode="signed",
+        sparsity=0.1,
+        bootstrap_replicates=20,
+        seed=44,
+    )
+    assert tied_result.overlap == pytest.approx(1.0)
+    assert tied_result.overlap_chance == pytest.approx(1.0)
+    assert tied_result.overlap_enrichment == pytest.approx(1.0)
+
+    learned, physical, paired_groups = _cyclic_fixture()
+    signal_null = lag_selection_permutation_null(
+        learned,
+        physical,
+        paired_groups,
+        mode="signed",
+        permutations=40,
+        seed=45,
+    )
+    random_null = lag_selection_permutation_null(
+        np.random.default_rng(46).normal(size=learned.shape),
+        physical,
+        paired_groups,
+        mode="signed",
+        permutations=40,
+        seed=45,
+    )
+    assert signal_null.q95 < 0.55
+    assert random_null.q95 < 0.2
+    assert signal_null.permutation_group == "equilibrium_files"
+    np.testing.assert_array_equal(
+        signal_null.max_abs_rank_correlation,
+        lag_selection_permutation_null(
+            learned,
+            physical,
+            paired_groups,
+            mode="signed",
+            permutations=40,
+            seed=45,
+        ).max_abs_rank_correlation,
+    )
 
 
 def test_grouped_bootstraps_and_case_selection_are_deterministic() -> None:

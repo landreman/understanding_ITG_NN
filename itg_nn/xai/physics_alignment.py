@@ -24,6 +24,7 @@ class CircularAlignment:
     overlap: float
     overlap_chance: float
     overlap_enrichment: float
+    overlap_orientation: str
     cross_correlation_by_lag: np.ndarray
     rank_correlation_by_lag: np.ndarray
     per_sample_rank_correlation: np.ndarray
@@ -54,6 +55,16 @@ class PairedDifference:
     bootstrap_difference: np.ndarray
     bootstrap_group: str
     estimand: str
+
+
+@dataclass(frozen=True)
+class LagSelectionNull:
+    """Null distribution for the maximum over all circular lags."""
+
+    max_abs_rank_correlation: np.ndarray
+    q95: float
+    maximum: float
+    permutation_group: str
 
 
 def circular_alignment(
@@ -103,7 +114,8 @@ def circular_alignment(
 
     aligned = np.roll(right, best_lag, axis=1)
     oriented = aligned
-    if mode == "signed" and rank_by_lag[best_lag] < 0:
+    association_is_negative = mode == "signed" and rank_by_lag[best_lag] < 0
+    if association_is_negative:
         oriented = -oriented
     left_mask = _upper_mask(left, sparsity)
     right_mask = _upper_mask(oriented, sparsity)
@@ -125,6 +137,11 @@ def circular_alignment(
         overlap_enrichment=float(
             overlap.mean() / max(chance.mean(), np.finfo(np.float64).eps)
         ),
+        overlap_orientation=(
+            "gx_profile_sign_flipped_to_match_negative_association"
+            if association_is_negative
+            else "gx_profile_unflipped"
+        ),
         cross_correlation_by_lag=cross_by_lag,
         rank_correlation_by_lag=rank_by_lag,
         per_sample_rank_correlation=per_sample_rank[:, best_lag],
@@ -132,6 +149,65 @@ def circular_alignment(
         bootstrap_rank_correlation=bootstrap_fixed,
         bootstrap_best_lag=bootstrap_best,
         bootstrap_group="equilibrium_files",
+    )
+
+
+def lag_selection_permutation_null(
+    learned: np.ndarray,
+    gx_profile: np.ndarray,
+    groups: np.ndarray,
+    *,
+    mode: AlignmentMode,
+    permutations: int,
+    seed: int,
+    batch_size: int = 16,
+) -> LagSelectionNull:
+    """Break equilibrium pairing and repeat the maximum-over-96-lags search."""
+
+    left, right, group_values = _validated_profiles(learned, gx_profile, groups)
+    if mode not in ("signed", "positive_contribution"):
+        raise ValueError(f"unknown alignment mode: {mode!r}")
+    if permutations < 2:
+        raise ValueError("at least two selection-null permutations are required")
+    if batch_size < 1:
+        raise ValueError("selection-null batch size must be positive")
+    if mode == "positive_contribution":
+        left = np.maximum(left, 0.0)
+        right = np.maximum(right, 0.0)
+
+    group_rows = _group_rows(group_values)
+    group_sizes = {len(rows) for rows in group_rows}
+    if len(group_sizes) != 1:
+        raise ValueError(
+            "equilibrium-pairing null requires the same row count in every equilibrium"
+        )
+
+    left_normalized = _normalized_rank_rows(left)
+    right_normalized = _normalized_rank_rows(right)
+    left_fft = np.fft.fft(left_normalized, axis=1)
+    right_fft = np.fft.fft(right_normalized, axis=1)
+    rng = np.random.default_rng(seed)
+    row_pairings = np.empty((permutations, len(group_values)), dtype=np.int64)
+    for permutation_index in range(permutations):
+        group_permutation = rng.permutation(len(group_rows))
+        for left_group, right_group in enumerate(group_permutation):
+            row_pairings[permutation_index, group_rows[left_group]] = group_rows[
+                right_group
+            ]
+
+    maxima = np.empty(permutations, dtype=np.float64)
+    for start in range(0, permutations, batch_size):
+        stop = min(start + batch_size, permutations)
+        paired_frequency = left_fft[None, :, :] * np.conj(
+            right_fft[row_pairings[start:stop]]
+        )
+        mean_curve = np.fft.ifft(paired_frequency.mean(axis=1), axis=1).real
+        maxima[start:stop] = np.max(np.abs(mean_curve), axis=1)
+    return LagSelectionNull(
+        max_abs_rank_correlation=maxima,
+        q95=float(np.quantile(maxima, 0.95)),
+        maximum=float(maxima.max()),
+        permutation_group="equilibrium_files",
     )
 
 
@@ -304,6 +380,18 @@ def _average_ranks(values: np.ndarray) -> np.ndarray:
 
 def _rank_rows(values: np.ndarray) -> np.ndarray:
     return np.stack([_average_ranks(row) for row in values], axis=0)
+
+
+def _normalized_rank_rows(values: np.ndarray) -> np.ndarray:
+    ranks = _rank_rows(values)
+    centered = ranks - ranks.mean(axis=1, keepdims=True)
+    norm = np.linalg.norm(centered, axis=1, keepdims=True)
+    return np.divide(
+        centered,
+        norm,
+        out=np.zeros_like(centered),
+        where=norm > np.finfo(np.float64).eps,
+    )
 
 
 def _row_correlation(left: np.ndarray, right: np.ndarray) -> np.ndarray:

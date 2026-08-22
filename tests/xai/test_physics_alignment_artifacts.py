@@ -66,6 +66,10 @@ def test_s07_spatial_table_keeps_functions_strata_signs_lags_and_grouping() -> N
     assert all(row["bootstrap_unit"] == "equilibrium_files" for row in rows)
     assert all(int(row["bootstrap_replicates"]) == 500 for row in rows)
     assert all(int(row["lag_stability_tolerance_positions"]) == 4 for row in rows)
+    unstable = [row for row in rows if row["stratum"] == "unstable"]
+    assert all(int(row["selection_null_permutations"]) == 200 for row in unstable)
+    assert all(row["selection_null_q95"] for row in unstable)
+    assert all(row["overlap_orientation"] for row in rows)
     assert all(row["validity_tag"] for row in rows)
     stable = [row for row in rows if row["stratum"] == "stable_or_near_floor"]
     assert all(row["feature_claims_permitted"] == "False" for row in stable)
@@ -97,6 +101,11 @@ def test_s07_headline_spatial_results_pin_signed_and_positive_conclusions() -> N
     assert int(density["best_lag"]) == 22
     assert float(density["best_lag_within_tolerance_recurrence"]) == 0.912
     assert float(density["overlap_enrichment"]) > 1.63
+    assert density["overlap_orientation"] == (
+        "gx_profile_sign_flipped_to_match_negative_association"
+    )
+    assert float(density["selection_null_q95"]) == np.float64(0.04321620846108337)
+    assert density["lag_search_null_resolved"] == "True"
     assert density["association_bootstrap_stable"] == "True"
     assert density["lag_bootstrap_stable"] == "True"
 
@@ -123,6 +132,23 @@ def test_s07_headline_spatial_results_pin_signed_and_positive_conclusions() -> N
     assert float(positive["circular_spearman"]) == np.float64(0.2657020267671119)
     assert int(positive["best_lag"]) == 1
     assert float(positive["overlap_enrichment"]) > 2.38
+    assert positive["overlap_orientation"] == "gx_profile_unflipped"
+    assert signed["lag_search_null_resolved"] == "True"
+
+    unresolved = one(
+        source_family="s06_attribution",
+        member_id="2864601_0.371",
+        function="invariant_tilde_f",
+        method="ig_low_pass",
+        gradient_set="varied",
+        stratum="unstable",
+        mode="signed",
+    )
+    assert float(unresolved["circular_spearman"]) == np.float64(-0.012763898379259002)
+    assert float(unresolved["selection_null_q95"]) > abs(
+        float(unresolved["circular_spearman"])
+    )
+    assert unresolved["lag_search_null_resolved"] == "False"
 
 
 def test_s07_zonal_pairing_cases_and_symmetry_keep_negative_results() -> None:
@@ -144,11 +170,32 @@ def test_s07_zonal_pairing_cases_and_symmetry_keep_negative_results() -> None:
         for row in paired
         if row["analysis_kind"] == "physical_Qz_fixed_vs_varied_same_geometry"
         and row["mode"] == "signed"
+        and row["stratum"] == "all"
     ]
     assert len(physical) == 1
     assert int(physical[0]["best_lag"]) == 0
     assert float(physical[0]["circular_spearman"]) == np.float64(0.7355389542305631)
     assert float(physical[0]["lag_recurrence"]) == 1.0
+
+    assert len(paired) == 138
+    assert {row["stratum"] for row in paired} == {
+        "all",
+        "either_stable_or_near_floor",
+        "both_unstable",
+    }
+    assert {(row["stratum"], int(row["sample_count"])) for row in paired} == {
+        ("all", 1000),
+        ("either_stable_or_near_floor", 251),
+        ("both_unstable", 749),
+    }
+    attribution_pairs = [
+        row for row in paired if row["source_family"] == "s06_attribution"
+    ]
+    assert all(
+        row["validity_tag"] == "deliberately_off_manifold_diagnostic"
+        for row in attribution_pairs
+    )
+    assert all(row["feature_claims_permitted"] == "False" for row in attribution_pairs)
 
     cases = _csv("case_studies.csv")
     assert len(cases) == 20

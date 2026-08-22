@@ -7,16 +7,23 @@ physical mechanism. In the varied-gradient unstable cohort, the top member's
 dominant density, `2864601_0.437:u001`, has circular Spearman rank correlation
 (agreement of within-tube ordering, from -1 to +1) **-0.361** with the held-out
 GX heat-flux profile $Q(z)$, with equilibrium-bootstrap 95% interval
-**[-0.388, -0.333]**, lag **+22/96**, and top-10% overlap **1.63 times chance**.
+**[-0.388, -0.333]** and lag **+22/96**. Because the association is negative,
+the **1.63-times-chance** overlap is computed after sign-flipping $Q(z)$: it is
+overlap with *low*, not high, heat-flux regions. The unflipped high-density /
+high-$Q(z)$ overlap is only **0.542 times chance**.
 The geodesic-curvature candidate `u008` gives **-0.268**
-**[-0.294, -0.241]** at lag **+44**. Both recur in the fixed-gradient panel at
-similar strength and lag.
+**[-0.294, -0.241]** at lag **+44**. The same geometry-derived densities give
+similar comparisons in the fixed-gradient panel, but that is not independent
+replication: only the GX field and drive panel change.
 
 That is evidence that two internal activation patterns covary with physical GX
 structure. It is not evidence that the network uses the positions where GX
 transports heat. Integrated Gradients (an attribution method: it divides the
 prediction change from a reference input among input cells) gives nearly zero
 *signed* spatial association: **-0.021, -0.013, -0.012** in the three members.
+These attribution paths are deliberately off-manifold diagnostics: their
+low-pass reference geometries are not asserted to be valid plasma equilibria,
+so they explain network extrapolation from that reference, not plasma causality.
 Keeping only positive contributions raises the associations to
 **0.266, 0.280, 0.262** at lag 0 or +1, but that one-sided view discards
 opposing evidence. The member-specific density signs and lags also fail to
@@ -34,19 +41,25 @@ training target at each position.
 - **Rows:** the 1,000-equilibrium S01 varied-gradient panel and the same
   geometries' 1,000 fixed-gradient simulations. The varied cohort contains 240
   stable/near-floor rows and 760 unstable rows; the fixed cohort contains 23
-  and 977. Stable and unstable strata are always separate table rows.
+  and 977. Spatial and zonal tables separate those strata. Paired tables report
+  all 1,000 rows plus 251 pairs where either target is stable/near-floor and 749
+  pairs where both targets are unstable.
 - **Density selection:** the three most important S04-ranked bottleneck units
   per member. This is a preregistered important-map comparison, not a census of
   every live unit.
 - **Attributions:** S06b low-pass Integrated Gradients as the primary method,
   for both the original $f_m$ and canonical exactly invariant $\tilde f_m$.
+  Every attribution row retains S06b's
+  `deliberately_off_manifold_diagnostic` validity tag because the reference path
+  is not guaranteed to remain on the manifold of valid equilibria.
   The periodic-mask map is a secondary diagnostic only: S06b found that its
   symmetry check failed, so its rows carry `feature_claims_permitted=False`.
 - **Prediction estimand:** native `max(log Q, -2)`. Predictions are never
   exponentiated. GX `Q_avgs_vs_z` and `zonal_phi2_amplitudes` are physical
   comparison quantities, not alternate model outputs.
-- **Validity:** all fixed/varied pairs and case studies are naturally observed
-  comparisons. No off-manifold edit is used.
+- **Validity:** fixed/varied GX rows, density comparisons, and case studies are
+  naturally observed comparisons. Attribution sources retain the deliberately
+  off-manifold S06b reference-path tag even when compared across observed rows.
 
 The production command was:
 
@@ -56,7 +69,7 @@ python scripts/xai_s07_physics_alignment.py \
   --config configs/xai/S07_physics_alignment.json
 ```
 
-Run `physics-alignment-top3-panel1000` took 258.11 seconds on CPU. The committed
+Run `physics-alignment-top3-panel1000` took 302.06 seconds on CPU. The committed
 [manifest](S07_artifacts/manifest.json) records the exact dataset, checkpoint,
 S04/S05 inputs, reused S06b attribution-map hash, package versions, command,
 row IDs, and output hashes.
@@ -70,14 +83,20 @@ that they can fail, and each was reverted before the production checks:
 3. exponentiating predictions before the paired difference failed the native-
    estimand test.
 
+Automated review then exposed two missing test branches. Deleting the
+negative-association overlap orientation and changing the tie-inclusive mask
+from `>=` to `>` had initially remained green. Inverse-association and tied-mask
+fixtures were added; both mutations now turn the focused suite red.
+
 ## Methods
 
 ### Spatial comparison
 
 For each learned profile and GX $Q(z)$ profile, the code computes within-tube
 Spearman correlation at every one of the 96 circular lags, chooses the largest
-absolute mean correlation on the full fixed panel, and reports that lag without
-realigning it away. The interval then holds that selected lag fixed. Lag
+absolute mean correlation within that same reported stratum, and reports that
+lag without realigning it away. This is in-sample lag selection. The interval
+then holds that selected lag fixed. Lag
 stability is a separate number: the fraction of bootstrap resamples whose
 selected lag lies within four grid positions of the registered lag.
 
@@ -86,11 +105,24 @@ resamples whole `equilibrium_files`, never individual rows, so related flux
 tubes cannot masquerade as independent evidence. There are 500 deterministic
 resamples. An association is called stable when its 95% interval excludes zero;
 a lag is stable when at least half of resamples select within four positions.
+This panel already has one row per equilibrium, so grouped and row resampling
+are numerically identical here; preserving `equilibrium_files` grouping keeps
+the estimator correct for any later panel containing sibling tubes.
 
-Overlap uses tie-inclusive top-10% masks. Signed mode keeps both helpful and
-opposing learned contributions. Positive-contribution mode clips both profiles
-at zero before comparison; it answers a deliberately narrower question and is
-not a substitute for the signed result.
+Because selecting the largest absolute value over 96 lags can manufacture a
+small peak, every unstable-row comparison also has 200 permutations that break
+the learned-profile/GX equilibrium pairing and repeat the full 96-lag maximum.
+`selection_null_q95` is the 95th percentile of those maxima. The fixed-lag
+bootstrap interval and the lag-search null answer different questions, and both
+are reported.
+
+Overlap uses tie-inclusive top-10% masks. For a negative signed association, the
+reported signed overlap sign-flips the aligned GX profile so that it measures
+high learned values against *low* $Q(z)$; `overlap_orientation` makes that
+operation explicit. The unflipped positive-mode row provides the high/high
+comparison for nonnegative densities. Positive-contribution mode clips both
+profiles at zero; it answers a deliberately narrower question and is not a
+substitute for the signed result.
 
 ### Zonal-flow comparison
 
@@ -105,8 +137,11 @@ The fixed panel holds $(a/L_T,a/L_n)=(3,0.9)$ across its geometries. Each fixed
 row is paired to the same geometry's varied-gradient row, whose drive may be
 different. The pairing therefore controls geometry, **not** drive within the
 pair. Fixed-minus-varied effects use the native clipped-log prediction, and
-their intervals resample whole equilibria. The study does not use the
-off-manifold `-3` marker.
+their intervals resample whole equilibria. Each result is reported for all
+pairs, pairs where either physical target is stable/near-floor, and pairs where
+both are unstable. The study does not use the off-manifold `-3` marker; that is
+separate from the deliberately off-manifold reference path inherited by the
+attribution source.
 
 ### Cases and symmetry control
 
@@ -114,28 +149,38 @@ For each of the two S05 hypotheses, the table keeps five naturally observed
 supporting and five contradicting equilibria, selected at the registered S07
 lag. Supporting means that the row-level sign agrees with the population sign;
 it does not mean that GX validates a causal mechanism. A joint circular shift
-of both compared profiles leaves the full lag curve unchanged to exactly zero
-in the registered numerical check.
+of two already-computed profiles leaves the full lag curve unchanged to exactly
+zero by construction. This checks the comparison statistic only; the end-to-end
+model and explanation symmetry evidence remains in S05 and S06b.
 
 ## Results
 
 ### 1. Density versus physical $Q(z)$
 
-The two S05 candidates in the top member are reproducible across the two GX
+The two S05 candidates in the top member remain associated across the two GX
 drive panels:
 
-| density | GX panel, unstable rows | circular $r_s$ (95% interval) | lag | lag recurrence within ±4 | overlap / chance |
+| density | GX panel, unstable rows | circular $r_s$ (95% interval) | lag | permutation-null q95 | overlap high/high; sign-oriented |
 |---|---|---:|---:|---:|---:|
-| `.437:u001` bad-curvature / flux-compression candidate | varied | -0.361 [-0.388, -0.333] | +22 | 0.912 | 1.631 |
-| `.437:u001` | fixed | -0.351 [-0.376, -0.328] | +21 | 0.842 | 1.624 |
-| `.437:u008` geodesic-curvature candidate | varied | -0.268 [-0.294, -0.241] | +44 | 1.000 | 1.318 |
-| `.437:u008` | fixed | -0.271 [-0.293, -0.250] | +42 | 1.000 | 1.325 |
+| `.437:u001` bad-curvature / flux-compression candidate | varied | -0.361 [-0.388, -0.333] | +22 | 0.043 | 0.542; 1.631 |
+| `.437:u001` | fixed | -0.351 [-0.376, -0.328] | +21 | 0.039 | 0.542; 1.624 |
+| `.437:u008` geodesic-curvature candidate | varied | -0.268 [-0.294, -0.241] | +44 | 0.041 | 0.742; 1.318 |
+| `.437:u008` | fixed | -0.271 [-0.293, -0.250] | +42 | 0.035 | 0.745; 1.325 |
 
-Across all nine selected units, however, the varied-unstable signed results
+The first overlap number compares actual high-density with high-$Q(z)$ regions;
+values below one mean avoidance relative to chance. The second first flips
+$Q(z)$ because $r_s<0$ and therefore measures high density against low $Q(z)$.
+Both candidate correlations are far above their complete lag-search nulls.
+
+Only `.437:u001` and `.437:u008` have S05 `supported_named_motif` status. Four
+other selected units in `.437`/`.371` were already unresolved in S05, and the
+three `.409` units were not characterised there at all. Conditional on this
+deliberately importance-ranked but mostly unnamed set, the varied-unstable signed results
 range from **-0.361 to +0.134** and the lags range from **-47 to +48**. The next
 members' strongest selected units are `.409:u014` at -0.210 and lag -26, and
-`.371:u017` at +0.119 and lag +17. Thus neither a common sign nor a common
-spatial offset identifies an ensemble mechanism. `spatial_alignment.csv`
+`.371:u017` at +0.119 and lag +17. Thus this S07 selection supplies no
+cross-member common sign or spatial offset; it is not a clean replication test
+of the two S05 names. `spatial_alignment.csv`
 contains all members, both drive panels, all/stable/unstable strata, both sign
 modes, overlap, intervals, and lag stability. `lag_curves.csv` preserves all
 96 registered-lag curves rather than only their maxima.
@@ -143,18 +188,22 @@ modes, overlap, intervals, and lag stability. `lag_curves.csv` preserves all
 ### 2. Attribution versus physical $Q(z)$
 
 For canonical $\tilde f_m$, primary low-pass Integrated Gradients on varied
-unstable rows gives:
+unstable rows gives the following deliberately off-manifold network diagnostic:
 
-| member | signed $r_s$ (95% interval), lag | positive-only $r_s$ (95% interval), lag | positive overlap / chance |
+| member | signed $r_s$ (95% interval), lag; null q95 | positive-only $r_s$ (95% interval), lag; null q95 | positive overlap / chance |
 |---|---:|---:|---:|
-| `.437` | -0.021 [-0.029, -0.013], -36 | +0.266 [0.249, 0.285], +1 | 2.390 |
-| `.371` | -0.013 [-0.022, -0.004], +47 | +0.280 [0.260, 0.298], 0 | 2.414 |
-| `.409` | -0.012 [-0.020, -0.003], +48 | +0.262 [0.243, 0.282], 0 | 2.439 |
+| `.437` | -0.021 [-0.029, -0.013], -36; 0.013 | +0.266 [0.249, 0.285], +1; 0.035 | 2.390 |
+| `.371` | -0.013 [-0.022, -0.004], +47; 0.013 | +0.280 [0.260, 0.298], 0; 0.038 | 2.414 |
+| `.409` | -0.012 [-0.020, -0.003], +48; 0.013 | +0.262 [0.243, 0.282], 0; 0.037 | 2.439 |
 
-This is the central contradiction. The positive portions occupy similar places
-to positive $Q(z)$, but the complete signed evidence is marginal and its lags
-do not agree. It would be misleading to describe the positive-only result as
-“where the model looks” without that qualification.
+This is the central contradiction. The `.371` and `.409` signed maxima do not
+exceed the lag-search null; `.437` does, but its magnitude is only 0.021. The
+positive portions exceed their nulls by factors of 7.0–7.7 and occupy similar
+places to positive $Q(z)$, but the complete signed evidence is marginal and its
+lags do not agree. Because the reference path is deliberately off-manifold, even
+the positive-only result describes network sensitivity to that constructed
+path, not a plasma mechanism. It would be misleading to call it simply “where
+the model looks.”
 
 The periodic-mask diagnostic is stronger (positive-only $r_s=0.318$–0.345),
 but it remains in the tables as a negative methodological result, not as feature
@@ -172,7 +221,7 @@ rows, **+0.032 [-0.040, +0.099]**, and positive on fixed rows,
 **+0.310 [+0.247, +0.372]**. The large drive dependence prevents a simple
 geometry-only interpretation.
 
-For canonical low-pass Integrated Gradients, the signed cell sum has intervals
+For deliberately off-manifold canonical low-pass Integrated Gradients, the signed cell sum has intervals
 crossing zero in every member (-0.026, -0.032, -0.054 point estimates). Absolute
 attribution mass is negatively associated in all three (-0.144, -0.159,
 -0.131, intervals excluding zero), but absolute mass discards sign and measures
@@ -180,19 +229,24 @@ how much the model responds, not whether that response raises heat flux.
 
 ### 4. Fixed/varied natural pairs
 
-Observed fixed-minus-varied clipped-log GX flux is **+1.559**
-**[+1.434, +1.694]**. All six original/canonical member prediction effects lie
+Across all rows, observed fixed-minus-varied clipped-log GX flux is **+1.559**
+**[+1.434, +1.694]**; it is **+3.356** **[+3.122, +3.563]** when either member
+of the pair is stable/near-floor and **+0.957** **[+0.826, +1.076]** when both
+are unstable. All six original/canonical member prediction effects lie
 between +1.534 and +1.550 and have intervals excluding zero. This is a check
 that the models track the large observed panel difference in their native
 estimand, not a controlled estimate of drive causality.
 
-The two physical $Q(z)$ profiles for the same geometry remain related:
-signed circular $r_s=0.736$ **[0.710, 0.760]**, lag 0, overlap 0.588, and lag
-recurrence 1.000. Even against that strong physical pairing, canonical signed
-attribution's fixed-minus-varied alignment changes are mixed across members
-(-0.003, +0.023, -0.021), whereas the positive-only changes are consistently
-positive (+0.073, +0.078, +0.053). This again says the apparent replication is
-specific to discarding negative contributions.
+The two physical $Q(z)$ profiles for the same geometry remain related. Across
+all rows, signed circular $r_s=0.736$ **[0.710, 0.760]**, lag 0, and overlap
+0.588. On the 749 both-unstable pairs it strengthens to **0.874**
+**[0.860, 0.888]**, lag 0, and overlap 0.686.
+
+On those both-unstable pairs, deliberately off-manifold canonical attribution's
+fixed-minus-varied signed alignment changes remain mixed across members
+(+0.006, +0.026, -0.021), while positive-only changes are consistently positive
+(+0.034, +0.034, +0.015). The positive-only contrast remains, but it is smaller
+than in the pooled table and cannot be promoted to plasma evidence.
 
 ### 5. Supporting and contradicting cases
 
@@ -210,11 +264,15 @@ shows both directions with equal space.
   activation-density/Q(z) association is larger. Activation is present in the
   network; attribution asks whether changing the input from a stated reference
   uses that location to change the prediction. They are not interchangeable.
+- Two of three signed attribution maxima do not exceed the 200-permutation
+  96-lag selection null. The remaining 0.021 maximum is resolved but negligible.
 - Signs and selected lags do not replicate across members. Member-level signed
   results are preserved before any summary, as required.
 - The positive-contribution result is stable but incomplete because it clips
   negative evidence. It supports a spatial resemblance, not the full signed
   prediction mechanism.
+- Every attribution result is deliberately off-manifold because its S06b
+  reference path is not guaranteed to represent valid equilibria.
 - The periodic-mask result may not support a feature claim because its upstream
   symmetry check failed.
 - The geodesic-density/zonal association changes greatly between drive panels.
@@ -230,11 +288,13 @@ shows both directions with equal space.
    `paired_analysis.csv` uses 500 resamples of `equilibrium_files`. The headline
    `.437:u001` interval is [-0.388, -0.333]; all three canonical positive-only
    varied-unstable attribution intervals and the two reported candidate-density
-   intervals exclude zero. Unresolved and invalid-method rows remain present.
+   intervals exclude zero and exceed their complete 96-lag permutation-null
+   q95. Unresolved and invalid-method rows remain present.
 2. **Spatial lag is reported.** Yes. The headline density lags are +22 and +44;
    signed canonical attribution lags are -36, +47, and +48. The complete 96-lag
-   curves are in `lag_curves.csv`, and lag recurrence is separate from
-   association stability.
+   curves are in `lag_curves.csv`; 200-permutation lag-search q95 values are in
+   `spatial_alignment.csv`; and lag recurrence is separate from fixed-lag
+   bootstrap stability and search-null resolution.
 3. **Prediction attribution and physical $Q(z)$ are explicitly distinct.** Yes.
    Every spatial row names `source_family`, `method`, `function`, and
    `gx_quantity`, and includes the distinction text. The report never treats
@@ -244,13 +304,15 @@ shows both directions with equal space.
 
 - [spatial_alignment.csv](S07_artifacts/spatial_alignment.csv): 216 comparisons
   with member, function, method, drive panel, stability stratum, sign mode,
-  uncertainty, lag, overlap, validity, and claim-permission columns.
+  uncertainty, lag, overlap orientation, permutation-null calibration,
+  validity, and claim-permission columns.
 - [lag_curves.csv](S07_artifacts/lag_curves.csv): 20,736 rows preserving every
   circular-lag correlation.
 - [zonal_association.csv](S07_artifacts/zonal_association.csv): 306 grouped
   scalar associations.
-- [paired_analysis.csv](S07_artifacts/paired_analysis.csv): 46 physical,
-  prediction, and learned-signal fixed/varied comparisons.
+- [paired_analysis.csv](S07_artifacts/paired_analysis.csv): 138 physical,
+  prediction, and learned-signal fixed/varied comparisons (46 quantities times
+  all/either-near-floor/both-unstable strata).
 - [case_studies.csv](S07_artifacts/case_studies.csv): 20 balanced natural cases.
 - [physics_alignment_atlas.png](S07_artifacts/physics_alignment_atlas.png) and
   [case_studies.png](S07_artifacts/case_studies.png): compact visual summaries.
@@ -276,7 +338,7 @@ never send the parent IDs directly to a reader pointed at the slice.
   config.
 - The exact headline table rows are pinned by
   `tests/xai/test_physics_alignment_artifacts.py`, including `.437:u001`
-  (-0.360511998599993, lag +22), signed canonical `.437` Integrated Gradients
+  (-0.360511998599993, lag +22, lag-search null q95 0.0432162), signed canonical `.437` Integrated Gradients
   (-0.02122218224703246, lag -36), positive-only canonical `.437` Integrated
   Gradients (+0.2657020267671119, lag +1), the zonal candidate, physical pair,
   balanced contradictions, and the zero-error shift control.
@@ -284,6 +346,9 @@ never send the parent IDs directly to a reader pointed at the slice.
 ### Checkable from committed artifacts alone
 
 - All headline numbers above are literal rows in the committed CSVs and summary.
+- Every unstable-row permutation-null distribution is reduced to its committed
+  q95 and maximum. The density nulls can be recomputed on the slice; the exact
+  attribution null reductions are checkable from the committed artifact.
 - The manifest hashes every committed artifact, records the dataset and
   checkpoint hashes, keeps the 2,000 gradient-set-tagged row IDs, and identifies
   the exact S06b map (`ab848646...5b8930b`).
@@ -298,7 +363,8 @@ never send the parent IDs directly to a reader pointed at the slice.
   dataset and the S06b production run. The nearest committed proxy is S06b's
   selected review-map artifact on 16 mapped rows; agreement there checks map
   loading, axes, function/method identity, and sign handling but not the exact
-  1,000-row bootstrap intervals.
+  1,000-row bootstrap intervals or underlying permutation draws. Their q95 and
+  maxima are committed in `spatial_alignment.csv`.
 - `alignment_details.h5` is git-ignored (about 3.1 MB). Its hash and all headline
   reductions are committed. If the local file is present, the artifact test also
   verifies its member/sample/unit/position axes.

@@ -58,14 +58,15 @@
     "minimum_lag_recurrence": 0.5,
     "mode": "production",
     "panel_varied_rows": 1000,
-    "physics_alignment_module_sha256": "b2d92fae4b1e5680ce07811e9b51e9e48df6aad2f533d5037227b485c0d76384",
+    "physics_alignment_module_sha256": "afab0a17bee25088ef25d1c36e59ed9fc956d100fc1ea1307360becded573441",
     "pilot": {
       "bootstrap_replicates": 100,
       "case_studies_per_direction": 2,
       "members": 1,
       "panel_varied_rows": 128,
       "run_id": "pilot-top1-panel128",
-      "selected_units_per_member": 3
+      "selected_units_per_member": 3,
+      "selection_null_permutations": 50
     },
     "published_artifacts": [
       "spatial_alignment.csv",
@@ -1085,9 +1086,10 @@
     "s05_motifs": "reports/xai/S05_artifacts/unit_motifs.csv",
     "s06b_manifest": "reports/xai/S06b_artifacts/manifest.json",
     "s06b_map": "output/xai/S06b/scaled-attribution-top10-panel2000-rank10-panel512/attribution_maps.h5",
-    "script_sha256": "6988d9b0ec2b02011166dd2e8027f82cd049adf0ba461a42ace55affe69aef0f",
+    "script_sha256": "5f338ced791cae5f54b4ae65b125a914b6c60617325c6377b0d4267756eaab1a",
     "seed": 20260822,
     "selected_units_per_member": 3,
+    "selection_null_permutations": 200,
     "stable_threshold_log_Q": -1.9,
     "step": "S07",
     "upstream_s04_ranking_sha256": "67f3e9efd6b27be7c2ee8f7f1b1ad81fbeb5fc87f566f3b6885be14f432e5140",
@@ -1102,10 +1104,10 @@
     "sha256": "9d8fa52f93f2782ad9948a38bf46943c0cd6df78cd08b94a006dad4e06c1c8ad"
   },
   "device": "cpu",
-  "git_commit": "04ec4ac3f3c9bc817c49096eac5c1dd60ebfb297",
+  "git_commit": "9228c5377f99eac82233616383f1534a8e00d4b6",
   "git_dirty": true,
   "git_tracked_dirty": true,
-  "git_tree": "0dfe3e3f5d6ceff3b98ac13bd67c725dca7288fb",
+  "git_tree": "08e1e43613f38e71374b663b43478bd9350fcf78",
   "gradient_set": "fixed_and_varied_separate",
   "member_ids": [
     "2864601_0.437",
@@ -1117,10 +1119,10 @@
     "case_studies.csv": "132103bb5647a803b504bde57ce22bbebe2fbbb3bcc160b60d9e6f92c43381b7",
     "case_studies.png": "04f78fca85f2501bec91bcf0569df4d8a7c09226babcffb8ed9f6b4a39fbad17",
     "lag_curves.csv": "745be776bedfa11ad9a803a9f7c483b29821746c3ab55c9eeed6281979d42d54",
-    "paired_analysis.csv": "5d6963101cf6f8d6bdea489387a2bbc66f127ec5daf274f4947925a439ed241f",
+    "paired_analysis.csv": "d451836ed11605ae59676e5b391b819a78134b85074d813df5b96b3a46472280",
     "physics_alignment_atlas.png": "82de5b67c90b74a6666f733a5e2127c42ef03f893b7772935f6cb88622cb4300",
-    "spatial_alignment.csv": "54c64d8cc8feaa1187d86bccbdfd847fd677d1e9a8cffddacc47771d52c38b4c",
-    "summary.json": "2a9e47dd1ab7562ef64dfddf4767f2f8d4a146aeb59e175be4634accc9431488",
+    "spatial_alignment.csv": "05b3a252f5a603670ea9e25b04fdd5bac5eb7b5a1e5a71f4ed2834b888b2a9c6",
+    "summary.json": "451ae80aa6a5c255157dcbe736b77672a535de1774de3c8a7f854f2f3e0362f7",
     "zonal_association.csv": "3a996323d95862bde49b7d0dc0ad58ee15ff17d630e349e6d46b1c6f27543a78"
   },
   "package_versions": {
@@ -3137,5 +3139,5 @@
     100596
   ],
   "seed": 20260822,
-  "wall_time_seconds": 258.11439912501373
+  "wall_time_seconds": 302.0647680420079
 }
