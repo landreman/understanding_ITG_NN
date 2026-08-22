@@ -1,0 +1,49 @@
+{
+  "step": "S07",
+  "run_id": "physics-alignment-top3-panel1000",
+  "seed": 20260822,
+  "device": "cpu",
+  "batch_size": 64,
+  "members": 3,
+  "selected_units_per_member": 3,
+  "panel_varied_rows": 1000,
+  "stable_threshold_log_Q": -1.9,
+  "alignment_sparsity": 0.1,
+  "bootstrap_replicates": 500,
+  "minimum_lag_recurrence": 0.5,
+  "lag_stability_tolerance_positions": 4,
+  "case_studies_per_direction": 5,
+  "case_hypotheses": [
+    {
+      "hypothesis": "bad_curvature_flux_compression",
+      "member_id": "2864601_0.437",
+      "unit_id": "2864601_0.437:u001",
+      "s05_concept": "f_Q_integrand_p3_Bm1__mean_w25"
+    },
+    {
+      "hypothesis": "radial_drift_geodesic_curvature_zonal_flow",
+      "member_id": "2864601_0.437",
+      "unit_id": "2864601_0.437:u008",
+      "s05_concept": "radial_drift_geodesic_curvature__mean_w25"
+    }
+  ],
+  "functions": ["original_f", "invariant_tilde_f"],
+  "methods": ["ig_low_pass", "periodic_mask"],
+  "gradient_sets": ["varied", "fixed"],
+  "dataset": "/Users/mattland/20260523-01-files_for_Kosmos_interpreting_neural_networks/20250102-01_GX_stellarator_dataset.h5",
+  "checkpoint": "models/cyclic_ensemble_pre2.pt",
+  "cohorts": "reports/xai/S01_artifacts/cohorts.json",
+  "s04_ranking": "reports/xai/S04_artifacts/rank_comparison.csv",
+  "s05_motifs": "reports/xai/S05_artifacts/unit_motifs.csv",
+  "s06b_map": "output/xai/S06b/scaled-attribution-top10-panel2000-rank10-panel512/attribution_maps.h5",
+  "s06b_manifest": "reports/xai/S06b_artifacts/manifest.json",
+  "published_dir": "reports/xai/S07_artifacts",
+  "pilot": {
+    "run_id": "pilot-top1-panel128",
+    "members": 1,
+    "selected_units_per_member": 3,
+    "panel_varied_rows": 128,
+    "bootstrap_replicates": 100,
+    "case_studies_per_direction": 2
+  }
+}

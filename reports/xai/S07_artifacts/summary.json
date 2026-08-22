@@ -1,0 +1,175 @@
+{
+  "cohort": {
+    "equilibrium_files": 1000,
+    "member_ids": [
+      "2864601_0.437",
+      "2864601_0.371",
+      "2864601_0.409"
+    ],
+    "rows_per_gradient_set": 1000,
+    "selected_unit_ids": [
+      [
+        "2864601_0.437:u001",
+        "2864601_0.437:u008",
+        "2864601_0.437:u003"
+      ],
+      [
+        "2864601_0.371:u017",
+        "2864601_0.371:u004",
+        "2864601_0.371:u019"
+      ],
+      [
+        "2864601_0.409:u014",
+        "2864601_0.409:u021",
+        "2864601_0.409:u027"
+      ]
+    ],
+    "stable_counts": {
+      "fixed": 23,
+      "varied": 240
+    }
+  },
+  "counts": {
+    "association_bootstrap_stable_spatial_rows": 203,
+    "case_study_rows": 20,
+    "lag_bootstrap_stable_spatial_rows": 161,
+    "lag_curve_rows": 20736,
+    "paired_analysis_rows": 46,
+    "spatial_alignment_rows": 216,
+    "zonal_association_rows": 306
+  },
+  "estimand": "native max(log Q, -2)",
+  "headline": {
+    "canonical_original_ig_spearman_difference_by_member": [
+      {
+        "canonical": -0.02122218224703246,
+        "member_id": "2864601_0.437",
+        "original": -0.013272392231391003
+      },
+      {
+        "canonical": -0.012763898379259002,
+        "member_id": "2864601_0.371",
+        "original": -0.007067200277457318
+      },
+      {
+        "canonical": -0.01160833480844481,
+        "member_id": "2864601_0.409",
+        "original": -0.009476317043449738
+      }
+    ],
+    "strongest_varied_unstable_canonical_ig_Qz": {
+      "alignment_sparsity": 0.1,
+      "association_bootstrap_stable": true,
+      "best_lag": -36,
+      "best_lag_bootstrap_recurrence": 0.62,
+      "best_lag_index_0_to_95": 60,
+      "best_lag_within_tolerance_recurrence": 0.822,
+      "bootstrap_replicates": 500,
+      "bootstrap_stable": true,
+      "bootstrap_unit": "equilibrium_files",
+      "circular_spearman": -0.02122218224703246,
+      "circular_spearman_ci95_lower": -0.028878466099348576,
+      "circular_spearman_ci95_upper": -0.013289961126313306,
+      "estimator_backend": "integrated_gradients_captum",
+      "feature_claims_permitted": true,
+      "function": "invariant_tilde_f",
+      "gradient_set": "varied",
+      "gx_quantity": "Q_avgs_vs_z",
+      "interval_scope": "fixed_full_panel_selected_lag",
+      "lag_bootstrap_stable": true,
+      "lag_selection": "max_abs_mean_within_tube_spearman_over_96_lags",
+      "lag_stability_tolerance_positions": 4,
+      "member_id": "2864601_0.437",
+      "method": "ig_low_pass",
+      "mode": "signed",
+      "overlap_at_fixed_sparsity": 0.12881578947368422,
+      "overlap_chance_baseline": 0.10416666666666666,
+      "overlap_enrichment": 1.2366315789473685,
+      "sample_count": 760,
+      "source_family": "s06_attribution",
+      "source_feature_claims_permitted": true,
+      "source_id": "ig_low_pass:channel_position_marginal",
+      "source_observed_nonnegative": false,
+      "source_signed": true,
+      "spatial_distinction": "learned prediction signal compared with held-out physical Q_avgs_vs_z; association does not make the attribution a physical heat-flux profile",
+      "stratum": "unstable",
+      "validity_tag": "deliberately_off_manifold_diagnostic"
+    },
+    "strongest_varied_unstable_density_Qz": {
+      "alignment_sparsity": 0.1,
+      "association_bootstrap_stable": true,
+      "best_lag": 22,
+      "best_lag_bootstrap_recurrence": 0.552,
+      "best_lag_index_0_to_95": 22,
+      "best_lag_within_tolerance_recurrence": 0.912,
+      "bootstrap_replicates": 500,
+      "bootstrap_stable": true,
+      "bootstrap_unit": "equilibrium_files",
+      "circular_spearman": -0.360511998599993,
+      "circular_spearman_ci95_lower": -0.3883653797328812,
+      "circular_spearman_ci95_upper": -0.332533286776065,
+      "estimator_backend": "s02_atrous_equivariant_density",
+      "feature_claims_permitted": true,
+      "function": "invariant_tilde_f",
+      "gradient_set": "varied",
+      "gx_quantity": "Q_avgs_vs_z",
+      "interval_scope": "fixed_full_panel_selected_lag",
+      "lag_bootstrap_stable": true,
+      "lag_selection": "max_abs_mean_within_tube_spearman_over_96_lags",
+      "lag_stability_tolerance_positions": 4,
+      "member_id": "2864601_0.437",
+      "method": "equivariant_density_rho",
+      "mode": "signed",
+      "overlap_at_fixed_sparsity": 0.20697368421052628,
+      "overlap_chance_baseline": 0.1268640350877193,
+      "overlap_enrichment": 1.6314606741573032,
+      "sample_count": 760,
+      "source_family": "s05_density",
+      "source_feature_claims_permitted": true,
+      "source_id": "2864601_0.437:u001",
+      "source_observed_nonnegative": true,
+      "source_signed": true,
+      "spatial_distinction": "learned prediction signal compared with held-out physical Q_avgs_vs_z; association does not make the attribution a physical heat-flux profile",
+      "stratum": "unstable",
+      "validity_tag": "observed-comparison"
+    },
+    "strongest_varied_unstable_zonal_association": {
+      "association_not_causation": true,
+      "bootstrap_replicates": 500,
+      "bootstrap_stable": true,
+      "bootstrap_unit": "equilibrium_files",
+      "feature_claims_permitted": true,
+      "function": "invariant_tilde_f",
+      "gradient_set": "varied",
+      "gx_quantity": "log10(zonal_phi2_amplitudes)",
+      "member_id": "2864601_0.437",
+      "method": "equivariant_density_rho",
+      "sample_count": 760,
+      "source_family": "s05_density",
+      "source_feature_claims_permitted": true,
+      "source_id": "2864601_0.437:u003",
+      "source_signed": true,
+      "spearman_ci95_lower": -0.23886385359558449,
+      "spearman_ci95_upper": -0.1157119713970405,
+      "spearman_rho": -0.18170189485935812,
+      "stratum": "unstable",
+      "summary": "mean_z_density",
+      "validity_tag": "observed-comparison"
+    }
+  },
+  "interpretation_limit": "Q_avgs_vs_z is a held-out GX physical diagnostic. Correlation with a network density or attribution is association, not identity or causality.",
+  "run_id": "physics-alignment-top3-panel1000",
+  "stable_feature_claims_permitted": false,
+  "step": "S07",
+  "symmetry": {
+    "s07_joint_shift_lag_curve_max_abs_error": 0.0,
+    "shift": 17,
+    "source_inheritance": "S05 density and S06 attribution source symmetry remain in their registered artifacts; S07 checks the joint-shift invariance of its association statistic"
+  },
+  "upstream": {
+    "s04_ranking_sha256": "67f3e9efd6b27be7c2ee8f7f1b1ad81fbeb5fc87f566f3b6885be14f432e5140",
+    "s05_motifs_sha256": "8f26193e32e966184ed422e1d63fa70d1f3d78ee4fb29b8e8662372e5501e012",
+    "s06b_manifest_sha256": "f2cbc58879fa1e40784578800efb3111ea9131eb1420a9bb439ed80c2e955c0b",
+    "s06b_map_sha256": "ab848646a7c0032fd3e2f40dab1498b3143114257ba19d36c6ae652175b8930b"
+  }
+}
