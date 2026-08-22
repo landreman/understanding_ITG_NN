@@ -126,7 +126,9 @@ small peak, every unstable-row comparison also has 200 permutations that break
 the learned-profile/GX equilibrium pairing and repeat the full 96-lag maximum.
 `selection_null_q95` is the 95th percentile of those maxima. The fixed-lag
 bootstrap interval and the lag-search null answer different questions, and both
-are reported.
+are reported. `lag_search_null_resolved` applies this 5% threshold separately
+to each comparison; across 72 unstable-row comparisons, a handful of borderline
+passes are expected and the flag is not a family-wise guarantee.
 
 Overlap uses tie-inclusive top-10% masks. For a negative signed association, the
 reported signed overlap sign-flips the aligned GX profile so that it measures
@@ -191,7 +193,10 @@ Both candidate correlations are far above their complete lag-search nulls.
 The dominant candidate is constant on 17/760 rows and has an active-row-only
 correlation of -0.369; the geodesic candidate is constant on 45/760 rows and
 has an active-row-only correlation of -0.285. Thus their headline associations
-are not driven by the constant-row convention.
+are not driven by the constant-row convention. Their varied-panel lags are also
+stable: +22 recurs within four positions in 91.2% of resamples, and +44 in
+100.0% (the fixed-panel +21 and +42 lags recur within four positions in 84.2%
+and 100.0%).
 
 Only `.437:u001` and `.437:u008` have S05 `supported_named_motif` status. Four
 other selected units in `.437`/`.371` were already unresolved in S05, and the
@@ -222,9 +227,9 @@ unstable rows gives the following deliberately off-manifold network diagnostic:
 
 | member | signed $r_s$ (95% interval), lag; null q95 | positive-only $r_s$ (95% interval), lag; null q95 | positive overlap / chance |
 |---|---:|---:|---:|
-| `.437` | -0.021 [-0.029, -0.013], -36; 0.013 | +0.266 [0.249, 0.285], +1; 0.035 | 2.390 |
-| `.371` | -0.013 [-0.022, -0.004], +47; 0.013 | +0.280 [0.260, 0.298], 0; 0.038 | 2.414 |
-| `.409` | -0.012 [-0.020, -0.003], +48; 0.013 | +0.262 [0.243, 0.282], 0; 0.037 | 2.439 |
+| `.437` | -0.021 [-0.029, -0.013], -36 (82.2% within ±4); 0.013 | +0.266 [0.249, 0.285], +1; 0.035 | 2.390 |
+| `.371` | -0.013 [-0.022, -0.004], +47 (63.4% within ±4); 0.013 | +0.280 [0.260, 0.298], 0; 0.038 | 2.414 |
+| `.409` | -0.012 [-0.020, -0.003], +48 (**unstable**, 31.2% within ±4); 0.013 | +0.262 [0.243, 0.282], 0; 0.037 | 2.439 |
 
 This is the central contradiction. The `.371` signed maximum lies at the
 estimated lag-search threshold (0.012764 versus q95 0.012817, too close for a
@@ -302,6 +307,8 @@ shows both directions with equal space.
   resolved but negligible.
 - Signs and selected lags do not replicate across members. Member-level signed
   results are preserved before any summary, as required.
+- The `.409` signed canonical attribution's selected +48 lag fails the stated
+  lag-stability rule: only 31.2% of resamples return within four positions.
 - Three of nine selected densities are silent on 42–82% of unstable rows, so
   their pooled magnitudes partly reflect the documented zero-correlation
   convention. The active-row range remains mixed, from -0.369 to +0.182.
@@ -327,11 +334,13 @@ shows both directions with equal space.
    varied-unstable attribution intervals and the two reported candidate-density
    intervals exclude zero and exceed their complete 96-lag permutation-null
    q95. Unresolved and invalid-method rows remain present.
-2. **Spatial lag is reported.** Yes. The headline density lags are +22 and +44;
-   signed canonical attribution lags are -36, +47, and +48. The complete 96-lag
-   curves are in `lag_curves.csv`; 200-permutation lag-search q95 values are in
-   `spatial_alignment.csv`; and lag recurrence is separate from fixed-lag
-   bootstrap stability and search-null resolution.
+2. **Spatial lag is reported.** Yes. The headline density lags are +22 (91.2%
+   of resamples within ±4) and +44 (100.0%); signed canonical attribution lags
+   are -36 (82.2%), +47 (63.4%), and +48 (31.2%, failing the registered 50%
+   lag-stability rule). Overall, 161/216 spatial rows pass that rule. The
+   complete 96-lag curves are in `lag_curves.csv`; 200-permutation lag-search
+   q95 values are in `spatial_alignment.csv`; and lag recurrence is separate
+   from fixed-lag bootstrap stability and search-null resolution.
 3. **Prediction attribution and physical $Q(z)$ are explicitly distinct.** Yes.
    Every spatial row names `source_family`, `method`, `function`, and
    `gx_quantity`, and includes the distinction text. The report never treats

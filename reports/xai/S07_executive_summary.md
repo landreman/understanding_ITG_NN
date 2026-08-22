@@ -36,15 +36,18 @@ correlation measures whether two curves order positions similarly; -1 is
 perfect reverse ordering and +1 is perfect matching ordering. The 95% interval
 is **[-0.388, -0.333]**, obtained by resampling whole equilibria to estimate
 uncertainty. The best match occurs at lag **+22** of 96 grid points, not at the
-same coordinate. Its association is negative: high activation goes with low
+same coordinate; 91.2% of resamples return within four positions of that lag.
+Its association is negative: high activation goes with low
 $Q(z)$. After sign-flipping $Q(z)$ to measure that inverse pattern, their
 top-10% regions overlap **1.63 times chance**. Without the sign flip, high
 activation and high $Q(z)$ overlap only **0.54 times chance**—they avoid one
 another more than chance predicts.
 
 A second unit previously associated with radial drift/geodesic curvature has
-correlation **-0.268 [-0.294, -0.241]** at lag **+44**. The same densities are
-nearly unchanged in the fixed-gradient comparison because density depends only
+correlation **-0.268 [-0.294, -0.241]** at lag **+44**. Its spatial offset is
+stable as well: 100% of resamples return within four positions of +44. The two
+candidate densities are nearly unchanged in the fixed-gradient comparison
+because density depends only
 on geometry; this is a robustness comparison against a second GX field, not an
 independent replication. These are credible activation-to-physics associations.
 
@@ -68,6 +71,8 @@ times and repeated the full search. The -0.013 peak lies at the estimated null
 threshold, so its binary pass/fail label is not stable; the -0.012 peak is below
 the threshold. The -0.021 peak clears it, but is still negligible and does not
 replicate.
+Moreover, the `.409` +48 offset itself is unstable: only 31.2% of resamples
+return within four positions, below the registered 50% lag-stability rule.
 
 If all negative contributions in the off-manifold diagnostic are thrown away, the correlations rise to
 **+0.266, +0.280, and +0.262** at lag 0 or +1. That is a genuine and repeatable
