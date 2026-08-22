@@ -1,0 +1,37 @@
+{
+  "canonical_function": "invariant_tilde_f",
+  "estimand": "native max(log Q, -2)",
+  "gradient_sets_reported_separately": [
+    "varied",
+    "fixed"
+  ],
+  "headline_members": 10,
+  "headline_rows_per_gradient_set": 1000,
+  "hierarchical_resampling_units": [
+    "members",
+    "equilibrium_files"
+  ],
+  "initial_production_wall_time_seconds": 4645.802209625021,
+  "mode": "production",
+  "negative_results_carried_from_s06a": [
+    "stable/near-floor maps do not support feature-level claims",
+    "periodic mask is a secondary fallback and fails fixed-background equivariance",
+    "low-pass IG has qualified parameter-randomization response and baseline sensitivity"
+  ],
+  "original_function": "original_f",
+  "perturbation_is_fallback": true,
+  "run_id": "scaled-attribution-top10-panel2000-rank10-panel512",
+  "scalar_robust_scales": [
+    1.9156667724903467,
+    0.9044588186548231
+  ],
+  "selected_primary_path": "ig_low_pass",
+  "selected_secondary_perturbation": "periodic_mask",
+  "stable_feature_claims_permitted": false,
+  "stable_rows": {
+    "fixed": 23,
+    "varied": 240
+  },
+  "step": "S06b",
+  "validation_r2_vs_map_stability_spearman": -0.07376218919438478
+}
