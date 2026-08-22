@@ -1,4 +1,82 @@
-# S06a executive summary — choosing trustworthy input explanations
+# Claude response
+
+## What step S06a was for
+
+The project's larger goal is to figure out *what geometric features* the trained neural networks look at when they predict ITG heat flux. The most direct family of tools for that is **attribution** (also called "saliency"): methods that, for one input sample, assign each input cell — each of the seven geometry channels at each position along the field line — a number saying how much that cell contributed to the network's output. The output being explained is the network's native quantity, max(log Q, −2).
+
+The problem is that there are a dozen popular attribution methods, and they often disagree — and some produce plausible-looking heat maps that are actually meaningless. S06a's job was therefore *not* to draw any physics conclusions, but to run a **benchmark**: put ~12 candidate methods through a battery of quantitative sanity checks on one network (the top ensemble member) and a 128-row panel of geometries, and pre-register which one or two methods the scaled-up follow-on step (S06b, which runs the top 10 members) is allowed to use. Picking the method *before* the big run, by fixed criteria, is a guard against cherry-picking the method whose pictures look nicest.
+
+## The methods being compared, in plain terms
+
+Two families were tested:
+
+- **Gradient/path methods.** The simplest is the gradient: how much does the output change if you nudge each input cell? A refinement called **Integrated Gradients (IG)** averages those gradients along a path from a "baseline" input to the actual input. The **baseline** (or reference) is a deliberately bland stand-in geometry meaning "no signal here" — and there's no unique right choice. S06a tried four: a constant profile (per-channel medians), a matched real geometry from the dataset, a "medoid" (the most central real geometry), and a **low-pass** version of the input itself (the same geometry with its fine-scale wiggles smoothed away, so the attribution highlights what the wiggles contribute). **Expected Gradients** is IG averaged over several real-data baselines.
+- **Perturbation methods.** Instead of gradients, these actually *edit* the input and watch the output move. **Occlusion** replaces one window of cells at a time; a **mask** method searches for the smallest set of cells whose replacement most changes the prediction.
+
+## The 12 registered candidates
+
+**Gradient/path methods (7):**
+
+1. **Signed robust-scaled gradient** — the plain gradient of the output with respect to each input cell, kept with its sign, and rescaled per channel by S01's interquartile ranges (needed because the seven geometry channels differ in magnitude by three orders of magnitude, so raw gradients aren't comparable across channels).
+2. **Integrated Gradients, robust-constant baseline** — IG starting from a flat geometry set to each channel's median value.
+3. **Integrated Gradients, matched-observed baseline** — IG starting from a real geometry drawn from the dataset and matched to the sample.
+4. **Integrated Gradients, medoid baseline** — IG starting from the single most "central" real geometry in the reference cohort.
+5. **Integrated Gradients, low-pass baseline** — IG starting from a smoothed copy of the sample's own geometry, so the attribution measures what the fine-scale structure adds. (This was the eventual winner.)
+6. **GradientSHAP / Expected Gradients** — IG averaged over eight different real-data baselines instead of committing to one, which also adds small random noise along each path.
+7. **Robust-noise VarGrad** — compute the gradient many times with small random perturbations added to the input, and report the *variance* of the results per cell; a magnitude-only "where is the network twitchy" map.
+
+**Perturbation methods (3):**
+
+8. **Cyclic channel-by-window occlusion** — slide a window around the (periodic) field line, replace the cells inside it channel by channel, and record how much the prediction moves. (Failed the analytic-toy position test, average precision 0.6125 vs. the required 0.75, so it was ineligible from the start of the rerun.)
+9. **Periodic extremal mask, matched-observed background** — an optimizer searches for the smallest smooth, periodic set of cells whose replacement with a matched real geometry most changes the prediction. (Retained only as the secondary fallback.)
+10. **Periodic extremal mask, robust-constant background** — the same mask search but replacing cells with the fixed z-median profile, added in the rerun specifically because a constant background is shift-invariant by construction. (Failed stable insertion and the symmetry tolerance anyway.)
+
+**Temporal-saliency-rescaled variants (2):**
+
+11. **TSR gradient** — the gradient method with "temporal saliency rescaling," a two-stage scheme borrowed from time-series explanation: first score whole positions along the field line by perturbing them, then weight the per-cell gradient map by those position scores.
+12. **TSR robust-reference IG** — the same rescaling applied on top of Integrated Gradients from the robust-constant baseline.
+
+A thirteenth family, **LRP** (Layer-wise Relevance Propagation, which propagates the output backward through the network layer by layer using per-layer rules), was deliberately *not* included: the plan only permitted it after documenting that its rules correctly cover this architecture's circular convolutions, max pooling, biases, and signed inputs, and that documentation was never done — so it's listed as deferred rather than tested.
+
+## The tests each method had to pass
+
+- **Toy recovery:** on a hand-built analytic function where the truly relevant cells are known by construction, does the method find them? (11 of 12 methods aced this, so it's a floor, not a ranking.)
+- **Deletion/insertion faithfulness:** rank the cells by claimed importance, then progressively delete (or insert) them in that order and watch the prediction. If the method is honest, deleting its "important" cells should move the prediction much faster than deleting cells in random order.
+- **Parameter randomization:** re-run the attribution on a copy of the network with its trained weights scrambled. A method whose map barely changes isn't explaining the *trained* network at all.
+- **Symmetry (equivariance):** S02 established the network is exactly invariant to cyclic shifts along the field line. A trustworthy explanation should shift along with a shifted input.
+- **Uncertainty:** every headline margin got a confidence interval from a **bootstrap** — recomputing the number on 500 random re-samplings of the data, resampled by whole equilibrium (so correlated rows from the same equilibrium travel together).
+
+## What was found
+
+**1. The selected pair.** The winner among gradient/path methods was **Integrated Gradients with the low-pass baseline** (64 steps): it passed toy recovery, both faithfulness directions in both row strata, the symmetry check under its natural convention, and randomization, then won the registered tie-break. The **periodic mask** was retained only as a secondary sensitivity check, because both of its background variants failed part of the gate — notably, the mask is only shift-equivariant if its background geometry is shifted along with the input; with the background held fixed its symmetry error is huge (1.009, i.e. order-one, versus essentially zero for the co-shifted convention).
+
+**2. The most important negative finding: a "dumb" control nearly matched the winner.** The team built a network-free control map, |X − B| — literally just "how far does each input cell sit from the baseline," computed without ever consulting the network. This control passed the toy test perfectly and passed the earlier random-order faithfulness gates. On **stable/near-floor rows** (the third of the data where the true output is clipped at the −2 floor), low-pass IG did *not* beat this control at all. Only on unstable rows does it demonstrably add network-derived information beyond the control, and even there its edge over the control (~0.01 in native units) is 25–60× smaller than the other baselines' edges. This forced a mid-step correction (the researcher-approved "control-aware selection" rerun): the selection rule was amended so every candidate must beat its own network-free control, with a bootstrap interval excluding zero, in both directions on unstable rows.
+
+**3. Stable rows carry no usable explanation.** For rows sitting at the clipped floor, the network's output barely differs from its output at the baseline (median endpoint difference 0.0014 native units), so attribution maps there are effectively noise divided by nearly zero. The registered standing caveat: S06b must *report* the stable stratum but may make **no feature-level claim** from any method on those rows.
+
+**4. Baseline choice materially changes the map.** The winning low-pass IG map agrees with the constant-baseline IG map only at rank correlation 0.432 — moderate at best. Worse, a rerun of the selection on a separate 64-row pilot panel picked a *different* winner (medoid IG). This pilot-to-production instability is itself a recorded negative result: the selected method is *not* baseline-independent, and S06b is required to carry the medoid and robust-constant baselines along as sensitivity analyses rather than trusting any one map.
+
+**5. The winner's pass on randomization is qualified.** Low-pass IG's map still correlates 0.406 with the map from a weight-scrambled network — the weakest response among eligible baselines — and much of that residual correlation traces to structure baked into the baseline itself rather than learned parameters.
+
+**6. The process caught many real bugs.** Sixteen failures were found and fixed before the final run, including a subtle Captum library issue (Expected Gradients pairing geometry paths with the wrong gradient-drive values), a normalization that flipped faithfulness rankings for stable rows, and a pooled statistic whose denominator canceled between strata and produced spurious verdicts. All are documented, and eleven deliberate code mutations were confirmed to turn the tests red.
+
+## The conclusions
+
+- **Registered for S06b:** low-pass Integrated Gradients as the primary attribution method; the matched-background periodic mask as a labeled secondary perturbation check; medoid and constant-baseline IG carried as mandatory sensitivity analyses.
+- **Everything is explicitly a statement about the network, not the plasma.** Both selected methods edit geometries in physically unrealizable ways ("off-manifold" edits — smoothed or cell-replaced geometries no real equilibrium would produce), so their maps diagnose what the *network* responds to, not what drives real ITG turbulence. The physics comparison is deferred to S07.
+- **No feature claims from stable/near-floor rows**, ever, from any method.
+- **Method selection here is honest but not unbiased:** the corrected rules were designed after seeing results on these 128 rows (a "post-run selection rule"), which the report states plainly rather than hiding.
+
+The overall picture is a benchmark that succeeded at its narrow job — picking a
+workable method with eyes open — while surfacing sobering caveats: attribution
+maps are substantially shaped by an arbitrary baseline choice, a network-free
+control can pass most standard checks, and a third of the dataset is effectively
+unexplainable by these tools. Those caveats now constrain how much S06b's
+scaled-up maps can be trusted to mean.
+
+----------------------
+
+# Codex response — choosing trustworthy input explanations
 
 ## What this step was about
 

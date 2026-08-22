@@ -168,8 +168,8 @@ Add `reports/xai/SNN_executive_summary.md` in plain language for the researcher,
 following the tone of the existing summaries. 
 The summary should explain what the step was about, what its purpose was, and what the conclusions were.
 The executive summaries are intended for a researcher who is not an expert in 
-machine learning, so do not assume they know the jargon, and the executive summary
-should educate the reader on any necessary terms and concepts.
+machine learning, so do use a jargon word or phrase without defining it, and the executive summary
+should educate the reader on what he needs to know to understand the results
 
 Keep contradictory and negative results in both the report and executive summary.
 
