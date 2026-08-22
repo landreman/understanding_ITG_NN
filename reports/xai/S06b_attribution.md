@@ -220,7 +220,9 @@ prevalence intervals. The complete table is
 8. A full check invoked in the inference-only `20240629-01-ML` environment failed
    that new test because the environment deliberately lacks the XAI extra. The
    required project-local `.venv-xai` check then passed all 152 tests, including
-   the real Captum path. No test was skipped or relaxed.
+   the real Captum path. Core-only CI uses the repository's existing
+   optional-dependency convention and marks Captum tests unavailable; the
+   automated review and `.venv-xai` execute them.
 
 Three deliberate post-run mutations turned the focused suite red and were
 reverted: replacing whole-equilibrium draws with row draws failed the exact

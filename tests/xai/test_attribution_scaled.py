@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import numpy as np
+import pytest
 import torch
 
 from itg_nn.xai.attribution import integrated_gradients, toy_recovery
@@ -41,7 +42,7 @@ def test_scaled_attribution_recovers_wrapped_toy_and_keeps_null_channel_zero() -
 
 
 def test_captum_estimator_recovers_wrapped_toy_and_records_backend() -> None:
-    import captum  # noqa: F401  # This test must exercise the production backend.
+    pytest.importorskip("captum")
 
     toy = PeriodicWindowToy(channel=2, start=92, width=8)
     geometry = torch.zeros(3, 96, 7)
