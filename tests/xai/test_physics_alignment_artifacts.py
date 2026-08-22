@@ -212,6 +212,21 @@ def test_s07_zonal_pairing_cases_and_symmetry_keep_negative_results() -> None:
     assert all(
         row["feature_claims_permitted"] == "True" for row in primary_both_unstable
     )
+    observed_gx = [
+        row
+        for row in paired
+        if row["quantity"] in {"observed_clipped_log_Q", "log10_zonal_phi2"}
+        and row["stratum"] == "both_unstable"
+    ]
+    assert len(observed_gx) == 2
+    assert all(row["plasma_claims_permitted"] == "True" for row in observed_gx)
+    predictions = [
+        row
+        for row in paired
+        if row["quantity"] == "member_prediction" and row["stratum"] == "both_unstable"
+    ]
+    assert predictions
+    assert all(row["plasma_claims_permitted"] == "False" for row in predictions)
 
     cases = _csv("case_studies.csv")
     assert len(cases) == 20
@@ -222,6 +237,8 @@ def test_s07_zonal_pairing_cases_and_symmetry_keep_negative_results() -> None:
         ("radial_drift_geodesic_curvature_zonal_flow", "contradicting"): 5,
     }
     assert all(row["validity_tag"] == "observed-comparison" for row in cases)
+    assert all(row["feature_claims_permitted"] == "True" for row in cases)
+    assert all(row["plasma_claims_permitted"] == "True" for row in cases)
     assert all(
         np.sign(float(row["score"])) == int(row["expected_sign"])
         for row in cases

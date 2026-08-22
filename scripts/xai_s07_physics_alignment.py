@@ -856,13 +856,21 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
             )
 
     add_paired_difference(
-        {"quantity": "observed_clipped_log_Q", "member_id": "none"},
+        {
+            "quantity": "observed_clipped_log_Q",
+            "member_id": "none",
+            "source_feature_claims_permitted": True,
+        },
         fixed_target.numpy(),
         varied_target.numpy(),
         NATIVE_ESTIMAND,
     )
     add_paired_difference(
-        {"quantity": "log10_zonal_phi2", "member_id": "none"},
+        {
+            "quantity": "log10_zonal_phi2",
+            "member_id": "none",
+            "source_feature_claims_permitted": True,
+        },
         np.log10(diagnostics["fixed"]["zonal_phi2"]),
         np.log10(diagnostics["varied"]["zonal_phi2"]),
         "log10 zonal_phi2_amplitudes",
@@ -1030,6 +1038,8 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
                 "original_prediction": predictions[0, member_index, 0, position],
                 "density_mean": densities[member_index, position, unit_slot].mean(),
                 "validity_tag": OBSERVED_VALIDITY,
+                "feature_claims_permitted": True,
+                "plasma_claims_permitted": True,
                 "selection_rule": "extreme per-row spatial correlation at registered panel lag",
             }
             case_rows.append(record)

@@ -1086,7 +1086,7 @@
     "s05_motifs": "reports/xai/S05_artifacts/unit_motifs.csv",
     "s06b_manifest": "reports/xai/S06b_artifacts/manifest.json",
     "s06b_map": "output/xai/S06b/scaled-attribution-top10-panel2000-rank10-panel512/attribution_maps.h5",
-    "script_sha256": "4511f9d91c4ddb6fa5531af8f84dc552df6fff9f452aa3786b486f787f5785d5",
+    "script_sha256": "4f41d9fc91973d2f27b392a86d9717454217a8c3545f02c8cb6dd8c71404fda3",
     "seed": 20260822,
     "selected_units_per_member": 3,
     "selection_null_permutations": 200,
@@ -1104,10 +1104,10 @@
     "sha256": "9d8fa52f93f2782ad9948a38bf46943c0cd6df78cd08b94a006dad4e06c1c8ad"
   },
   "device": "cpu",
-  "git_commit": "5bc6655b261d1569a5e027f22799490c68447038",
+  "git_commit": "e3215d30e368164c128a513c1a52e9776f309d49",
   "git_dirty": true,
   "git_tracked_dirty": true,
-  "git_tree": "8501868042b0bb97a28720371d9f47a7634e0c3d",
+  "git_tree": "229891c8c952971b805a1cc154a47de4a793aa3d",
   "gradient_set": "fixed_and_varied_separate",
   "member_ids": [
     "2864601_0.437",
@@ -1116,10 +1116,10 @@
   ],
   "output_hashes": {
     "alignment_details.h5": "11a867e93d3728d64abcfaf2cf50b6bbad3659f9c34f5913b0e8d5952f2a308d",
-    "case_studies.csv": "132103bb5647a803b504bde57ce22bbebe2fbbb3bcc160b60d9e6f92c43381b7",
+    "case_studies.csv": "2b079a35c59e808ee32476d2a1d29b51c845458a17515d8cb29b3618e6f0dff2",
     "case_studies.png": "04f78fca85f2501bec91bcf0569df4d8a7c09226babcffb8ed9f6b4a39fbad17",
     "lag_curves.csv": "341b9975fec633eb1f4621fee721c2f316fa8868ebfa0d47ccd296824adea40c",
-    "paired_analysis.csv": "616daf4f630047ee01dd162cd06d1567d9011529e3ab664c25f9f3979f458829",
+    "paired_analysis.csv": "752dd17ac85813c078edf3f0bdb21adc461d6292bc3464f1a5d6d9fef493b012",
     "physics_alignment_atlas.png": "82de5b67c90b74a6666f733a5e2127c42ef03f893b7772935f6cb88622cb4300",
     "spatial_alignment.csv": "4dee605e9f5a227ab8a9b86bd3d034aad82389ff797abb11259989574824e4ca",
     "summary.json": "5f2ff39da157c0f17f363937670ba01248d929c70968b9fcbbf07bf078ef5bad",
@@ -3139,5 +3139,5 @@
     100596
   ],
   "seed": 20260822,
-  "wall_time_seconds": 303.9974855830078
+  "wall_time_seconds": 303.408347708988
 }

@@ -63,7 +63,8 @@ training target at each position.
   `feature_claims_permitted` retains S06b's technical meaning (the explanation
   method passed its own checks in an unstable stratum). The stricter
   `plasma_claims_permitted` additionally requires an observed/on-manifold source;
-  it is therefore false for every attribution row.
+  it is true for observed GX quantities and observed density/case comparisons,
+  and false for every off-manifold attribution row and member-prediction row.
 
 The production command was:
 
@@ -73,7 +74,7 @@ python scripts/xai_s07_physics_alignment.py \
   --config configs/xai/S07_physics_alignment.json
 ```
 
-Run `physics-alignment-top3-panel1000` took 304.00 seconds on CPU. The committed
+Run `physics-alignment-top3-panel1000` took 303.41 seconds on CPU. The committed
 [manifest](S07_artifacts/manifest.json) records the exact dataset, checkpoint,
 S04/S05 inputs, reused S06b attribution-map hash, package versions, command,
 row IDs, and output hashes.
@@ -270,8 +271,9 @@ shows both directions with equal space.
   activation-density/Q(z) association is larger. Activation is present in the
   network; attribution asks whether changing the input from a stated reference
   uses that location to change the prediction. They are not interchangeable.
-- Two of three signed attribution maxima do not exceed the 200-permutation
-  96-lag selection null. The remaining 0.021 maximum is resolved but negligible.
+- One signed attribution maximum is below the 200-permutation 96-lag selection
+  null, one lies at its estimated threshold, and the remaining 0.021 maximum is
+  resolved but negligible.
 - Signs and selected lags do not replicate across members. Member-level signed
   results are preserved before any summary, as required.
 - The positive-contribution result is stable but incomplete because it clips
