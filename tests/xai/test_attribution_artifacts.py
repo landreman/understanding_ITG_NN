@@ -203,6 +203,22 @@ def test_s06a_control_aware_production_signs_and_median_background_are_pinned() 
         low_pass["unstable"]["insertion_method_minus_control_map_gap_ci_lower"]
     ) > 0
 
+    for method in (
+        "ig_robust_constant",
+        "ig_matched_observed",
+        "ig_medoid",
+        "expected_gradients",
+    ):
+        stable = next(
+            row
+            for row in rows
+            if row["function"] == "invariant_tilde_f"
+            and row["method"] == method
+            and row["stratum"] == "stable_or_near_floor"
+        )
+        assert float(stable["deletion_method_minus_control_map_gap_ci_lower"]) > 0
+        assert float(stable["insertion_method_minus_control_map_gap_ci_lower"]) > 0
+
     median_mask = {
         row["stratum"]: row
         for row in rows

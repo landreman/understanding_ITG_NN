@@ -71,9 +71,10 @@ insertion resolves against its displacement control, **0.1374**
 Robust-constant, medoid, low-pass, and Expected Gradients all clear the added
 unstable control clause; low-pass remains selected by the registered tie-break.
 
-The stable result is baseline-specific, not a generic near-floor tie. Low-pass
-is the only eligible path candidate whose stable paired intervals cross zero;
-the other candidates resolve against their own controls on the same 33 rows:
+The stable control-comparison effect size is baseline-specific, not a generic
+near-floor tie. Low-pass's estimates are near zero, while the other four path
+candidates' estimates on the same 33 rows are roughly two orders of magnitude
+larger:
 
 | Path candidate | Stable deletion method−control gap (95% CI) | Stable insertion gap (95% CI) |
 | --- | ---: | ---: |
@@ -83,13 +84,20 @@ the other candidates resolve against their own controls on the same 33 rows:
 | low-pass IG | -0.00043 (-0.00385–0.00224) | -0.00202 (-0.00939–0.00219) |
 | Expected Gradients | 0.03871 (0.00048–0.09556) | 0.03673 (0.00228–0.08730) |
 
-Had the registered control clause gated both strata, low-pass would be
-ineligible and robust-constant IG would win the unchanged infidelity tie-break.
-The near-floor output scale still makes low-pass's stable maps a poor basis for
-feature claims, but it does not justify a claim that every baseline family is
-uninformative there. S06b must report the stable stratum and may make no claim
-from the low-pass primary there; any broader stable-stratum claim requires
-agreement across the resolving baseline sensitivities.
+The interval endpoints are descriptive, not a reliable way to distinguish the
+smallest positive bounds: with 500 resamples the 2.5th percentile is only the
+12.5th order statistic, so the approximately 0.0005 medoid and Expected-
+Gradients lower bounds are within bootstrap Monte Carlo resolution. The
+baseline-specific conclusion rests on the much larger point estimates, not on
+which intervals happen to cross zero. Had the registered control clause gated
+both strata, low-pass would be ineligible and robust-constant IG would win the
+unchanged infidelity tie-break.
+
+This faithfulness-versus-control metric does not establish that clipped rows
+carry feature information. The researcher-registered conservative caveat is
+therefore unchanged: S06b reports the stable/near-floor stratum but makes no
+feature-level claim from any method there. The table remains a baseline-
+sensitivity result, not permission to interpret stable-row maps.
 
 Each candidate also faces a different control difficulty because its control is
 its own $|X-B|$. In the stable stratum, the low-pass control's normalized
@@ -289,13 +297,13 @@ No mechanism or common feature is named from these maps in S06a. That requires
 the top-10 member agreement and equilibrium/member hierarchy in S06b, followed
 by the physics comparisons in S07.
 
-Stable/near-floor **low-pass-primary** maps are near-uninformative for feature
-claims: clipping leaves that baseline a median endpoint difference of only
-**0.0014 native units**, and it alone fails both stable control intervals. S06b
-must report this stratum but may not base a feature claim on the low-pass map
-there. Other baselines resolve against their controls, so a broader stable-row
-claim would require explicit cross-baseline agreement rather than blanket
-demotion.
+Stable/near-floor maps remain near-uninformative for feature claims under the
+researcher-registered caveat. Clipping leaves the selected low-pass baseline a
+median endpoint difference of only **0.0014 native units**. Other baselines have
+larger method-minus-control effect estimates, but that faithfulness comparison
+does not demonstrate feature information in clipped rows, and the smallest
+positive 500-resample bounds are within bootstrap Monte Carlo resolution. S06b
+must report this stratum but may not base a feature-level claim on it.
 
 ## Uncertainty
 
@@ -348,7 +356,7 @@ selected methods across the registered top 10 and a wider sensitivity sample.
 
 ## Failed checks and corrections
 
-Nine failures were found before the final registered run and retained in tests
+Sixteen failures were found before the final registered run and retained in tests
 or method records:
 
 1. Captum batches all IG steps together; the first real-model pilot exposed
@@ -460,10 +468,13 @@ the new two-branch selection fixture.
   control is therefore insufficient evidence that an attribution adds
   learned-network information. The control itself clears the toy and random-
   order gates and is excluded by randomization correlation 1.000. Low-pass's
-  near-floor endpoint is small, but that alone cannot explain the result because
-  the other four baselines resolve on the same rows. The failure is baseline-
-  specific: $|X-B|$ is also IG's displacement factor for low-pass. S06b reports
-  these rows but makes no feature claim from the low-pass primary there.
+  near-floor endpoint is small, but that alone cannot explain the effect-size
+  contrast: the other four estimates are roughly two orders of magnitude
+  larger on the same rows. The control comparison is baseline-specific because
+  $|X-B|$ is also IG's displacement factor for low-pass. The smallest positive
+  500-resample bounds are within bootstrap Monte Carlo resolution, and the
+  metric does not establish feature information in clipped rows. S06b reports
+  these rows but makes no feature claim from any method there.
 - The robust-constant mask fails stable insertion (-0.155) and fixed-background
   equivariance ($9.88\times10^{-4}$ versus the $2\times10^{-5}$ tolerance), even
   though both unstable control intervals favour it. A shift-invariant

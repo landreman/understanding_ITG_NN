@@ -104,13 +104,15 @@ cells. The old rule excluded it only because its map is unchanged when the
 network is randomized (correlation exactly 1.000). That is why direct
 method-versus-control evidence is now part of selection.
 
-The stable-row outcome is specific to low-pass: it is the only eligible path
-whose stable control intervals cross zero. Robust-constant, medoid, Expected
-Gradients, and even the otherwise-ineligible matched-observed path resolve
-against their controls on those same 33 rows. If stable rows had also been
-gated, robust-constant IG—not low-pass—would have won. This is why the stable
-caveat below applies to the selected low-pass map, not automatically to every
-possible baseline.
+The stable-row effect-size outcome is specific to low-pass: its paired estimates
+are near zero, while robust-constant, medoid, Expected Gradients, and even the
+otherwise-ineligible matched-observed path have estimates roughly two orders of
+magnitude larger on those same 33 rows. At only 500 bootstrap resamples, however,
+the smallest positive lower bounds (about 0.0005) are within Monte Carlo
+resolution, so the distinction does not rest on which intervals cross zero. If
+stable rows had also been gated, robust-constant IG—not low-pass—would have won.
+This control metric does not show that clipped rows contain feature information,
+so it does not relax the researcher-registered stable-row caveat.
 
 The unstable pass is also much smaller in native units for low-pass. Its method-
 minus-control gains are about 0.010/0.011, versus 0.24–0.60 for the other
@@ -168,12 +170,12 @@ selects low-pass; the two panels overlapped by only 7 rows. S06b
 must carry the other baselines as sensitivity analyses; the chosen map is not a
 unique, baseline-free truth.
 
-Stable/near-floor rows are a standing caveat for the **selected low-pass map**.
-Its clipped output barely changes under low-pass edits (median endpoint
-difference 0.0014 native units), and it is the only eligible path whose two
-stable control intervals cross zero. S06b must report the stratum but may not
-base a feature claim on low-pass there; any broader claim needs agreement with
-the other baselines, which did resolve against their controls.
+Stable/near-floor rows remain a standing caveat for **every method**. The
+selected low-pass output barely changes under its edits (median endpoint
+difference 0.0014 native units). Other baselines have much larger control-
+comparison effect estimates, but this faithfulness metric does not establish
+feature information in clipped rows. S06b must report the stratum but may not
+base feature-level claims on it.
 
 The second caveat is **physical validity**. Smoothing a geometry or replacing
 individual cells does not generally produce another realizable magnetic

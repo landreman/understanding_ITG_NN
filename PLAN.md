@@ -758,11 +758,18 @@ cyclic explanation equivariance. The researcher approved a control-aware
 selection rerun across all five path candidates and a robust-constant
 (z-median, shift-invariant by construction) mask-background variant, per
 `reports/xai/S06a_control_aware_selection_decision.md`. That memo carries the
-registered clause additions and implementer instructions. The completed rerun
-narrows the standing caveat: the selected low-pass map supports no stable/near-
-floor feature-level claim because it alone fails both stable control intervals;
-other baselines resolve there, so any broader stable-row claim requires
-explicit cross-baseline agreement.
+registered clause additions and implementer instructions; S06b inherits its
+standing caveat that stable/near-floor attribution maps support no
+feature-level claims.
+
+**Implementation outcome addendum (2026-08-22; implementer):** the stable
+method-minus-control effect estimates are baseline-specific: low-pass is near
+zero while the other four path estimates are roughly two orders of magnitude
+larger. A counterfactual rule gating the stable stratum selects robust-constant
+IG. However, this control-comparison metric does not establish that clipped
+rows carry feature information, and the smallest positive 500-resample CI
+bounds are within bootstrap Monte Carlo resolution. The researcher's
+conservative stable-row caveat therefore remains unchanged.
 
 ### S07 — Compare learned spatial importance with physics fields and GX $Q(z)$
 

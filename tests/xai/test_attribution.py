@@ -555,6 +555,8 @@ def test_curve_margin_orientation_handles_original_below_baseline() -> None:
     assert paired["control_map_per_row_oriented_native_gap_estimate"] == pytest.approx(
         1.0
     )
+    assert paired["control_map_per_row_oriented_native_gap_ci_lower"] > 0
+    assert paired["control_map_per_row_oriented_native_gap_ci_upper"] > 0
     assert paired["method_minus_control_map_gap_estimate"] == pytest.approx(-0.25)
     assert paired["method_minus_control_map_gap_ci_upper"] < 0
 
