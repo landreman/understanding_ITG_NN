@@ -7,6 +7,7 @@ import pytest
 
 from itg_nn.xai.physics_alignment import (
     _average_ranks,
+    _grouped_row_draws,
     _row_correlation,
     circular_alignment,
     lag_selection_permutation_null,
@@ -327,6 +328,17 @@ def test_scalar_and_paired_results_use_whole_equilibria_and_native_units() -> No
     )
     assert association.spearman_rho == pytest.approx(1.0)
     assert association.bootstrap_group == "equilibrium_files"
+
+    sibling_groups = np.asarray(["eq0", "eq0", "eq1", "eq1", "eq2", "eq2"])
+    grouped_draws = _grouped_row_draws(sibling_groups, replicates=4, seed=123)
+    expected_draws = (
+        np.asarray([0, 1, 4, 5, 2, 3]),
+        np.asarray([0, 1, 4, 5, 0, 1]),
+        np.asarray([0, 1, 0, 1, 2, 3]),
+        np.asarray([0, 1, 2, 3, 4, 5]),
+    )
+    for actual, expected_draw in zip(grouped_draws, expected_draws, strict=True):
+        np.testing.assert_array_equal(actual, expected_draw)
 
     fixed_native = np.asarray([-2.0, -1.0, 0.0, 1.0] * 5)
     varied_native = fixed_native - 0.5

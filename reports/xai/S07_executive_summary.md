@@ -96,12 +96,14 @@ In the fixed-gradient panel it becomes much stronger, **-0.513 [-0.564,
 -0.461]**. The top bad-curvature candidate changes from an unresolved
 **+0.032 [-0.040, +0.099]** to **+0.310 [+0.247, +0.372]**.
 
-This drive dependence is scientifically useful negative evidence. It argues
-against reading either unit as a simple geometry-only monitor of zonal flow.
-The observed relationship depends strongly on which simulation drives are
-present. The effect is also not candidate-specific: all nine selected densities
-reach absolute fixed-panel correlations of 0.310–0.564, and the largest is the
-unnamed, mostly silent `.437:u003` at -0.564 rather than the geodesic candidate.
+This contrast does not establish drive dependence. The fixed panel holds drive
+at $(3,0.9)$ while the varied panel does not, so drive-driven variance or
+confounding can obscure a geometry-only association in the varied panel. The
+fixed result supports an association conditional on constant drive, not a
+causal mechanism. It is also not candidate-specific: all nine selected
+densities reach absolute fixed-panel correlations of 0.310–0.564, and the
+largest is the unnamed, mostly silent `.437:u003` at -0.564 rather than the
+geodesic candidate.
 
 ## What the fixed/varied pairs show
 
@@ -145,7 +147,8 @@ not an independent replication of the two named candidates. Moreover:
   the resolved peak remains negligible;
 - the stronger attribution result appears only after negative evidence is
   removed;
-- the zonal-flow relationships change greatly with the drive panel; and
+- stronger fixed-drive zonal associations are panel-wide rather than
+  candidate-specific, while the varied panel is drive-confounded; and
 - strong natural contradictions exist for both hypotheses.
 
 The appropriate conclusion is therefore narrower than “the network discovered

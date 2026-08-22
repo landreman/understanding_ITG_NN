@@ -148,7 +148,9 @@ GX mask widths; the primary association remains the preregistered all-row mean.
 The sample-level mean density and four attribution summaries are rank-correlated
 with `log10(zonal_phi2_amplitudes)`. This is an across-equilibrium association,
 not a claim that either learned signal causes zonal flows. Stable/near-floor and
-unstable simulations remain separate.
+unstable simulations remain separate. Zonal `bootstrap_stable` is also a
+per-comparison 5% interval decision, not a family-wise guarantee across the
+table.
 
 ### Natural paired comparison
 
@@ -263,15 +265,19 @@ The proposed geodesic-curvature density `.437:u008` is associated with
 **[-0.183, -0.060]**, but becomes **-0.513** **[-0.564, -0.461]** on fixed
 unstable rows. The bad-curvature candidate `.437:u001` is unresolved on varied
 rows, **+0.032 [-0.040, +0.099]**, and positive on fixed rows,
-**+0.310 [+0.247, +0.372]**. The large drive dependence prevents a simple
-geometry-only interpretation.
+**+0.310 [+0.247, +0.372]**. This panel contrast does not establish drive
+dependence: the fixed panel holds drive at $(3,0.9)$ while the varied panel does
+not, so drive-driven variance or confounding can obscure a geometry-only
+association in the varied panel. The fixed result supports an association
+conditional on constant drive, not a causal mechanism.
 
 This amplification is not specific to either named candidate. Across all nine
 selected densities, fixed-panel unstable correlations have absolute magnitude
 0.310–0.564, compared with 0.029–0.182 on the varied panel. The largest fixed
 association is the unnamed and mostly silent `.437:u003` at -0.564, rather than
 the geodesic-curvature candidate. The zonal comparison therefore supports a
-panel-wide drive dependence, not a candidate-specific zonal mechanism.
+panel-wide constant-drive geometry association, not a candidate-specific zonal
+mechanism.
 
 For deliberately off-manifold canonical low-pass Integrated Gradients, the signed cell sum has intervals
 crossing zero in every member (-0.026, -0.032, -0.054 point estimates). Absolute
@@ -334,7 +340,8 @@ shows both directions with equal space.
   reference path is not guaranteed to represent valid equilibria.
 - The periodic-mask result may not support a feature claim because its upstream
   symmetry check failed.
-- The geodesic-density/zonal association changes greatly between drive panels.
+- Zonal associations are stronger when drive is fixed, but the varied panel is
+  drive-confounded; the contrast alone cannot establish drive dependence.
 - Equal-prominence natural contradictions exist for both hypotheses.
 - Circular correlation, even with grouped uncertainty and correct lag, is
   association rather than identity or causality. $Q(z)$ is itself a GX
