@@ -74,7 +74,7 @@ python scripts/xai_s07_physics_alignment.py \
   --config configs/xai/S07_physics_alignment.json
 ```
 
-Run `physics-alignment-top3-panel1000` took 303.41 seconds on CPU. The committed
+Run `physics-alignment-top3-panel1000` took 302.96 seconds on CPU. The committed
 [manifest](S07_artifacts/manifest.json) records the exact dataset, checkpoint,
 S04/S05 inputs, reused S06b attribution-map hash, package versions, command,
 row IDs, and output hashes.
@@ -91,7 +91,10 @@ that they can fail, and each was reverted before the production checks:
 Automated review then exposed two missing test branches. Deleting the
 negative-association overlap orientation and changing the tie-inclusive mask
 from `>=` to `>` had initially remained green. Inverse-association and tied-mask
-fixtures were added; both mutations now turn the focused suite red.
+fixtures were added; both mutations now turn the focused suite red. A later
+review found that replacing average ranks for tied values with arbitrary
+ordinal ranks also remained green. An analytic tied-profile fixture now pins
+mid-ranks and makes that mutation fail.
 
 ## Methods
 
@@ -127,7 +130,12 @@ high learned values against *low* $Q(z)$; `overlap_orientation` makes that
 operation explicit. The unflipped positive-mode row provides the high/high
 comparison for nonnegative densities. Positive-contribution mode clips both
 profiles at zero; it answers a deliberately narrower question and is not a
-substitute for the signed result.
+substitute for the signed result. A learned profile that is constant along all
+96 positions has no spatial ordering: by convention it contributes rank
+correlation zero at every lag, while the tie-inclusive mask contains all 96
+positions. Each artifact row therefore records the constant-profile count and
+fraction, the association over nonconstant rows alone, and the mean learned and
+GX mask widths; the primary association remains the preregistered all-row mean.
 
 ### Zonal-flow comparison
 
@@ -176,6 +184,10 @@ The first overlap number compares actual high-density with high-$Q(z)$ regions;
 values below one mean avoidance relative to chance. The second first flips
 $Q(z)$ because $r_s<0$ and therefore measures high density against low $Q(z)$.
 Both candidate correlations are far above their complete lag-search nulls.
+The dominant candidate is constant on 17/760 rows and has an active-row-only
+correlation of -0.369; the geodesic candidate is constant on 45/760 rows and
+has an active-row-only correlation of -0.285. Thus their headline associations
+are not driven by the constant-row convention.
 
 Only `.437:u001` and `.437:u008` have S05 `supported_named_motif` status. Four
 other selected units in `.437`/`.371` were already unresolved in S05, and the
@@ -189,6 +201,15 @@ of the two S05 names. `spatial_alignment.csv`
 contains all members, both drive panels, all/stable/unstable strata, both sign
 modes, overlap, intervals, and lag stability. `lag_curves.csv` preserves all
 96 registered-lag curves rather than only their maxima.
+
+Three of the nine selected densities are constant on many unstable rows:
+`.437:u003` on 605/760 (79.6%), `.371:u004` on 620/760 (81.6%), and
+`.371:u019` on 316/760 (41.6%). Their all-row correlations are respectively
++0.034, +0.034, and -0.114, versus +0.168, +0.182, and -0.195 over only rows
+where the unit varies. Their tie-inclusive learned masks average 80.8, 84.1,
+and 52.0 positions rather than the nominal 10. This changes the meaning of
+those per-unit magnitudes but not the negative cross-member conclusion: the
+active-row range remains mixed, from -0.369 to +0.182, with no common lag.
 
 ### 2. Attribution versus physical $Q(z)$
 
@@ -312,8 +333,9 @@ shows both directions with equal space.
 
 - [spatial_alignment.csv](S07_artifacts/spatial_alignment.csv): 216 comparisons
   with member, function, method, drive panel, stability stratum, sign mode,
-  uncertainty, lag, overlap orientation, permutation-null calibration,
-  validity, and claim-permission columns.
+  uncertainty, lag, overlap orientation, constant-profile and mask-width
+  diagnostics, permutation-null calibration, validity, and claim-permission
+  columns.
 - [lag_curves.csv](S07_artifacts/lag_curves.csv): 20,736 rows preserving every
   circular-lag correlation.
 - [zonal_association.csv](S07_artifacts/zonal_association.csv): 306 grouped
@@ -350,6 +372,11 @@ never send the parent IDs directly to a reader pointed at the slice.
   (-0.02122218224703246, lag -36), positive-only canonical `.437` Integrated
   Gradients (+0.2657020267671119, lag +1), the zonal candidate, physical pair,
   balanced contradictions, and the zero-error shift control.
+- The same artifact test pins the dominant density's 17/760 constant rows and
+  -0.368761 active-row association, and the mostly silent `.437:u003` density's
+  605/760 constant rows, +0.167794 active-row association, and 80.847-position
+  mean learned-mask width. A separate analytic test pins mid-ranks for tied
+  values and the zero-correlation convention for a constant row.
 
 ### Checkable from committed artifacts alone
 

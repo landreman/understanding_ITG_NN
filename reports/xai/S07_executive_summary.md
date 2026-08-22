@@ -48,6 +48,17 @@ nearly unchanged in the fixed-gradient comparison because density depends only
 on geometry; this is a robustness comparison against a second GX field, not an
 independent replication. These are credible activation-to-physics associations.
 
+A separate limitation affects three of the other seven selected units. They are
+silent—constant along all 96 positions—on 42–82% of unstable equilibria. A
+constant curve has no spatial ordering, so the registered statistic assigns it
+correlation zero; its tie-inclusive top-10% mask also expands to all 96
+positions. The published table now records those counts, active-row-only
+correlations, and mean mask widths. Restricting descriptively to rows where a
+unit varies changes the nine-unit range from **-0.361 to +0.134** to **-0.369
+to +0.182**, which remains mixed in sign and lag. The two named candidates are
+constant on only 17/760 and 45/760 rows, so their result is essentially
+unchanged.
+
 But the off-manifold attribution diagnostic gives a different picture. Keeping
 the full sign of Integrated Gradients, its correlations with $Q(z)$ are only **-0.021,
 -0.013, and -0.012** in the three members, with incompatible lags **-36, +47,
@@ -114,6 +125,8 @@ comparison is therefore conditional on an importance-ranked, mostly unnamed set,
 not an independent replication of the two named candidates. Moreover:
 
 - density signs and lags do not replicate across members;
+- three secondary densities are silent on many rows, and their pooled
+  magnitudes partly reflect the documented zero-correlation convention;
 - complete signed off-manifold attributions have almost no spatial association
   with $Q(z)$; one peak is below the 96-lag null, one is at its threshold, and
   the resolved peak remains negligible;

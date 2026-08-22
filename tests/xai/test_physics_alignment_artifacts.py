@@ -70,6 +70,10 @@ def test_s07_spatial_table_keeps_functions_strata_signs_lags_and_grouping() -> N
     assert all(int(row["selection_null_permutations"]) == 200 for row in unstable)
     assert all(row["selection_null_q95"] for row in unstable)
     assert all(row["overlap_orientation"] for row in rows)
+    assert all(row["learned_constant_profile_count"] for row in rows)
+    assert all(row["learned_active_profile_count"] for row in rows)
+    assert all(row["learned_mask_width_mean"] for row in rows)
+    assert all(row["gx_mask_width_mean"] for row in rows)
     assert all(row["validity_tag"] for row in rows)
     stable = [row for row in rows if row["stratum"] == "stable_or_near_floor"]
     assert all(row["feature_claims_permitted"] == "False" for row in stable)
@@ -115,6 +119,28 @@ def test_s07_headline_spatial_results_pin_signed_and_positive_conclusions() -> N
     assert density["lag_search_null_resolved"] == "True"
     assert density["association_bootstrap_stable"] == "True"
     assert density["lag_bootstrap_stable"] == "True"
+    assert int(density["learned_constant_profile_count"]) == 17
+    assert int(density["learned_active_profile_count"]) == 743
+    assert float(density["circular_spearman_active_learned_profiles"]) == np.float64(
+        -0.3687605907617687
+    )
+
+    mostly_silent = one(
+        source_id="2864601_0.437:u003",
+        gradient_set="varied",
+        stratum="unstable",
+        mode="signed",
+    )
+    assert int(mostly_silent["learned_constant_profile_count"]) == 605
+    assert float(mostly_silent["learned_constant_profile_fraction"]) == np.float64(
+        0.7960526315789473
+    )
+    assert float(mostly_silent["circular_spearman_active_learned_profiles"]) == (
+        np.float64(0.1677936576993047)
+    )
+    assert float(mostly_silent["learned_mask_width_mean"]) == np.float64(
+        80.84736842105264
+    )
 
     signed = one(
         source_family="s06_attribution",

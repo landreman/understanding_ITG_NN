@@ -25,6 +25,12 @@ class CircularAlignment:
     overlap_chance: float
     overlap_enrichment: float
     overlap_orientation: str
+    learned_constant_profile_count: int
+    learned_active_profile_count: int
+    learned_constant_profile_fraction: float
+    circular_spearman_active_learned_profiles: float
+    learned_mask_width_mean: float
+    gx_mask_width_mean: float
     cross_correlation_by_lag: np.ndarray
     rank_correlation_by_lag: np.ndarray
     per_sample_rank_correlation: np.ndarray
@@ -124,6 +130,13 @@ def circular_alignment(
     left_count = np.count_nonzero(left_mask, axis=1)
     overlap = intersection / np.maximum(right_count, 1)
     chance = left_count / grid_size
+    learned_constant = np.ptp(left, axis=1) <= np.finfo(np.float64).eps
+    learned_active = ~learned_constant
+    active_rank_correlation = (
+        float(per_sample_rank[learned_active, best_lag].mean())
+        if np.any(learned_active)
+        else 0.0
+    )
 
     return CircularAlignment(
         mode=mode,
@@ -142,6 +155,12 @@ def circular_alignment(
             if association_is_negative
             else "gx_profile_unflipped"
         ),
+        learned_constant_profile_count=int(np.count_nonzero(learned_constant)),
+        learned_active_profile_count=int(np.count_nonzero(learned_active)),
+        learned_constant_profile_fraction=float(learned_constant.mean()),
+        circular_spearman_active_learned_profiles=active_rank_correlation,
+        learned_mask_width_mean=float(left_count.mean()),
+        gx_mask_width_mean=float(right_count.mean()),
         cross_correlation_by_lag=cross_by_lag,
         rank_correlation_by_lag=rank_by_lag,
         per_sample_rank_correlation=per_sample_rank[:, best_lag],

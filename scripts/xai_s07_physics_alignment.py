@@ -308,6 +308,16 @@ def _alignment_row(
         "overlap_chance_baseline": result.overlap_chance,
         "overlap_enrichment": result.overlap_enrichment,
         "overlap_orientation": result.overlap_orientation,
+        "learned_constant_profile_count": result.learned_constant_profile_count,
+        "learned_active_profile_count": result.learned_active_profile_count,
+        "learned_constant_profile_fraction": (
+            result.learned_constant_profile_fraction
+        ),
+        "circular_spearman_active_learned_profiles": (
+            result.circular_spearman_active_learned_profiles
+        ),
+        "learned_mask_width_mean": result.learned_mask_width_mean,
+        "gx_mask_width_mean": result.gx_mask_width_mean,
         "alignment_sparsity": sparsity,
         "association_bootstrap_stable": association_stable,
         "bootstrap_stable": association_stable,

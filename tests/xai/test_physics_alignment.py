@@ -4,6 +4,8 @@ import numpy as np
 import pytest
 
 from itg_nn.xai.physics_alignment import (
+    _average_ranks,
+    _row_correlation,
     circular_alignment,
     lag_selection_permutation_null,
     paired_native_difference,
@@ -115,6 +117,11 @@ def test_tie_inclusive_overlap_and_lag_selection_null_are_pinned() -> None:
     assert tied_result.overlap == pytest.approx(1.0)
     assert tied_result.overlap_chance == pytest.approx(1.0)
     assert tied_result.overlap_enrichment == pytest.approx(1.0)
+    assert tied_result.learned_constant_profile_count == 12
+    assert tied_result.learned_active_profile_count == 0
+    assert tied_result.learned_constant_profile_fraction == pytest.approx(1.0)
+    assert tied_result.learned_mask_width_mean == pytest.approx(96.0)
+    assert tied_result.gx_mask_width_mean == pytest.approx(96.0)
 
     learned, physical, paired_groups = _cyclic_fixture()
     signal_null = lag_selection_permutation_null(
@@ -176,6 +183,24 @@ def test_tie_inclusive_overlap_and_lag_selection_null_are_pinned() -> None:
         np.asarray(direct_maxima),
         atol=1e-12,
     )
+
+
+def test_average_ranks_pin_midrank_ties_and_constant_row_convention() -> None:
+    # In each four-position block, the long low plateau in `left` has a
+    # mid-rank correlation of exactly zero with `right`. Stable ordinal ranks
+    # (which break ties by position) instead give a large nonzero value.
+    left = np.tile(np.asarray([0.0, 0.0, 0.0, 1.0]), 24)
+    right = np.tile(np.asarray([0.0, 1.0, 2.0, 1.0]), 24)
+    tied = _row_correlation(
+        _average_ranks(left)[None, :], _average_ranks(right)[None, :]
+    )
+    assert tied[0] == pytest.approx(0.0, abs=1e-12)
+
+    constant = np.zeros(96, dtype=np.float64)
+    constant_result = _row_correlation(
+        _average_ranks(constant)[None, :], _average_ranks(right)[None, :]
+    )
+    assert constant_result[0] == pytest.approx(0.0, abs=1e-12)
 
 
 def test_grouped_bootstraps_and_case_selection_are_deterministic() -> None:
