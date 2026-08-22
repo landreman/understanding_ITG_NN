@@ -23,7 +23,7 @@ from itg_nn.xai.attribution import (
     toy_recovery,
     vargrad,
 )
-from itg_nn.xai.perturbations import ValidityTag
+from itg_nn.xai.perturbations import ValidityTag, robust_constant_profile
 from scripts.xai_s06a_attribution import (
     METHOD_NAMES,
     _attribution_equivariance_pair,
@@ -31,6 +31,7 @@ from scripts.xai_s06a_attribution import (
     _faithfulness_control_map,
     _forward,
     _grouped_curve_margin_interval,
+    _run_method,
     _resolve,
     _select_methods,
     build_parser,
@@ -283,6 +284,36 @@ def test_periodic_mask_selects_natural_signal_without_boundary_penalty() -> None
     assert float(relevant.mean()) > float(irrelevant.max())
     assert result.metadata["periodic_total_variation"] is True
     assert result.validity == ValidityTag.OFF_MANIFOLD
+
+
+def test_robust_constant_periodic_mask_is_fixed_background_equivariant() -> None:
+    generator = torch.Generator().manual_seed(61)
+    reference = torch.randn((9, 24, 7), generator=generator)
+    geometry = torch.randn((2, 24, 7), generator=generator)
+    constant = robust_constant_profile(reference).expand_as(geometry).clone()
+    baselines = {
+        "robust_constant": constant,
+        "matched_observed": torch.randn(geometry.shape, generator=generator),
+    }
+    config = {
+        "mask_area_fraction": 0.1,
+        "mask_steps": 8,
+        "mask_learning_rate": 0.1,
+    }
+
+    def attributor(values: torch.Tensor) -> AttributionMap:
+        return _run_method(
+            "periodic_mask_robust_constant",
+            _invariant_quadratic_forward,
+            values,
+            baselines,
+            torch.ones(7),
+            config,
+            seed=5,
+        )
+
+    error = attribution_equivariance_error(attributor, geometry, shift=7)
+    assert error < 2e-5
 
 
 def test_deletion_insertion_reports_random_controls_and_support_drift_every_dose() -> None:
@@ -614,6 +645,54 @@ def test_s06a_selection_requires_positive_faithfulness_in_each_floor_stratum() -
     assert selected["primary_path_gradient"] == "ig_medoid"
 
 
+def test_s06a_path_selection_requires_unstable_control_interval_in_both_directions() -> None:
+    rows = []
+    toy = {}
+    for method in METHOD_NAMES:
+        toy[method] = {
+            "channel_top1": 1.0,
+            "position_average_precision": 1.0,
+        }
+        for stratum in ("all", "stable_or_near_floor", "unstable"):
+            rows.append(
+                {
+                    "function": "invariant_tilde_f",
+                    "method": method,
+                    "stratum": stratum,
+                    "deletion_margin_vs_random": 1.0,
+                    "insertion_margin_vs_random": 1.0,
+                    "parameter_randomization_correlation": 0.0,
+                    "normalized_infidelity": 1.0,
+                    "runtime_seconds": 1.0,
+                    "deletion_method_minus_control_map_gap_ci_lower": 0.1,
+                    "insertion_method_minus_control_map_gap_ci_lower": 0.1,
+                }
+            )
+    failed = next(
+        row
+        for row in rows
+        if row["method"] == "ig_low_pass" and row["stratum"] == "unstable"
+    )
+    failed["insertion_method_minus_control_map_gap_ci_lower"] = 0.0
+    rule = {
+        "path_candidates": ["ig_low_pass", "ig_medoid"],
+        "perturbation_candidates": ["periodic_mask"],
+        "faithfulness_strata": ["stable_or_near_floor", "unstable"],
+        "control_aware_candidates": ["ig_low_pass", "ig_medoid"],
+        "control_aware_stratum": "unstable",
+        "control_aware_directions": ["deletion", "insertion"],
+        "minimum_toy_channel_top1": 1.0,
+        "minimum_toy_position_average_precision": 0.75,
+        "minimum_deletion_margin": 0.0,
+        "minimum_insertion_margin": 0.0,
+        "maximum_parameter_randomization_correlation": 0.95,
+        "tie_break": "lowest_normalized_infidelity_then_runtime",
+    }
+    selected = _select_methods(rows, toy, rule)
+    assert selected["eligible"]["ig_low_pass"] is False
+    assert selected["primary_path_gradient"] == "ig_medoid"
+
+
 def test_infidelity_sensitivity_and_randomized_map_agreement_have_controls() -> None:
     generator = torch.Generator().manual_seed(44)
     geometry = torch.randn((3, 12, 3), generator=generator)
@@ -749,7 +828,7 @@ def test_s06a_cli_exposes_required_reproducibility_overrides() -> None:
     }.issubset(destinations)
 
 
-def test_s06a_pilot_replays_historical_pooled_gate() -> None:
+def test_s06a_pilot_retains_registered_control_aware_strata() -> None:
     parser = build_parser()
     args = parser.parse_args(["--pilot"])
     config = {
@@ -757,7 +836,10 @@ def test_s06a_pilot_replays_historical_pooled_gate() -> None:
         "selection_rule": {"faithfulness_strata": ["stable_or_near_floor", "unstable"]},
     }
     resolved = _resolve(config, args)
-    assert resolved["selection_rule"]["faithfulness_strata"] == ["all"]
+    assert resolved["selection_rule"]["faithfulness_strata"] == [
+        "stable_or_near_floor",
+        "unstable",
+    ]
     assert config["selection_rule"]["faithfulness_strata"] == [
         "stable_or_near_floor",
         "unstable",

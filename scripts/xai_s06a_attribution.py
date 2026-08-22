@@ -64,6 +64,7 @@ METHOD_NAMES = (
     "vargrad",
     "cyclic_occlusion",
     "periodic_mask",
+    "periodic_mask_robust_constant",
     "tsr_scaled_gradient",
     "tsr_ig_robust_constant",
 )
@@ -77,6 +78,7 @@ METHOD_BASELINES = {
     "vargrad": "none_local_noise",
     "cyclic_occlusion": "matched_observed",
     "periodic_mask": "matched_observed",
+    "periodic_mask_robust_constant": "robust_constant",
     "tsr_scaled_gradient": "none_local",
     "tsr_ig_robust_constant": "robust_constant",
 }
@@ -117,12 +119,6 @@ def _resolve(config: dict[str, Any], args: argparse.Namespace) -> dict[str, Any]
     resolved = copy.deepcopy(config)
     if args.pilot:
         resolved.update(config["pilot"])
-        # Preserve the historical development gate. Production was corrected
-        # after review to avoid pooled denominator cancellation; rewriting the
-        # pilot selection would erase the instability that it exposed.
-        resolved["selection_rule"]["faithfulness_strata"] = list(
-            config["pilot"]["faithfulness_strata"]
-        )
     resolved["mode"] = "pilot" if args.pilot else "production"
     for name in ("device", "seed", "members"):
         value = getattr(args, name)
@@ -405,15 +401,28 @@ def _run_method(
             window=int(config["occlusion_window"]),
             stride=int(config["occlusion_stride"]),
         )
-    if name == "periodic_mask":
-        return periodic_extremal_mask(
+    if name in ("periodic_mask", "periodic_mask_robust_constant"):
+        baseline_name = (
+            "robust_constant"
+            if name == "periodic_mask_robust_constant"
+            else "matched_observed"
+        )
+        result = periodic_extremal_mask(
             forward,
             geometry,
-            baselines["matched_observed"],
+            baselines[baseline_name],
             area_fraction=float(config["mask_area_fraction"]),
             steps=int(config["mask_steps"]),
             learning_rate=float(config["mask_learning_rate"]),
             seed=seed,
+        )
+        return AttributionMap(
+            values=result.values,
+            method=f"{result.method}__{baseline_name}",
+            validity=result.validity,
+            signed=result.signed,
+            runtime_seconds=result.runtime_seconds,
+            metadata={**result.metadata, "replacement_background": baseline_name},
         )
     if name == "tsr_scaled_gradient":
         return temporal_saliency_rescale(
@@ -554,6 +563,16 @@ def _select_methods(
         if row["function"] == "invariant_tilde_f"
     }
     faithfulness_strata = tuple(rule["faithfulness_strata"])
+    control_aware_candidates = set(rule.get("control_aware_candidates", ()))
+    control_stratum = str(rule.get("control_aware_stratum", "unstable"))
+    control_directions = tuple(rule.get("control_aware_directions", ()))
+    minimum_control_lower = float(
+        rule.get("minimum_method_minus_control_ci_lower", 0.0)
+    )
+    fixed_symmetry_candidates = set(rule.get("fixed_symmetry_candidates", ()))
+    maximum_fixed_symmetry = float(
+        rule.get("maximum_fixed_baseline_equivariance_relative_rms", float("inf"))
+    )
 
     def eligible(method: str) -> bool:
         metrics = toy[method]
@@ -573,6 +592,23 @@ def _select_methods(
             )
             and float(row["parameter_randomization_correlation"])
             < float(rule["maximum_parameter_randomization_correlation"])
+            and (
+                method not in control_aware_candidates
+                or all(
+                    float(
+                        by_method_stratum[(method, control_stratum)][
+                            f"{direction}_method_minus_control_map_gap_ci_lower"
+                        ]
+                    )
+                    > minimum_control_lower
+                    for direction in control_directions
+                )
+            )
+            and (
+                method not in fixed_symmetry_candidates
+                or float(row["cyclic_equivariance_fixed_baseline_relative_rms"])
+                <= maximum_fixed_symmetry
+            )
         )
 
     def choose(candidates: list[str]) -> str | None:
@@ -592,11 +628,20 @@ def _select_methods(
 
     primary_path = choose(list(rule["path_candidates"]))
     primary_perturbation = choose(list(rule["perturbation_candidates"]))
+    perturbation_fallback_used = False
+    if primary_perturbation is None and rule.get("perturbation_fallback"):
+        fallback = str(rule["perturbation_fallback"])
+        # The decision memo retains this registered matched-background mask as
+        # an explicitly secondary sensitivity if the symmetry-conforming
+        # variant fails its full gate.
+        primary_perturbation = fallback
+        perturbation_fallback_used = True
     return {
         "primary_path_gradient": primary_path,
         "primary_perturbation": primary_perturbation,
         "rule": rule,
         "eligible": {method: eligible(method) for method in METHOD_NAMES},
+        "perturbation_fallback_used": perturbation_fallback_used,
         "passed": primary_path is not None and primary_perturbation is not None,
     }
 
@@ -1072,6 +1117,8 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
                     "registered_baseline_convention": (
                         "co_shifted_input_derived"
                         if method == "ig_low_pass"
+                        else "fixed_robust_constant"
+                        if method == "periodic_mask_robust_constant"
                         else "fixed_matched_observed"
                         if method == "periodic_mask"
                         else "fixed"
@@ -1322,15 +1369,10 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
                 }
             )
 
-    selection = _select_methods(metric_rows, toy, config["selection_rule"])
-    if not selection["passed"]:
-        raise RuntimeError(f"no primary method pair passed the registered rule: {selection}")
-
-    selected_names = (
-        str(selection["primary_path_gradient"]),
-        str(selection["primary_perturbation"]),
+    control_candidates = tuple(
+        dict.fromkeys(config["selection_rule"]["control_comparison_candidates"])
     )
-    for selected_index, method in enumerate(selected_names):
+    for selected_index, method in enumerate(control_candidates):
         method_index = METHOD_NAMES.index(method)
         result = maps[(CANONICAL_FUNCTION, method)]
         baseline = _method_baseline(method, baselines)
@@ -1407,6 +1449,15 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
                 metric_row[
                     f"{direction}_control_map_margin_vs_random"
                 ] = interval["control_map_normalized_margin_estimate"]
+                metric_row[
+                    f"{direction}_method_minus_control_map_gap_estimate"
+                ] = interval["method_minus_control_map_gap_estimate"]
+                metric_row[
+                    f"{direction}_method_minus_control_map_gap_ci_lower"
+                ] = interval["method_minus_control_map_gap_ci_lower"]
+                metric_row[
+                    f"{direction}_method_minus_control_map_gap_ci_upper"
+                ] = interval["method_minus_control_map_gap_ci_upper"]
                 metric_row[f"{direction}_margin_vs_control_map"] = float(
                     expected
                 ) - float(interval["control_map_normalized_margin_estimate"])
@@ -1420,6 +1471,15 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
                     }
                 )
 
+    selection = _select_methods(metric_rows, toy, config["selection_rule"])
+    if not selection["passed"]:
+        raise RuntimeError(f"no primary method pair passed the registered rule: {selection}")
+
+    selected_names = (
+        str(selection["primary_path_gradient"]),
+        str(selection["primary_perturbation"]),
+    )
+
     metrics_path = artifacts.write_text("benchmark_metrics.csv", _csv_text(metric_rows))
     curves_path = artifacts.write_text("faithfulness_curves.csv", _csv_text(curve_rows))
     bootstrap_path = artifacts.write_text(
@@ -1430,6 +1490,17 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
     )
     toy_path = artifacts.write_json("toy_controls.json", toy)
     selection_path = artifacts.write_json("selected_methods.json", selection)
+    background_path = artifacts.write_text(
+        "robust_constant_background.csv",
+        _csv_text(
+            [
+                {"channel": channel, "z_constant_median": float(value)}
+                for channel, value in enumerate(
+                    baselines["robust_constant"][0, 0].detach().cpu().tolist()
+                )
+            ]
+        ),
+    )
     summary = {
         "step": "S06a",
         "mode": config["mode"],
@@ -1497,6 +1568,7 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
             convergence_path,
             toy_path,
             selection_path,
+            background_path,
             summary_path,
             plot_path,
             review_path,

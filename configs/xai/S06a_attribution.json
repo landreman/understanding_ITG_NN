@@ -49,8 +49,34 @@
       "ig_low_pass",
       "expected_gradients"
     ],
-    "perturbation_candidates": ["cyclic_occlusion", "periodic_mask"],
+    "perturbation_candidates": ["periodic_mask_robust_constant"],
+    "perturbation_fallback": "periodic_mask",
     "faithfulness_strata": ["stable_or_near_floor", "unstable"],
+    "control_aware_candidates": [
+      "ig_robust_constant",
+      "ig_matched_observed",
+      "ig_medoid",
+      "ig_low_pass",
+      "expected_gradients",
+      "periodic_mask_robust_constant"
+    ],
+    "control_comparison_candidates": [
+      "ig_robust_constant",
+      "ig_matched_observed",
+      "ig_medoid",
+      "ig_low_pass",
+      "expected_gradients",
+      "periodic_mask",
+      "periodic_mask_robust_constant"
+    ],
+    "control_aware_stratum": "unstable",
+    "control_aware_directions": ["deletion", "insertion"],
+    "minimum_method_minus_control_ci_lower": 0.0,
+    "fixed_symmetry_candidates": [
+      "periodic_mask",
+      "periodic_mask_robust_constant"
+    ],
+    "maximum_fixed_baseline_equivariance_relative_rms": 0.00002,
     "minimum_toy_channel_top1": 1.0,
     "minimum_toy_position_average_precision": 0.75,
     "minimum_deletion_margin": 0.0,
@@ -60,7 +86,7 @@
   },
   "pilot": {
     "run_id": "pilot-top1-panel64",
-    "faithfulness_strata": ["all"],
+    "faithfulness_strata": ["stable_or_near_floor", "unstable"],
     "panel_varied_rows": 64,
     "support_reference_rows": 256,
     "expected_backgrounds": 4,

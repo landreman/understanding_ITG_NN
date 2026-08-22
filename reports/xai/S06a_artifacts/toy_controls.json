@@ -55,6 +55,14 @@
     "random_deletion_auc": 0.5572035987213502,
     "random_insertion_auc": 0.4427964707498119
   },
+  "periodic_mask_robust_constant": {
+    "channel_top1": 1.0,
+    "deletion_auc": 0.025,
+    "insertion_auc": 0.975,
+    "position_average_precision": 1.0,
+    "random_deletion_auc": 0.5572035987213502,
+    "random_insertion_auc": 0.4427964707498119
+  },
   "random_map_control": {
     "channel_top1": 0.0,
     "deletion_auc": 0.4828983128446396,

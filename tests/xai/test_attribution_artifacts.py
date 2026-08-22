@@ -43,6 +43,7 @@ def test_s06a_published_manifest_and_small_artifact_hashes_are_exact() -> None:
         "ig_convergence.csv",
         "selected_methods.json",
         "selected_review_maps.h5",
+        "robust_constant_background.csv",
         "summary.json",
         "toy_controls.json",
     ):
@@ -64,7 +65,7 @@ def test_s06a_metrics_keep_functions_strata_signs_and_validity_machine_readable(
         "stable_or_near_floor",
         "unstable",
     }
-    assert len(rows) == 2 * 11 * 3
+    assert len(rows) == 2 * 12 * 3
     allowed = {tag.value for tag in ValidityTag}
     assert all(row["validity_tag"] in allowed for row in rows)
     assert all(row["baseline_validity_tag"] in allowed for row in rows)
@@ -76,6 +77,10 @@ def test_s06a_metrics_keep_functions_strata_signs_and_validity_machine_readable(
     mask = next(row for row in rows if row["method"] == "periodic_mask")
     assert mask["deterministic_optimizer"] == "True"
     assert mask["registered_baseline_convention"] == "fixed_matched_observed"
+    median_mask = next(
+        row for row in rows if row["method"] == "periodic_mask_robust_constant"
+    )
+    assert median_mask["registered_baseline_convention"] == "fixed_robust_constant"
 
 
 def test_s06a_selected_methods_pass_both_faithfulness_directions_in_each_stratum() -> None:
@@ -85,11 +90,20 @@ def test_s06a_selected_methods_pass_both_faithfulness_directions_in_each_stratum
     assert selection["passed"] is True
     assert selection["primary_path_gradient"] == "ig_low_pass"
     assert selection["primary_perturbation"] == "periodic_mask"
+    assert selection["perturbation_fallback_used"] is True
+    assert selection["eligible"]["periodic_mask"] is False
+    assert selection["eligible"]["periodic_mask_robust_constant"] is False
     assert selection["rule"]["maximum_parameter_randomization_correlation"] == 0.95
     assert selection["rule"]["faithfulness_strata"] == [
         "stable_or_near_floor",
         "unstable",
     ]
+    assert selection["rule"]["control_aware_stratum"] == "unstable"
+    assert selection["rule"]["control_aware_directions"] == [
+        "deletion",
+        "insertion",
+    ]
+    assert selection["rule"]["maximum_fixed_baseline_equivariance_relative_rms"] == 2e-5
     selected = {
         selection["primary_path_gradient"],
         selection["primary_perturbation"],
@@ -141,7 +155,10 @@ def test_s06a_pilot_selection_artifact_records_baseline_instability() -> None:
     assert pilot["passed"] is True
     assert pilot["primary_path_gradient"] == "ig_medoid"
     assert production["primary_path_gradient"] == "ig_low_pass"
-    assert pilot["rule"]["faithfulness_strata"] == ["all"]
+    assert pilot["rule"]["faithfulness_strata"] == [
+        "stable_or_near_floor",
+        "unstable",
+    ]
     assert production["rule"]["faithfulness_strata"] == [
         "stable_or_near_floor",
         "unstable",
@@ -160,6 +177,57 @@ def test_s06a_pilot_selection_artifact_records_baseline_instability() -> None:
     mask_stable = candidates[("periodic_mask", "stable_or_near_floor")]
     assert float(mask_stable["deletion_margin_vs_random"]) > 0
     assert float(mask_stable["insertion_margin_vs_random"]) < 0
+
+
+def test_s06a_control_aware_production_signs_and_median_background_are_pinned() -> None:
+    rows = _metrics()
+    low_pass = {
+        row["stratum"]: row
+        for row in rows
+        if row["function"] == "invariant_tilde_f" and row["method"] == "ig_low_pass"
+    }
+    assert float(
+        low_pass["stable_or_near_floor"][
+            "deletion_method_minus_control_map_gap_estimate"
+        ]
+    ) < 0
+    assert float(
+        low_pass["stable_or_near_floor"][
+            "insertion_method_minus_control_map_gap_estimate"
+        ]
+    ) < 0
+    assert float(
+        low_pass["unstable"]["deletion_method_minus_control_map_gap_ci_lower"]
+    ) > 0
+    assert float(
+        low_pass["unstable"]["insertion_method_minus_control_map_gap_ci_lower"]
+    ) > 0
+
+    median_mask = {
+        row["stratum"]: row
+        for row in rows
+        if row["function"] == "invariant_tilde_f"
+        and row["method"] == "periodic_mask_robust_constant"
+    }
+    assert float(median_mask["stable_or_near_floor"]["insertion_margin_vs_random"]) < 0
+    assert float(
+        median_mask["all"]["cyclic_equivariance_fixed_baseline_relative_rms"]
+    ) > 2e-5
+
+    with (ARTIFACTS / "robust_constant_background.csv").open(
+        newline="", encoding="utf-8"
+    ) as handle:
+        background = list(csv.DictReader(handle))
+    assert [int(row["channel"]) for row in background] == list(range(7))
+    assert [float(row["z_constant_median"]) for row in background] == [
+        1.0960736274719238,
+        -0.06282701343297958,
+        -0.02537703514099121,
+        8.744433040043639e-16,
+        1.8279118537902832,
+        -8.811368759909226e-16,
+        1.5146362781524658,
+    ]
 
 
 def test_s06a_selected_faithfulness_margins_have_grouped_intervals() -> None:

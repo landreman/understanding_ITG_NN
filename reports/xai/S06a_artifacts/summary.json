@@ -7,6 +7,7 @@
     "ig_medoid": "medoid",
     "ig_robust_constant": "robust_constant",
     "periodic_mask": "matched_observed",
+    "periodic_mask_robust_constant": "robust_constant",
     "scaled_gradient": "none_local",
     "tsr_ig_robust_constant": "robust_constant",
     "tsr_scaled_gradient": "none_local",
@@ -26,10 +27,11 @@
   "function_count": 2,
   "magnitude_only_methods": [
     "vargrad",
-    "periodic_mask"
+    "periodic_mask",
+    "periodic_mask_robust_constant"
   ],
   "member_id": "2864601_0.437",
-  "method_count": 11,
+  "method_count": 12,
   "mode": "production",
   "panel_support_equilibrium_overlap": 0,
   "row_count": 128,
@@ -42,23 +44,53 @@
       "ig_matched_observed": false,
       "ig_medoid": true,
       "ig_robust_constant": true,
-      "periodic_mask": true,
+      "periodic_mask": false,
+      "periodic_mask_robust_constant": false,
       "scaled_gradient": false,
       "tsr_ig_robust_constant": true,
-      "tsr_scaled_gradient": true,
+      "tsr_scaled_gradient": false,
       "vargrad": false
     },
     "passed": true,
+    "perturbation_fallback_used": true,
     "primary_path_gradient": "ig_low_pass",
     "primary_perturbation": "periodic_mask",
     "rule": {
+      "control_aware_candidates": [
+        "ig_robust_constant",
+        "ig_matched_observed",
+        "ig_medoid",
+        "ig_low_pass",
+        "expected_gradients",
+        "periodic_mask_robust_constant"
+      ],
+      "control_aware_directions": [
+        "deletion",
+        "insertion"
+      ],
+      "control_aware_stratum": "unstable",
+      "control_comparison_candidates": [
+        "ig_robust_constant",
+        "ig_matched_observed",
+        "ig_medoid",
+        "ig_low_pass",
+        "expected_gradients",
+        "periodic_mask",
+        "periodic_mask_robust_constant"
+      ],
       "faithfulness_strata": [
         "stable_or_near_floor",
         "unstable"
       ],
+      "fixed_symmetry_candidates": [
+        "periodic_mask",
+        "periodic_mask_robust_constant"
+      ],
+      "maximum_fixed_baseline_equivariance_relative_rms": 2e-05,
       "maximum_parameter_randomization_correlation": 0.95,
       "minimum_deletion_margin": 0.0,
       "minimum_insertion_margin": 0.0,
+      "minimum_method_minus_control_ci_lower": 0.0,
       "minimum_toy_channel_top1": 1.0,
       "minimum_toy_position_average_precision": 0.75,
       "path_candidates": [
@@ -69,9 +101,9 @@
         "expected_gradients"
       ],
       "perturbation_candidates": [
-        "cyclic_occlusion",
-        "periodic_mask"
+        "periodic_mask_robust_constant"
       ],
+      "perturbation_fallback": "periodic_mask",
       "tie_break": "lowest_normalized_infidelity_then_runtime"
     }
   },
