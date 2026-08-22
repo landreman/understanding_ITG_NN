@@ -9,25 +9,32 @@ only as a secondary perturbation sensitivity: its robust-constant-background
 variant failed the stable insertion and S02 symmetry clauses, while the matched
 variant retains its fixed-background symmetry failure. Both explain the member's native
 $\max(\log Q,-2)$ output, and both were evaluated for S02's canonical
-$\tilde f$ and the original $f$. The selected pair is a benchmark result about
+$\tilde f$ and the original $f$. The path/fallback pair is a benchmark result about
 the network, not a physical-causality result: both paths are tagged
 `deliberately_off_manifold_diagnostic`.
 
 The researcher-approved rerun adds a control-aware clause to the corrected
 stratum rule: every path candidate must beat its own network-free $|X-B|$ map
 with a 500-draw whole-`equilibrium_files` paired interval excluding zero in both
-unstable directions. Stable rows remain published but are not gated because
-their clipped outputs barely move. Four path candidates pass the complete rule;
+unstable directions. Stable rows remain published but are not gated under the
+researcher-approved rule. Four path candidates pass the registered rule;
 low-pass IG still wins the unchanged normalized-infidelity tie-break at
 **0.09697** (robust constant 0.31180, medoid 0.35032, Expected Gradients
 0.65198). Matched-observed IG beats its control but remains ineligible because
 its unstable deletion margin versus random is -0.263.
 
-On the analytic wrapped-window toy, both selected methods recover the relevant
+This is a **post-run selection rule**: both the per-stratum correction and the
+control-aware clause were designed after results on these 128 rows were known.
+The 64-row pilot was then regenerated under the corrected rule, so it verifies
+the implementation and exposes panel sensitivity but is not an independent
+pre-production validation. Selection is therefore a benchmark registration for
+S06b, not an unbiased estimate of method-selection performance.
+
+On the analytic wrapped-window toy, the path primary and mask fallback recover the relevant
 channel at top 1 and obtain position average precision **1.000**, versus **0.0442**
 for the random-map control. Their toy deletion AUC is **0.025** versus **0.557**
 for random order, and insertion AUC is **0.975** versus **0.443**. On the
-toy, 10 of 11 methods attain the same perfect recovery and AUC values, so this
+toy, 11 of 12 methods attain the same perfect recovery and AUC values, so this
 registered threshold is a sanity-check floor rather than a useful ranking among
 the passing methods. On the
 128-row canonical panel benchmark, the rule is evaluated separately on the 33
@@ -49,7 +56,7 @@ leaving only **+0.04765** after pooling. The resulting ratio lies outside both
 stratum-specific results. This cancellation also made pooled cyclic occlusion
 look worse than random even though its deletion margins are positive in both
 strata. The corrected gate therefore requires positive deletion and insertion
-margins in each stratum; the selected pair is unchanged.
+margins in each stratum; the stored path/fallback pair is unchanged.
 
 Random ordering is a weak control because it preserves the selected map's cell
 magnitudes. The benchmark therefore scores the network-free control map
@@ -64,6 +71,32 @@ insertion resolves against its displacement control, **0.1374**
 Robust-constant, medoid, low-pass, and Expected Gradients all clear the added
 unstable control clause; low-pass remains selected by the registered tie-break.
 
+The stable result is baseline-specific, not a generic near-floor tie. Low-pass
+is the only eligible path candidate whose stable paired intervals cross zero;
+the other candidates resolve against their own controls on the same 33 rows:
+
+| Path candidate | Stable deletion method−control gap (95% CI) | Stable insertion gap (95% CI) |
+| --- | ---: | ---: |
+| robust-constant IG | 0.02931 (0.00155–0.07388) | 0.06622 (0.02305–0.12091) |
+| matched-observed IG | 0.16320 (0.04903–0.29224) | 0.14270 (0.05373–0.26515) |
+| medoid IG | 0.03735 (0.00058–0.07905) | 0.04915 (0.01599–0.09503) |
+| low-pass IG | -0.00043 (-0.00385–0.00224) | -0.00202 (-0.00939–0.00219) |
+| Expected Gradients | 0.03871 (0.00048–0.09556) | 0.03673 (0.00228–0.08730) |
+
+Had the registered control clause gated both strata, low-pass would be
+ineligible and robust-constant IG would win the unchanged infidelity tie-break.
+The near-floor output scale still makes low-pass's stable maps a poor basis for
+feature claims, but it does not justify a claim that every baseline family is
+uninformative there. S06b must report the stable stratum and may make no claim
+from the low-pass primary there; any broader stable-stratum claim requires
+agreement across the resolving baseline sensitivities.
+
+Each candidate also faces a different control difficulty because its control is
+its own $|X-B|$. In the stable stratum, the low-pass control's normalized
+margins are 1.7404/0.7917, versus roughly 0.04–0.23 for the other baseline
+families. Passing these candidate-specific controls is therefore not a uniform
+bar across baselines.
+
 The earlier reviewer negative result is retained in full: low-pass's $|X-B|$
 control itself clears the toy floor (channel top-1 1.000, position AP 1.000) and
 the prior per-stratum random-order faithfulness gate in all four cells (stable
@@ -72,7 +105,21 @@ model-independent map has parameter-randomization correlation exactly 1.000.
 That is why the new paired method-minus-control clause, rather than the old
 randomization clause alone, is needed.
 
-Both selected methods respond to complete parameter randomization: absolute-map
+Native-unit effect sizes further qualify the unstable pass:
+
+| Eligible path | Method gap, deletion/insertion | Control gap, deletion/insertion | Method−control gap, deletion/insertion |
+| --- | ---: | ---: | ---: |
+| robust-constant IG | 0.533/0.701 | 0.265/0.200 | 0.268/0.501 |
+| medoid IG | 0.549/0.715 | 0.129/0.114 | 0.420/0.601 |
+| low-pass IG | 0.0203/0.0207 | 0.0107/0.0097 | 0.0096/0.0111 |
+| Expected Gradients | 0.478/0.645 | 0.235/0.221 | 0.243/0.424 |
+
+Low-pass's paired advantage is 25–60 times smaller than the other eligible
+paths. It wins on normalized infidelity, a scale-relative ratio that can favour
+the shortest baseline path; the selection should not be read as a like-for-like
+native-effect contest.
+
+The path primary and mask fallback respond to complete parameter randomization: absolute-map
 rank correlation with the randomized member is **0.406** for low-pass IG and
 **0.099** for the mask. Low-pass IG has the weakest response among eligible IG
 baselines: robust-constant, medoid, and Expected Gradients correlations are
@@ -95,6 +142,15 @@ It beats random in stable deletion (**0.774**) but fails stable insertion
 $9.88\times10^{-4}$, above S02's registered $2\times10^{-5}$ tolerance. It does
 beat its own control in both unstable directions, but fails the full gate and is
 retained as a negative sensitivity result rather than registered as primary.
+
+The $2\times10^{-5}$ ceiling is a conservative **mask-candidate-only** clause,
+borrowed from S02's float32 model-output tolerance rather than established as a
+universal relative-RMS attribution tolerance. It was added to answer the
+decision memo's fixed-background perturbation question. Applying it universally
+would also reject fixed-background matched IG (1.122), medoid IG (0.653), and
+Expected Gradients (0.737); low-pass's registered co-shifted error is
+$1.03\times10^{-4}$. Those path methods retain their documented baseline
+conventions and are not claimed to pass the mask-only ceiling.
 
 ## Estimand and cohort
 
@@ -233,10 +289,13 @@ No mechanism or common feature is named from these maps in S06a. That requires
 the top-10 member agreement and equilibrium/member hierarchy in S06b, followed
 by the physics comparisons in S07.
 
-Stable/near-floor attribution maps are near-uninformative for feature claims:
-clipping leaves a median low-pass endpoint difference of only **0.0014 native
-units**. S06b must report this stratum but must not base feature-level
-conclusions on it.
+Stable/near-floor **low-pass-primary** maps are near-uninformative for feature
+claims: clipping leaves that baseline a median endpoint difference of only
+**0.0014 native units**, and it alone fails both stable control intervals. S06b
+must report this stratum but may not base a feature claim on the low-pass map
+there. Other baselines resolve against their controls, so a broader stable-row
+claim would require explicit cross-baseline agreement rather than blanket
+demotion.
 
 ## Uncertainty
 
@@ -327,7 +386,8 @@ or method records:
 9. The randomization threshold was hard-coded and headline faithfulness margins
    lacked intervals. The 0.95 maximum is now part of the registered rule in
    config, pilot, production selection, and manifest, and grouped margin
-   intervals are committed for both selected methods and all floor strata.
+   intervals are committed for every control-comparison candidate and all floor
+   strata.
 10. Review found that pooled faithfulness divided by a denominator in which the
     floor strata cancel. The production gate now requires both directions to be
     positive in each stratum. Native-unit gaps and denominator diagnostics are
@@ -356,8 +416,12 @@ or method records:
     cyclic toy, but the real model misses S02's $2\times10^{-5}$ tolerance and
     its stable insertion margin is negative. Both failures are retained; the
     matched-observed mask is the explicitly secondary fallback.
+16. Review showed that neither the mask symmetry ceiling nor the two fallback
+    branches were exercised by a selection fixture. A paired mask-like fixture
+    now straddles the ceiling and asserts both the failing-candidate fallback and
+    passing-candidate primary paths.
 
-Nine deliberate post-run mutations turned the focused suite red and were
+Eleven deliberate post-run mutations turned the focused suite red and were
 reverted: dropping robust channel scales failed the exact scaled-gradient test;
 resampling individual rows instead of `equilibrium_files` failed the grouped
 bootstrap support test; and restoring the absolute AUC denominator failed the
@@ -369,7 +433,9 @@ negative-endpoint control. For the control-aware rerun, bypassing the paired
 control clause failed the analytic selection fixture, replacing $|X-B|$ with a
 degenerate zero map failed the exact control-map fixture, and wiring the new
 mask back to the matched-observed background failed its fixed-background
-equivariance fixture (error 0.413 versus the $2\times10^{-5}$ ceiling).
+equivariance fixture (error 0.413 versus the $2\times10^{-5}$ ceiling). Finally,
+bypassing the mask symmetry clause and making fallback unconditional both fail
+the new two-branch selection fixture.
 
 ## Negative results and interpretation limits
 
@@ -377,7 +443,9 @@ equivariance fixture (error 0.413 versus the $2\times10^{-5}$ ceiling).
   is 0.6125 versus the registered 0.75 minimum. Its real deletion margins are
   actually positive in both strata, **0.641** stable and **0.074** unstable;
   the former pooled value -1.620 was a denominator-cancellation artifact and is
-  not a reason for exclusion.
+  not a reason for exclusion. The control-aware rerun removed it from the
+  perturbation candidate list because the toy failure already makes it
+  ineligible; it remains fully published as a sensitivity.
 - Matched-observed IG passes deletion in the stable stratum (**0.500**) but fails
   it in the unstable stratum (**-0.263**). Its pooled -2.070 is likewise not
   interpreted. An observed endpoint does not make the interpolation path
@@ -391,10 +459,11 @@ equivariance fixture (error 0.413 versus the $2\times10^{-5}$ ceiling).
   control conclusively only for unstable insertion. Passing a random-order
   control is therefore insufficient evidence that an attribution adds
   learned-network information. The control itself clears the toy and random-
-  order gates and is excluded by randomization correlation 1.000. These near-
-  floor rows have a mean endpoint difference of only 0.00273 native units, so a
-  mechanical tie is plausible; S06b reports them but makes no feature claim
-  from them.
+  order gates and is excluded by randomization correlation 1.000. Low-pass's
+  near-floor endpoint is small, but that alone cannot explain the result because
+  the other four baselines resolve on the same rows. The failure is baseline-
+  specific: $|X-B|$ is also IG's displacement factor for low-pass. S06b reports
+  these rows but makes no feature claim from the low-pass primary there.
 - The robust-constant mask fails stable insertion (-0.155) and fixed-background
   equivariance ($9.88\times10^{-4}$ versus the $2\times10^{-5}$ tolerance), even
   though both unstable control intervals favour it. A shift-invariant
@@ -434,10 +503,10 @@ equivariance fixture (error 0.413 versus the $2\times10^{-5}$ ceiling).
 
 | PLAN criterion | S06a verdict and evidence |
 | --- | --- |
-| Selected methods beat random/control maps on toy recovery and faithfulness | **Partial.** The control-aware path primary passes toy recovery, both random-order directions in both strata, and both unstable paired control intervals (0.00964, CI 0.00446–0.01638 deletion; 0.01105, 0.00454–0.01953 insertion). Stable control ties are published but not gated. No perturbation candidate meets the complete gate: the robust-constant mask fails stable insertion and symmetry, so the matched mask remains a secondary sensitivity and resolves against control only for unstable insertion. |
+| Selected methods beat random/control maps on toy recovery and faithfulness | **Partial.** The control-aware path primary passes toy recovery, both random-order directions in both strata, and both unstable paired control intervals (0.00964, CI 0.00446–0.01638 deletion; 0.01105, 0.00454–0.01953 insertion). Low-pass alone fails the published, non-gating stable intervals; gating them would select robust-constant IG. No perturbation candidate meets the complete gate: the robust-constant mask fails stable insertion and symmetry, so the matched mask remains a secondary sensitivity and resolves against control only for unstable insertion. |
 | Selected methods respond to parameter randomization | **Pass, qualified.** Canonical absolute-map rank correlation is 0.406 for low-pass IG and 0.099 for the mask. Low-pass is weakest among eligible IG baselines, and its input-baseline factor correlates 0.816 with the randomized map. |
-| Baseline sensitivity is understood | **Pass, with a strong limitation.** Low-pass/robust map correlation is 0.432; all four IG baselines and Expected Gradients remain published sensitivity analyses. |
-| Methods meet symmetry behavior permitted by S02 | **Pass for the path primary; fail for both fixed-background perturbation variants.** Low-pass's input-derived co-shift error is $1.03\times10^{-4}$. The matched mask's fixed error is 1.009; the robust-constant mask improves it to $9.88\times10^{-4}$ but still misses S02's $2\times10^{-5}$ tolerance. |
+| Baseline sensitivity is understood | **Pass, with a strong limitation.** Low-pass/robust map correlation is 0.432; low-pass's unstable native method−control effects (0.0096/0.0111) are 25–60× smaller than the other eligible paths, and normalized infidelity is scale-relative. All four IG baselines and Expected Gradients remain published sensitivity analyses. |
+| Methods meet symmetry behavior permitted by S02 | **Pass for the path's registered convention; fail for both fixed-background perturbation variants.** Low-pass's input-derived co-shift error is $1.03\times10^{-4}$. The matched mask's fixed error is 1.009; the robust-constant mask improves it to $9.88\times10^{-4}$ but still misses the mask-only $2\times10^{-5}$ ceiling. That borrowed ceiling is not asserted as a universal attribution tolerance. |
 | Uncertainty includes model and equilibrium sampling | **Pending S06b by the explicit S06a/S06b split.** S06a provides 500-draw equilibrium-file intervals for its one registered member; model sampling begins in S06b. |
 | Signed and absolute summaries are distinguishable | **Pass.** Full HDF5 maps retain signs; every metrics row has `signed` and `contribution_valued`; VarGrad and masks are marked magnitude-only. |
 | No feature is called common without agreement | **Pass.** S06a names no common feature; member agreement is deferred to S06b. |

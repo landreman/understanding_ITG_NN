@@ -693,6 +693,70 @@ def test_s06a_path_selection_requires_unstable_control_interval_in_both_directio
     assert selected["primary_path_gradient"] == "ig_medoid"
 
 
+def test_s06a_mask_symmetry_gate_and_fallback_are_both_live() -> None:
+    rows = []
+    toy = {}
+    for method in METHOD_NAMES:
+        toy[method] = {
+            "channel_top1": 1.0,
+            "position_average_precision": 1.0,
+        }
+        for stratum in ("all", "stable_or_near_floor", "unstable"):
+            rows.append(
+                {
+                    "function": "invariant_tilde_f",
+                    "method": method,
+                    "stratum": stratum,
+                    "deletion_margin_vs_random": 1.0,
+                    "insertion_margin_vs_random": 1.0,
+                    "parameter_randomization_correlation": 0.0,
+                    "normalized_infidelity": 1.0,
+                    "runtime_seconds": 1.0,
+                    "cyclic_equivariance_fixed_baseline_relative_rms": 0.01,
+                }
+            )
+    all_rows = {
+        row["method"]: row for row in rows if row["stratum"] == "all"
+    }
+    all_rows["periodic_mask"][
+        "cyclic_equivariance_fixed_baseline_relative_rms"
+    ] = 0.2
+    all_rows["periodic_mask_robust_constant"][
+        "cyclic_equivariance_fixed_baseline_relative_rms"
+    ] = 0.2
+    rule = {
+        "path_candidates": ["ig_medoid"],
+        "perturbation_candidates": ["periodic_mask_robust_constant"],
+        "perturbation_fallback": "periodic_mask",
+        "faithfulness_strata": ["stable_or_near_floor", "unstable"],
+        "fixed_symmetry_candidates": [
+            "periodic_mask",
+            "periodic_mask_robust_constant",
+        ],
+        "maximum_fixed_baseline_equivariance_relative_rms": 0.1,
+        "minimum_toy_channel_top1": 1.0,
+        "minimum_toy_position_average_precision": 0.75,
+        "minimum_deletion_margin": 0.0,
+        "minimum_insertion_margin": 0.0,
+        "maximum_parameter_randomization_correlation": 0.95,
+        "tie_break": "lowest_normalized_infidelity_then_runtime",
+    }
+
+    failed = _select_methods(rows, toy, rule)
+    assert failed["eligible"]["periodic_mask"] is False
+    assert failed["eligible"]["periodic_mask_robust_constant"] is False
+    assert failed["primary_perturbation"] == "periodic_mask"
+    assert failed["perturbation_fallback_used"] is True
+
+    all_rows["periodic_mask_robust_constant"][
+        "cyclic_equivariance_fixed_baseline_relative_rms"
+    ] = 0.05
+    passed = _select_methods(rows, toy, rule)
+    assert passed["eligible"]["periodic_mask_robust_constant"] is True
+    assert passed["primary_perturbation"] == "periodic_mask_robust_constant"
+    assert passed["perturbation_fallback_used"] is False
+
+
 def test_infidelity_sensitivity_and_randomized_map_agreement_have_controls() -> None:
     generator = torch.Generator().manual_seed(44)
     geometry = torch.randn((3, 12, 3), generator=generator)

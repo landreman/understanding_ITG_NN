@@ -31,6 +31,12 @@ this control in both deletion and insertion on unstable rows, with uncertainty
 intervals that stay above zero. Four paths pass; low-pass Integrated Gradients
 retains the lowest infidelity score and remains primary.
 
+This rule was written after results on the 128 production rows were already
+known. The 64-row pilot was regenerated under it, so the pilot checks the code
+and reveals panel sensitivity but is not an independent pre-production test.
+The chosen method is a registered S06b benchmark choice, not an unbiased method-
+selection estimate.
+
 **Integrated Gradients from a low-pass reference** starts with the real geometry,
 smooths away its shorter-scale variation, and measures how the prediction
 changes while moving from that smoothed reference back to the original. It
@@ -98,6 +104,21 @@ cells. The old rule excluded it only because its map is unchanged when the
 network is randomized (correlation exactly 1.000). That is why direct
 method-versus-control evidence is now part of selection.
 
+The stable-row outcome is specific to low-pass: it is the only eligible path
+whose stable control intervals cross zero. Robust-constant, medoid, Expected
+Gradients, and even the otherwise-ineligible matched-observed path resolve
+against their controls on those same 33 rows. If stable rows had also been
+gated, robust-constant IG—not low-pass—would have won. This is why the stable
+caveat below applies to the selected low-pass map, not automatically to every
+possible baseline.
+
+The unstable pass is also much smaller in native units for low-pass. Its method-
+minus-control gains are about 0.010/0.011, versus 0.24–0.60 for the other
+eligible paths. Low-pass wins on normalized infidelity, a relative score that
+can favour its unusually short path, so “winner” does not mean largest native
+effect. Each path also faces a different $|X-B|$ control, so passing is not a
+uniform-difficulty contest across baseline families.
+
 The Integrated Gradients margins are normalized by a small native-unit change.
 The low-pass reference changes the canonical output by median 0.0014 and mean
 0.0175 across the registered rows. Its median numerical completeness error is
@@ -147,10 +168,12 @@ selects low-pass; the two panels overlapped by only 7 rows. S06b
 must carry the other baselines as sensitivity analyses; the chosen map is not a
 unique, baseline-free truth.
 
-Stable/near-floor rows are a standing caveat, not an interpretation cohort.
-Their clipped output barely changes under low-pass edits (median endpoint
-difference 0.0014 native units), so S06b must report them but must not base
-feature-level claims on their maps.
+Stable/near-floor rows are a standing caveat for the **selected low-pass map**.
+Its clipped output barely changes under low-pass edits (median endpoint
+difference 0.0014 native units), and it is the only eligible path whose two
+stable control intervals cross zero. S06b must report the stratum but may not
+base a feature claim on low-pass there; any broader claim needs agreement with
+the other baselines, which did resolve against their controls.
 
 The second caveat is **physical validity**. Smoothing a geometry or replacing
 individual cells does not generally produce another realizable magnetic
@@ -172,7 +195,9 @@ remains secondary.
 The simple cyclic occlusion method was not good enough. It recovered the correct
 toy channel but its position score was only 0.613, below the registered 0.75
 threshold. Its real deletion margins are actually positive in both strata; the
-former negative pooled value was a denominator-cancellation artifact.
+former negative pooled value was a denominator-cancellation artifact. The rerun
+therefore removed it from the perturbation candidate list while retaining its
+published sensitivity results; the toy failure already made it ineligible.
 Integrated Gradients from a matched observed geometry failed deletion in the
 unstable stratum.
 An observed endpoint does not make the artificial path between two geometries

@@ -124,11 +124,14 @@ expected because no panel row changes.
    the slice; that moves the new mask variant out of the "not checkable"
    reproduction list that the matched-observed background is confined to.
 
-5. **Carry one standing caveat into the report and forward to S06b:**
-   attribution maps on the stable/near-floor stratum are near-uninformative for
-   any method, because the clipped output barely moves under edits there
-   (median low-pass endpoint difference 0.0014 native units). S06b reports that
-   stratum but must not base feature-level claims on it.
+5. **Carry one standing caveat into the report and forward to S06b.** The
+   decision anticipated that stable/near-floor maps would be near-uninformative
+   for any method because the clipped output barely moves there (median
+   low-pass endpoint difference 0.0014 native units). The completed rerun
+   narrowed that inference: low-pass alone fails both stable control intervals,
+   while the other path baselines resolve. S06b reports the stratum, makes no
+   stable feature claim from its low-pass primary, and requires cross-baseline
+   agreement for any broader claim.
 
 6. **Regenerate pilot and production, and update every dependent artifact**:
    `benchmark_metrics.csv`, `grouped_uncertainty.csv`, `faithfulness_curves.csv`,
