@@ -750,6 +750,27 @@ both model and equilibrium sampling; signed and absolute summaries are
 distinguishable; no feature is called common without an explicit agreement
 statistic.
 
+**Researcher decision (2026-08-22):** the S06a benchmark surfaced two
+criteria that were not fully met — the network-free $|X-B|$ control map
+matched the selected method on stable/near-floor rows and cleared the
+registered faithfulness gate, and the fixed-background periodic mask failed
+cyclic explanation equivariance. The researcher approved a control-aware
+selection rerun across all five path candidates and a robust-constant
+(z-median, shift-invariant by construction) mask-background variant, per
+`reports/xai/S06a_control_aware_selection_decision.md`. That memo carries the
+registered clause additions and implementer instructions; S06b inherits its
+standing caveat that stable/near-floor attribution maps support no
+feature-level claims.
+
+**Implementation outcome addendum (2026-08-22; implementer):** the stable
+method-minus-control effect estimates are baseline-specific: low-pass is near
+zero while the other four path estimates are roughly two orders of magnitude
+larger. A counterfactual rule gating the stable stratum selects robust-constant
+IG. However, this control-comparison metric does not establish that clipped
+rows carry feature information, and the smallest positive 500-resample CI
+bounds are within bootstrap Monte Carlo resolution. The researcher's
+conservative stable-row caveat therefore remains unchanged.
+
 ### S07 — Compare learned spatial importance with physics fields and GX $Q(z)$
 
 **Goal:** Translate reliable maps into concrete plasma-geometry hypotheses.
