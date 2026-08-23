@@ -322,8 +322,13 @@ def test_s07_zonal_pairing_cases_and_symmetry_keep_negative_results() -> None:
     assert float(silent_row["spearman_active_summary"]) == np.float64(
         0.07426122264831943
     )
-    assert float(silent_row["spearman_active_summary_ci95_lower"]) < 0
-    assert float(silent_row["spearman_active_summary_ci95_upper"]) > 0
+    assert (
+        float(silent_row["spearman_active_summary_ci95_lower"]),
+        float(silent_row["spearman_active_summary_ci95_upper"]),
+    ) == (
+        np.float64(-0.06860759699198943),
+        np.float64(0.2267801678826823),
+    )
     assert silent_row["active_summary_bootstrap_stable"] == "False"
 
     paired = _csv("paired_analysis.csv")
