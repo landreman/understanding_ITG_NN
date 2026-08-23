@@ -66,7 +66,8 @@ example is not statistically resolved. At low $a/L_T$, increasing the observed
 bad-curvature score has median slope **-0.858**; at high $a/L_T$, the point
 estimate is **+0.356**. All three members show that direction, but the grouped
 95% interval for each endpoint crosses zero in every member. Thus the
-bad-curvature reversal is a hypothesis, not a resolved result. Geodesic
+step did not compute an interval for the high-minus-low difference, so the
+bad-curvature reversal is a hypothesis, not an established result. Geodesic
 curvature strengthens sharply with $a/L_T$, while cross-channel co-location
 remains positive but weakens.
 

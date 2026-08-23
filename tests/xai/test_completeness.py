@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import importlib
+from pathlib import Path
+
 import numpy as np
 import pytest
 
@@ -60,6 +63,52 @@ def test_completeness_is_deterministic_and_native_not_exponentiated():
     second = grouped_completeness(sets, native, groups, **kwargs)
     np.testing.assert_allclose(first[-1].prediction, second[-1].prediction)
     assert first[-1].held_out_r2 > grouped_completeness(sets, np.exp(native), groups, **kwargs)[-1].held_out_r2
+
+
+def test_completeness_bootstrap_is_invariant_to_row_duplication():
+    groups, signal, _, drive, native = _cyclic_fixture()
+    values = np.column_stack([drive, np.zeros_like(drive), signal])
+    kwargs = dict(
+        outer_folds=4,
+        inner_folds=3,
+        penalties=(1e-8,),
+        seed=43,
+        bootstrap_replicates=50,
+    )
+    original = grouped_completeness({"known": values}, native, groups, **kwargs)[0]
+    duplicated = grouped_completeness(
+        {"known": np.repeat(values, 3, axis=0)},
+        np.repeat(native, 3),
+        np.repeat(groups, 3),
+        **kwargs,
+    )[0]
+    np.testing.assert_allclose(
+        (original.increment_ci95_lower, original.increment_ci95_upper),
+        (duplicated.increment_ci95_lower, duplicated.increment_ci95_upper),
+        atol=1e-8,
+    )
+
+
+def test_paired_gain_bootstrap_is_invariant_to_row_duplication(monkeypatch):
+    scripts = Path(__file__).resolve().parents[2] / "scripts"
+    monkeypatch.syspath_prepend(str(scripts))
+    paired_gain = importlib.import_module("xai_s09_completeness")._paired_gain
+    rng = np.random.default_rng(47)
+    groups = np.repeat(np.arange(30), 4)
+    target = rng.normal(size=len(groups))
+    group_error = rng.normal(scale=0.8, size=30)
+    baseline = target + np.repeat(group_error, 4)
+    candidate = target + 0.5 * np.repeat(group_error, 4)
+    original = paired_gain(target, candidate, baseline, groups, 100, 53)
+    duplicated = paired_gain(
+        np.repeat(target, 3),
+        np.repeat(candidate, 3),
+        np.repeat(baseline, 3),
+        np.repeat(groups, 3),
+        100,
+        53,
+    )
+    np.testing.assert_allclose(original, duplicated, atol=1e-12)
 
 
 def test_stratified_interaction_recovers_signed_drive_change_and_null():

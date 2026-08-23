@@ -32,8 +32,9 @@ from **-0.858** in the low-drive bin to **+0.356** in the high-drive bin in all
 three members. However, neither endpoint is individually resolved in any
 member: the three low-bin 95% intervals span **[-2.569,+0.931]** to
 **[-2.355,+0.739]**, and the high-bin intervals span **[-0.206,+0.914]** to
-**[-0.111,+0.808]**. Both endpoints therefore straddle zero in every member;
-the apparent reversal is a hypothesis, not a resolved result.
+**[-0.111,+0.808]**. Both endpoints straddle zero in every member, and this
+step did not compute an interval for their high-minus-low difference. The
+apparent reversal is therefore a hypothesis, not an established result.
 Geodesic-curvature slope rises from **0.220 to 3.553** across
 $a/L_T$ bins, while co-location declines from **1.270 to 0.279** but stays
 positive. These are observed comparisons and decoder diagnostics, not valid
@@ -181,7 +182,7 @@ resolved reversal.
 | --- | --- |
 | “high fidelity is demonstrated on held-out equilibria” | **Pass.** All-candidate member $R^2=0.9080$–0.9174 under nested equilibrium-grouped folds; median held-out fidelity is 0.9087 with an exact-head ceiling of 1 by construction. |
 | “added complexity has an uncertainty-qualified gain” | **Pass with an important qualification.** All-candidate gain over the paper baseline is 0.0849 [0.0705, 0.0998], 0.0953 [0.0800, 0.1108], and 0.0895 [0.0764, 0.1040]. Geometry-only gain is 0.0117 [-0.0044, 0.0260], 0.0221 [0.0111, 0.0332], and 0.0193 [0.0085, 0.0300]; the larger gain includes target-side diagnostics. |
-| “interaction conclusions reproduce across members and do not rest on the fixed-gradient set alone” | **Qualified pass.** The observed-slope calculation uses varied rows only. Pooled and unstable point-estimate signs reproduce in 48/48 cells across all three members; stable/near-floor signs reproduce in 36/48, but only 19/144 stable-row slopes have 95% intervals excluding zero. The bad-curvature $a/L_T$ point estimates reverse in every member, yet both endpoint intervals cross zero in all three members, so the reversal is not resolved. True network-input mixed derivatives and paired grouped finite differences are deferred. |
+| “interaction conclusions reproduce across members and do not rest on the fixed-gradient set alone” | **Qualified pass.** The observed-slope calculation uses varied rows only. Pooled and unstable point-estimate signs reproduce in 48/48 cells across all three members; stable/near-floor signs reproduce in 36/48, but only 19/144 stable-row slopes have 95% intervals excluding zero. The bad-curvature $a/L_T$ point estimates reverse in every member, but both endpoint intervals cross zero and this step did not compute an interval for their difference, so the reversal is not established. True network-input mixed derivatives and paired grouped finite differences are deferred. |
 
 ## Mutation testing
 
@@ -199,7 +200,8 @@ reverted:
 5. replacing the five fold-specific mixed derivatives with their repeated
    panel mean failed the deliberately sign-inconsistent fold-spread test; and
 6. resampling individual rows instead of `equilibrium_files` failed the row-
-   duplication invariance controls for both interaction estimators.
+   duplication invariance controls for the completeness, direct-gain,
+   directional-effect, and mixed-term bootstraps.
 
 ## Reproduction
 
