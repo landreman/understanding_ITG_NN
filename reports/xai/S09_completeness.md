@@ -5,8 +5,8 @@
 The candidate vocabulary predicts the three canonical member outputs with high
 held-out fidelity: the all-candidate decoder reaches member $R^2$ values
 **0.9080, 0.9087, and 0.9174** (median **0.9087**) on equilibria excluded from
-its fit. Completeness is therefore **90.9%** relative to the exact canonical
-bottleneck head, whose fidelity is 1 by construction. The paper baseline
+its fit. This is **90.9% held-out fidelity**; the exact canonical bottleneck
+head is a ceiling of 1 by construction, not a measured denominator. The paper baseline
 $\{a/L_T,a/L_n,f_Q\}$ already reaches median $R^2=0.8231$; the all-candidate
 gain is **0.0849–0.0953** across members (median **0.08954**), and every direct
 paired equilibrium-bootstrap 95% interval excludes zero.
@@ -17,7 +17,7 @@ diagnostics rather than network inputs. The geometry-only set through
 compression, curvature, parallel scale, co-location, $f_{\rm stab}$, and
 $\log\langle|\nabla x|\rangle$ gains **0.0117, 0.0221, and 0.0193** over the
 paper baseline. Its direct 95% intervals are respectively
-**[-0.0040, 0.0256]**, **[0.0119, 0.0342]**, and **[0.0092, 0.0299]**. Thus two
+**[-0.0044, 0.0260]**, **[0.0111, 0.0332]**, and **[0.0085, 0.0300]**. Thus two
 members resolve a modest geometry-only increment and one does not. The larger
 all-candidate gain shows predictive completeness of the vocabulary, not that
 the network causally uses zonal flow; S08 independently rejected all zonal-use
@@ -50,8 +50,8 @@ for development or production.
 
 The registered run is `completeness-top3-panel1000`. The committed
 [manifest](S09_artifacts/manifest.json) records production compute time
-**2,423.63 s (40.39 min)** and the subsequent hash-validated post-processing
-pass separately. It records dataset SHA-256
+**2,423.63 s (40.39 min)** and **585.28 s** for the final hash-validated
+post-processing pass. It records dataset SHA-256
 `9d8fa52f93f2782ad9948a38bf46943c0cd6df78cd08b94a006dad4e06c1c8ad`
 and checkpoint SHA-256
 `d5e092348514a5ee85b68bcdcf51dbb32eaa344beea1daa28f5aaeba9e86eefb`.
@@ -79,13 +79,15 @@ lower-dimensional all-candidate decoder. This is a decoder-capacity result, not
 an information-ordering result: the trained head consumes the bottleneck and
 therefore reproduces its own output exactly. The artifact keeps both
 `full_bottleneck_simple_decoder` and `full_bottleneck_exact_head`; completeness
-uses the latter as the bounded ceiling. [Completeness rows](S09_artifacts/completeness.csv)
+is not formed by dividing by the exact head. The all-candidate/simple-bottleneck
+decoder ratio is **1.045**, with the capacity caveat above; the primary quantity
+is plain held-out $R^2$. [Completeness rows](S09_artifacts/completeness.csv)
 carry out-of-fold $R^2$, MSE, bias, residual standard deviation, incremental
 gain, direct gain over baseline, grouped intervals, and selection stability.
 [Per-row residuals](S09_artifacts/concept_residuals.csv) make every summary
 independently recomputable.
 
-The direct gain intervals resample all 1,000 `equilibrium_files` 500 times and
+The direct gain intervals resample all 1,000 `equilibrium_files` 5,000 times and
 compare each candidate and baseline on the same draw. Bootstrap selection
 stability is the fraction of draws with positive gain. This evaluates fixed
 out-of-fold predictions; it does not refit the decoder inside every resample.
@@ -99,14 +101,24 @@ Uncertainty again resamples `equilibrium_files`. The
 [cross-member summary](S09_artifacts/interaction_summary.csv) retain signs and
 regimes.
 
-Selected integrated-Hessian terms (a diagnostic that measures how a concept's
-local decoder effect changes with a drive) use four held-out decoder evaluations
+The registered substitute for selected integrated-Hessian terms is a mixed
+derivative of the fitted concept decoder (a diagnostic that measures how a
+concept's local decoder effect changes with a drive). It uses four held-out decoder evaluations
 around each observed row. The declared quadratic decoder makes that four-point
 mixed difference exact for the decoder. Contributions are integrated from the
 panel-median background and stored in
 [integrated_hessian_terms.csv](S09_artifacts/integrated_hessian_terms.csv).
-Every row is tagged `observed-comparison`: correlated concepts and drive
+Each row reports the minimum, maximum, and sign agreement across the five
+outer-fold coefficients; the row-bootstrap interval is retained only as
+evaluation-panel variation and is not used for a mechanism claim. Every row is
+tagged `observed-comparison`: correlated concepts and drive
 stratification prevent a physical-causal reading.
+
+This is not an entry of the network's 674-input Hessian, and the directional
+slopes are observed OLS slopes rather than paired grouped finite differences.
+Those PLAN task-3 calculations are explicitly deferred below. No multiplicity
+correction is applied across the exploratory interaction table; cross-member
+sign replication is descriptive, not a discovery threshold.
 
 ## Stable/near-floor versus unstable behavior
 
@@ -121,8 +133,10 @@ Interactions are less reproducible near the floor: 36/48 stable-stratum signs
 agree in all three members, versus 48/48 on unstable rows. The mixed terms also
 change. For example, median $a/L_T \times
 \log\langle|\nabla x|\rangle$ mixed derivative is **-0.189** near the floor but
-**+0.319** on unstable rows. This regime reversal is retained rather than
-pooled into a single mechanism.
+**+0.319** on unstable rows. However, the stable fold ranges are
+**[-0.400,+0.071]**, **[-0.321,+0.045]**, and **[-0.238,-0.064]**: two members
+contain an opposite-sign fold. This is a tentative regime contrast, not a
+resolved reversal.
 
 ## Negative and contradictory results
 
@@ -160,9 +174,9 @@ pooled into a single mechanism.
 
 | PLAN criterion | Verdict and evidence |
 | --- | --- |
-| “high fidelity is demonstrated on held-out equilibria” | **Pass.** All-candidate member $R^2=0.9080$–0.9174 under nested equilibrium-grouped folds; completeness is median 0.9087 against the exact bottleneck-head ceiling. |
-| “added complexity has an uncertainty-qualified gain” | **Pass with an important qualification.** All-candidate gain over the paper baseline is 0.0849 [0.0717, 0.1020], 0.0953 [0.0802, 0.1113], and 0.0895 [0.0764, 0.1046]. Geometry-only gain is 0.0117 [-0.0040, 0.0256], 0.0221 [0.0119, 0.0342], and 0.0193 [0.0092, 0.0299]; the larger gain includes target-side diagnostics. |
-| “interaction conclusions reproduce across members and do not rest on the fixed-gradient set alone” | **Pass with regime limit.** The calculation uses varied rows only. Pooled and unstable signs reproduce in 48/48 cells across all three members; stable/near-floor signs reproduce in 36/48. The bad-curvature $a/L_T$ sign reversal is shared by all members. |
+| “high fidelity is demonstrated on held-out equilibria” | **Pass.** All-candidate member $R^2=0.9080$–0.9174 under nested equilibrium-grouped folds; median held-out fidelity is 0.9087 with an exact-head ceiling of 1 by construction. |
+| “added complexity has an uncertainty-qualified gain” | **Pass with an important qualification.** All-candidate gain over the paper baseline is 0.0849 [0.0705, 0.0998], 0.0953 [0.0800, 0.1108], and 0.0895 [0.0764, 0.1040]. Geometry-only gain is 0.0117 [-0.0044, 0.0260], 0.0221 [0.0111, 0.0332], and 0.0193 [0.0085, 0.0300]; the larger gain includes target-side diagnostics. |
+| “interaction conclusions reproduce across members and do not rest on the fixed-gradient set alone” | **Qualified pass.** The observed-slope calculation uses varied rows only. Pooled and unstable signs reproduce in 48/48 cells across all three members; stable/near-floor signs reproduce in 36/48. The bad-curvature $a/L_T$ sign reversal is shared, but true network-input mixed derivatives and paired grouped finite differences are deferred. |
 
 ## Mutation testing
 
@@ -175,6 +189,8 @@ reverted:
    and failed the native-output assertion; and
 3. dropping the drive-by-concept product changed the known mixed derivative
    from 3 to approximately zero and failed the integrated-Hessian control.
+4. fitting the outer decoder on all rows, including its held-out fold, failed
+   the explicit manual out-of-fold prediction comparison.
 
 ## Reproduction
 
@@ -199,6 +215,9 @@ out-of-fold decoder prediction, regime metric, directional slope, and selected
 mixed term for the three named members. The practical proxy is the 96-row pilot;
 agreement on folds, signed interaction controls, axes, and artifact columns
 checks the wiring, while the full slice reproduces the production numbers.
+Because the frozen panel deliberately contains one row per equilibrium,
+equilibrium-grouped and row-grouped folds coincide for this production cohort;
+the repeated-group synthetic test is what exercises the grouping protection.
 
 **Checkable from committed artifacts alone.** Every headline above recomputes
 from `completeness.csv`, `concept_residuals.csv`, `interaction_summary.csv`, and
@@ -215,4 +234,9 @@ agreement checks the science but cannot match the source-file bytes to its hash.
 
 ## Deferred
 
-Nothing. The MVD and the registered drive-interaction analyses were completed.
+The MVD—nested concept completeness and the uncertainty-qualified gain over the
+paper baseline—is complete. PLAN task 3's true selected network-input mixed
+derivatives (geometry channel × drive) and paired grouped finite differences
+are deferred. The delivered concept-decoder mixed derivatives and stratified
+OLS slopes are clearly labeled substitutes; implementing a robustly scaled
+input-Hessian path would exceed the one-session budget after the complete MVD.

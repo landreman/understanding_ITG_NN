@@ -17,18 +17,22 @@ in a plasma.
 A simple decoder (a small fitted formula) tried to reproduce each of the top
 three networks from progressively larger concept sets. Entire equilibria were
 kept together, and every score came from equilibria excluded while that decoder
-was fitted. This prevents nearly related rows from making the score look better
-than it is.
+was fitted. The frozen panel already has one row per equilibrium, so row and
+equilibrium grouping coincide here; a repeated-equilibrium synthetic test
+checks that the code remains safe on a less restricted cohort.
 
 The paper's starting vocabulary—temperature gradient, density gradient, and
 $f_Q$—already explains a median **82.3%** of the variation in the member
-predictions. The full candidate vocabulary explains **90.9%**. Its gain is
+predictions. The full candidate vocabulary reaches held-out $R^2=0.909$. The
+exact trained bottleneck head is 1 by construction, so this is a fidelity score
+rather than a newly measured “percent of the bottleneck.” Its gain is
 about **nine percentage points of $R^2$**, and the uncertainty interval excludes
 zero in every member.
 
 Completeness is bounded against the network's invariant bottleneck: the small
 set of hidden numbers containing all geometric information used by the network.
-The trained head reproduces its own output exactly, so the ceiling is 100%.
+The trained head reproduces its own output exactly, so the ceiling is 100% by
+definition.
 A separate simple decoder of that wider bottleneck reaches 87.0%. The fact that
 the lower-dimensional concept decoder scores slightly better than that simple
 bottleneck decoder reflects ease of fitting, not extra information; both
@@ -64,12 +68,14 @@ $a/L_T$, it is associated with a higher prediction (**+0.356**). All three
 members show that reversal. Geodesic curvature strengthens sharply with
 $a/L_T$, while cross-channel co-location remains positive but weakens.
 
-These patterns reproduce impressively on unstable rows: every one of the 48
+These patterns reproduce on unstable rows: every one of the 48
 concept-by-drive-bin signs agrees across all three members. Near the clipped
 output floor, only 36 of 48 agree. That weaker agreement is itself useful: the
 network's stiffness behavior well above threshold is much more coherent than
 its fine-grained geometry response where the output is compressed against the
-floor.
+floor. The three member outputs are themselves extremely correlated
+($r=0.994$ pairwise), so sign agreement is descriptive evidence and may partly
+reflect shared training bias.
 
 The stable-row fidelity is therefore reported with mean squared error rather
 than relying on $R^2$, whose denominator is nearly zero there. The candidate
@@ -90,4 +96,7 @@ drive changes. Those relationships are observed comparisons, not physical
 interventions. They identify focused hypotheses for later compact formulas and
 equilibrium-consistent GX tests; they do not yet establish plasma causality.
 
-Nothing was deferred.
+The nested completeness result is complete. True mixed derivatives of the
+network with respect to geometry inputs and drive, plus paired grouped finite
+differences, are deferred; the present interaction diagnostics are fitted-
+decoder slopes and mixed terms, not network-input Hessian entries.

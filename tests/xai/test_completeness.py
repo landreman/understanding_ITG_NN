@@ -3,7 +3,14 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from itg_nn.xai.completeness import grouped_completeness, grouped_integrated_hessian, stratified_directional_effects
+from itg_nn.xai.completeness import (
+    _expand,
+    _predict,
+    _ridge_fit,
+    grouped_completeness,
+    grouped_integrated_hessian,
+    stratified_directional_effects,
+)
 
 
 def _cyclic_fixture(seed: int = 7):
@@ -77,6 +84,9 @@ def test_grouped_integrated_hessian_recovers_selected_mixed_term():
     )
     lookup = {(row.drive_index, row.concept): row for row in rows}
     assert lookup[(0, "signal")].mixed_derivative == pytest.approx(3.0, abs=0.15)
+    assert lookup[(0, "signal")].fold_minimum_mixed_derivative < 3.1
+    assert lookup[(0, "signal")].fold_maximum_mixed_derivative > 2.9
+    assert lookup[(0, "signal")].fold_sign_agreement == 1.0
     assert abs(lookup[(0, "null")].mixed_derivative) < 0.3
     assert all(row.validity_tag == "observed-comparison" for row in rows)
 
@@ -89,3 +99,23 @@ def test_repeated_rows_with_too_few_equilibria_are_rejected():
             np.zeros_like(groups), outer_folds=4, inner_folds=3,
             penalties=(0.1,), seed=0, bootstrap_replicates=10,
         )
+
+
+def test_outer_predictions_are_fit_without_the_held_out_fold():
+    groups, signal, _, drive, native = _cyclic_fixture()
+    values = np.column_stack([drive, np.zeros_like(drive), signal])
+    noisy_native = native + np.random.default_rng(31).normal(0, 0.25, len(native))
+    noisy_native[groups == groups[-1]] += 2.0
+    result = grouped_completeness(
+        {"known": values}, noisy_native, groups, outer_folds=4, inner_folds=3,
+        penalties=(1e-6,), seed=29, bootstrap_replicates=20,
+    )[0]
+    expanded = _expand(values)
+    leaky = _predict(_ridge_fit(expanded, noisy_native, 1e-6), expanded)
+    assert not np.allclose(result.prediction, leaky)
+    for fold in np.unique(result.fold):
+        train = result.fold != fold
+        expected = _predict(
+            _ridge_fit(expanded[train], noisy_native[train], 1e-6), expanded[~train]
+        )
+        np.testing.assert_allclose(result.prediction[~train], expected, atol=1e-10)

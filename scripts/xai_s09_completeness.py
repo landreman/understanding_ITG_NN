@@ -117,15 +117,16 @@ def _plot(path: Path, rows: list[dict[str, Any]], member_ids: list[str]) -> None
     figure, axes = plt.subplots(1, 2, figsize=(12, 4.5))
     for member in member_ids:
         selected = [row for row in rows if row["member_id"] == member and row["regime"] == "all"]
-        axes[0].plot(range(len(selected)), [row["held_out_r2"] for row in selected], marker="o", alpha=.75, label=member)
-        axes[1].plot(range(len(selected)), [row["completeness_relative_to_full_bottleneck"] for row in selected], marker="o", alpha=.75)
-    for axis, title in zip(axes, ("Held-out decoder fidelity", "Completeness relative to bottleneck")):
+        axes[0].plot(range(len(selected)), [float(row["held_out_r2"]) for row in selected], marker="o", alpha=.75, label=member)
+        axes[1].plot(range(len(selected)), [float(row["gain_over_paper_baseline"]) for row in selected], marker="o", alpha=.75)
+    for axis, title in zip(axes, ("Held-out decoder fidelity", "Gain over paper baseline")):
         axis.set_xticks(range(len(names)), names, rotation=30, ha="right"); axis.set_title(title); axis.grid(alpha=.2)
     axes[0].legend(fontsize=7)
     figure.tight_layout(); figure.savefig(path, dpi=160); plt.close(figure)
 
 
 def _resume_postprocess(output_dir: Path, resolved: dict[str, Any], dataset: Path, checkpoint: Path, repository: Path, published: Path | None) -> Path:
+    artifacts = RunArtifacts(output_dir)
     old = json.loads((output_dir / "manifest.json").read_text(encoding="utf-8"))
     if old["dataset"]["sha256"] != sha256_file(dataset) or old["checkpoint"]["sha256"] != sha256_file(checkpoint):
         raise RuntimeError("resume input fingerprint changed")
@@ -138,7 +139,8 @@ def _resume_postprocess(output_dir: Path, resolved: dict[str, Any], dataset: Pat
         if row["concept_set"] == "full_bottleneck": row["concept_set"] = "full_bottleneck_simple_decoder"
     for member_number, member in enumerate(members):
         member_residuals = [row for row in residuals if row["member_id"] == member]
-        by_set = {name: [row for row in member_residuals if row["concept_set"] == name] for name in {row["concept_set"] for row in member_residuals}}
+        ordered_names = list(dict.fromkeys(row["concept_set"] for row in member_residuals))
+        by_set = {name: [row for row in member_residuals if row["concept_set"] == name] for name in ordered_names}
         baseline_rows = by_set["paper_baseline"]
         target = np.asarray([float(row["target_native_prediction"]) for row in baseline_rows])
         baseline = np.asarray([float(row["decoder_prediction"]) for row in baseline_rows])
@@ -147,7 +149,7 @@ def _resume_postprocess(output_dir: Path, resolved: dict[str, Any], dataset: Pat
         baseline_r2 = _r2(target, baseline, np.ones(len(target), dtype=bool))
         for set_number, (name, set_rows) in enumerate(by_set.items()):
             prediction = np.asarray([float(row["decoder_prediction"]) for row in set_rows])
-            lower, upper, stability = _paired_gain(target, prediction, baseline, groups, int(resolved["bootstrap_replicates"]), int(resolved["seed"]) + member_number * 10000 + set_number)
+            lower, upper, stability = _paired_gain(target, prediction, baseline, groups, int(resolved["direct_gain_bootstrap_replicates"]), int(resolved["seed"]) + member_number * 10000 + set_number)
             for row in completeness:
                 if row["member_id"] == member and row["concept_set"] == name:
                     regime_mask = {"all": np.ones(len(target), dtype=bool), "stable_or_near_floor": stable_local, "unstable": ~stable_local}[row["regime"]]
@@ -157,7 +159,7 @@ def _resume_postprocess(output_dir: Path, resolved: dict[str, Any], dataset: Pat
                         row["gain_over_paper_baseline_ci95_lower"] = lower; row["gain_over_paper_baseline_ci95_upper"] = upper; row["gain_over_paper_baseline_selection_stability"] = stability
         if "full_bottleneck_exact_head" not in by_set:
             stable = np.asarray([row["stable_or_near_floor"] == "True" for row in baseline_rows])
-            lower, upper, stability = _paired_gain(target, target, baseline, groups, int(resolved["bootstrap_replicates"]), int(resolved["seed"]) + member_number * 10000 + 999)
+            lower, upper, stability = _paired_gain(target, target, baseline, groups, int(resolved["direct_gain_bootstrap_replicates"]), int(resolved["seed"]) + member_number * 10000 + 999)
             for regime, mask in (("all", np.ones(len(target), dtype=bool)), ("stable_or_near_floor", stable), ("unstable", ~stable)):
                 completeness.append({"member_id": member, "concept_set": "full_bottleneck_exact_head", "regime": regime, "held_out_r2": 1.0, "increment_r2_over_previous": "", "increment_ci95_lower": "", "increment_ci95_upper": "", "bootstrap_selection_stability": "", "gain_over_paper_baseline": 1.0 - baseline_r2 if regime == "all" else "", "gain_over_paper_baseline_ci95_lower": lower if regime == "all" else "", "gain_over_paper_baseline_ci95_upper": upper if regime == "all" else "", "gain_over_paper_baseline_selection_stability": stability if regime == "all" else "", "completeness_relative_to_full_bottleneck": 1.0 if regime == "all" else "", "rows": int(mask.sum()), "outer_split_unit": "not_fitted_exact_trained_head", "inner_split_unit": "not_fitted_exact_trained_head", "bootstrap_unit": "equilibrium_files", "decoder": "trained_canonical_head_exact_ceiling", "estimand": NATIVE_ESTIMAND, "canonical_function": CANONICAL_FUNCTION, "validity_tag": OBSERVED})
             for row in baseline_rows:
@@ -197,12 +199,13 @@ def _resume_postprocess(output_dir: Path, resolved: dict[str, Any], dataset: Pat
     summary["median_full_bottleneck_simple_decoder_r2"] = float(np.median([float(row["held_out_r2"]) for row in all_rows if row["concept_set"] == "full_bottleneck_simple_decoder"]))
     summary["median_full_bottleneck_r2"] = 1.0
     summary["median_completeness_relative_to_full_bottleneck"] = float(np.median([float(row["completeness_relative_to_full_bottleneck"]) for row in all_rows if row["concept_set"] == "all_candidates"]))
+    summary["median_candidate_to_simple_bottleneck_decoder_ratio"] = summary["median_all_candidates_r2"] / summary["median_full_bottleneck_simple_decoder_r2"]
+    summary["direct_gain_bootstrap"] = {"unit": "equilibrium_files", "replicates": int(resolved["direct_gain_bootstrap_replicates"])}
     summary["interaction_summary_rows"] = len(interaction_summary)
     summary["interaction_rows"] = len(interactions); summary["integrated_hessian_rows"] = len(hessian_rows)
     (output_dir / "summary.json").write_text(json.dumps(summary, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     resolved["production_compute_wall_time_seconds"] = float(old["config"].get("production_compute_wall_time_seconds", old["wall_time_seconds"]))
     resolved["script_sha256"] = sha256_file(__file__); resolved["completeness_module_sha256"] = sha256_file(repository / "itg_nn/xai/completeness.py")
-    artifacts = RunArtifacts(output_dir)
     for name in ("completeness.csv", "concept_residuals.csv", "interaction_effects.csv", "integrated_hessian_terms.csv", "interaction_summary.csv", "completeness_curves.png", "summary.json"): artifacts.register_existing(name)
     artifacts.finalize(config=resolved, dataset=dataset, checkpoint=checkpoint, member_ids=members, row_ids=old["row_ids"], gradient_set="varied", device=old["device"], repository=repository, command=sys.argv, published_dir=published)
     if published is not None:
@@ -256,7 +259,7 @@ def run(args: argparse.Namespace) -> Path:
         baseline_r2 = result[0].held_out_r2
         baseline_prediction = result[0].prediction
         for entry in result:
-            gain_lower, gain_upper, gain_stability = _paired_gain(target, entry.prediction, baseline_prediction, groups, int(resolved["bootstrap_replicates"]), int(resolved["seed"]) + member_number * 10000 + len(completeness_rows))
+            gain_lower, gain_upper, gain_stability = _paired_gain(target, entry.prediction, baseline_prediction, groups, int(resolved["direct_gain_bootstrap_replicates"]), int(resolved["seed"]) + member_number * 10000 + len(completeness_rows))
             for regime, mask in (("all", np.ones(len(rows), dtype=bool)), ("stable_or_near_floor", stable), ("unstable", ~stable)):
                 completeness_rows.append({
                     "member_id": member_id, "concept_set": entry.name, "regime": regime,
@@ -277,7 +280,7 @@ def run(args: argparse.Namespace) -> Path:
                 })
             for position in range(len(rows)):
                 residual_rows.append({"member_id": member_id, "row_id": int(rows[position]), "equilibrium_file": groups[position], "stable_or_near_floor": bool(stable[position]), "concept_set": entry.name, "target_native_prediction": float(target[position]), "decoder_prediction": float(entry.prediction[position]), "signed_residual": float(target[position] - entry.prediction[position])})
-        exact_lower, exact_upper, exact_stability = _paired_gain(target, target, baseline_prediction, groups, int(resolved["bootstrap_replicates"]), int(resolved["seed"]) + member_number * 10000 + 999)
+        exact_lower, exact_upper, exact_stability = _paired_gain(target, target, baseline_prediction, groups, int(resolved["direct_gain_bootstrap_replicates"]), int(resolved["seed"]) + member_number * 10000 + 999)
         for regime, mask in (("all", np.ones(len(rows), dtype=bool)), ("stable_or_near_floor", stable), ("unstable", ~stable)):
             completeness_rows.append({"member_id": member_id, "concept_set": "full_bottleneck_exact_head", "regime": regime, "held_out_r2": 1.0, "increment_r2_over_previous": "", "increment_ci95_lower": "", "increment_ci95_upper": "", "bootstrap_selection_stability": "", "gain_over_paper_baseline": 1.0 - baseline_r2 if regime == "all" else "", "gain_over_paper_baseline_ci95_lower": exact_lower if regime == "all" else "", "gain_over_paper_baseline_ci95_upper": exact_upper if regime == "all" else "", "gain_over_paper_baseline_selection_stability": exact_stability if regime == "all" else "", "completeness_relative_to_full_bottleneck": 1.0 if regime == "all" else "", "rows": int(mask.sum()), "outer_split_unit": "not_fitted_exact_trained_head", "inner_split_unit": "not_fitted_exact_trained_head", "bootstrap_unit": "equilibrium_files", "decoder": "trained_canonical_head_exact_ceiling", "estimand": NATIVE_ESTIMAND, "canonical_function": CANONICAL_FUNCTION, "validity_tag": OBSERVED})
         for position in range(len(rows)):
@@ -319,9 +322,11 @@ def run(args: argparse.Namespace) -> Path:
         "median_all_candidates_r2": float(np.median([row["held_out_r2"] for row in candidates])),
         "median_full_bottleneck_r2": float(np.median([row["held_out_r2"] for row in full])),
         "median_full_bottleneck_simple_decoder_r2": float(np.median([row["held_out_r2"] for row in simple_full])),
+        "median_candidate_to_simple_bottleneck_decoder_ratio": float(np.median([row["held_out_r2"] for row in candidates])) / float(np.median([row["held_out_r2"] for row in simple_full])),
         "median_gain_over_paper_baseline": float(np.median([row["gain_over_paper_baseline"] for row in candidates])),
         "median_completeness_relative_to_full_bottleneck": float(np.median([row["completeness_relative_to_full_bottleneck"] for row in candidates])),
         "bootstrap": {"unit": "equilibrium_files", "replicates": int(resolved["bootstrap_replicates"])},
+        "direct_gain_bootstrap": {"unit": "equilibrium_files", "replicates": int(resolved["direct_gain_bootstrap_replicates"])},
         "interaction_rows": len(interaction_rows), "integrated_hessian_rows": len(hessian_rows), "interaction_summary_rows": len(interaction_summary_rows), "interaction_source": "varied-gradient panel only",
     }
     artifacts.write_json("summary.json", summary)

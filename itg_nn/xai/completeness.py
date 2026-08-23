@@ -45,6 +45,9 @@ class IntegratedHessianTerm:
     ci95_upper: float
     mean_signed_integrated_term: float
     mean_absolute_integrated_term: float
+    fold_minimum_mixed_derivative: float
+    fold_maximum_mixed_derivative: float
+    fold_sign_agreement: float
     validity_tag: str = "observed-comparison"
     split_unit: str = "equilibrium_files"
     bootstrap_unit: str = "equilibrium_files"
@@ -232,11 +235,25 @@ def grouped_integrated_hessian(
                     evaluations.append(_predict(model, _expand(changed)))
                 mixed[test] = (evaluations[0] - evaluations[1] - evaluations[2] + evaluations[3]) / (4 * h_drive * h_concept)
             integrated = mixed * (raw[:, drive] - center[drive]) * (raw[:, concept_index] - center[concept_index])
+            fold_values = np.asarray([float(np.mean(mixed[fold == outer])) for outer in np.unique(fold)])
             rng = np.random.default_rng(seed + drive * 1000 + concept_offset)
             draws = np.empty(bootstrap_replicates)
             for draw in range(bootstrap_replicates):
                 positions = np.concatenate([positions_by_group[group] for group in rng.choice(unique, len(unique), replace=True)])
                 draws[draw] = float(np.mean(mixed[positions]))
             lower, upper = np.quantile(draws, (0.025, 0.975))
-            result.append(IntegratedHessianTerm(drive, str(concept), float(np.mean(mixed)), float(lower), float(upper), float(np.mean(integrated)), float(np.mean(np.abs(integrated)))))
+            result.append(
+                IntegratedHessianTerm(
+                    drive,
+                    str(concept),
+                    float(np.mean(mixed)),
+                    float(lower),
+                    float(upper),
+                    float(np.mean(integrated)),
+                    float(np.mean(np.abs(integrated))),
+                    float(fold_values.min()),
+                    float(fold_values.max()),
+                    float(max(np.mean(fold_values > 0), np.mean(fold_values < 0))),
+                )
+            )
     return result

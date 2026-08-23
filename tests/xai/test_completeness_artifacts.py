@@ -41,3 +41,4 @@ def test_s09_interactions_retain_members_and_regimes():
     assert {row["regime"] for row in effects} == {"all", "stable_or_near_floor", "unstable"}
     assert {row["regime"] for row in hessian} == {"all", "stable_or_near_floor", "unstable"}
     assert all(row["perturbation_validity_tag"] == "observed-comparison" for row in effects)
+    assert all(float(row["fold_minimum_mixed_derivative"]) <= float(row["mixed_derivative"]) <= float(row["fold_maximum_mixed_derivative"]) for row in hessian)

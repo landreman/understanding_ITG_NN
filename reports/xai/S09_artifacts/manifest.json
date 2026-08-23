@@ -14,9 +14,10 @@
     "bootstrap_replicates": 500,
     "checkpoint": "models/cyclic_ensemble_pre2.pt",
     "cohorts": "reports/xai/S01_artifacts/cohorts.json",
-    "completeness_module_sha256": "238c7fbe14fd179f0f4b93878f995401b5ae61c02562201b2c131e0734b644d4",
+    "completeness_module_sha256": "1bc5639226b4637b633a92658aab6e4e213f9ce68b7a90c2470a68acf6089877",
     "dataset": "/Users/mattland/20260523-01-files_for_Kosmos_interpreting_neural_networks/20250102-01_GX_stellarator_dataset.h5",
     "device": "cpu",
+    "direct_gain_bootstrap_replicates": 5000,
     "inner_folds": 3,
     "interaction_bins": 3,
     "members": 3,
@@ -25,6 +26,7 @@
     "panel_varied_rows": 1000,
     "pilot": {
       "bootstrap_replicates": 100,
+      "direct_gain_bootstrap_replicates": 500,
       "inner_folds": 2,
       "members": 1,
       "outer_folds": 3,
@@ -40,7 +42,7 @@
       1.0
     ],
     "run_id": "completeness-top3-panel1000",
-    "script_sha256": "f346c2f82667ff7940c10a4e905e5d054886c415adf15dd1d0126287451bc8a9",
+    "script_sha256": "74ec883e640338089500c5618cdfdf195061f94bc25bd347e6a2189cacdf1d45",
     "seed": 20260823,
     "stable_threshold_log_Q": -1.9,
     "step": "S09"
@@ -52,10 +54,10 @@
     "sha256": "9d8fa52f93f2782ad9948a38bf46943c0cd6df78cd08b94a006dad4e06c1c8ad"
   },
   "device": "cpu",
-  "git_commit": "20fe07308ca5396fb517ca82c086957bda2e388a",
+  "git_commit": "3e0b9a9342401de763d640e11d5fc1da2e63377c",
   "git_dirty": true,
-  "git_tracked_dirty": false,
-  "git_tree": "36cdde12bc68ae9200e9d3eb7794af7cd39023c5",
+  "git_tracked_dirty": true,
+  "git_tree": "3e370c6a47be867f6e3d864f3664ecaae4f51b3a",
   "gradient_set": "varied",
   "member_ids": [
     "2864601_0.437",
@@ -63,13 +65,13 @@
     "2864601_0.409"
   ],
   "output_hashes": {
-    "completeness.csv": "5047bf192c12ae740cc1b62d9583f001741663061a00c12f3cbdcf9e37dd6197",
-    "completeness_curves.png": "117df2ea2f4f7aa00445c9e96c4c60ca3df468a4d17f7862dec5b6dbe09cfa30",
+    "completeness.csv": "0108f6676a916f9efe76092c28e4bfcef464e56b95631b6a72fb65289413e6be",
+    "completeness_curves.png": "acc19d728ef4410aeeb310dd2d2026435905ba02a4f2586bf7830292ce25db1a",
     "concept_residuals.csv": "00fbfcfb3739359e9f624706a860a35880b7a9abf716bc54064228008ef13efb",
-    "integrated_hessian_terms.csv": "e4f4aee2b76824a5568a8a0eb1a519d886cca5220cee8e17d5fca3d8f0c7e2cf",
+    "integrated_hessian_terms.csv": "ae9460184e3c296c49c58dfd887be579dd0aec322773445a54cb328be6e99c1c",
     "interaction_effects.csv": "93ee44b8d6c108aa4b26af035084af9f2d7103dbec76ad61b733ea7cec5c8b0b",
     "interaction_summary.csv": "64a3e6985bd60d937a098aa0096239e75087b4d2266658182b22d60bf14b2af8",
-    "summary.json": "8933e163516e9a8f34900d163b946d11bc1919faca7e80668a95687d36658aec"
+    "summary.json": "da09ca4b3748600194d003188fec49e5d398dc67da44d4857146a6c02ba2b766"
   },
   "package_versions": {
     "captum": "0.9.0",
@@ -1085,5 +1087,5 @@
     100596
   ],
   "seed": 20260823,
-  "wall_time_seconds": 0.7144427919993177
+  "wall_time_seconds": 585.2775842919946
 }
