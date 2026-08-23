@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib
+import inspect
 from pathlib import Path
 
 import numpy as np
@@ -151,6 +152,18 @@ def test_paired_gain_bootstrap_is_invariant_to_row_duplication(monkeypatch):
             - _test_r2(target[positions], baseline[positions])
         )
     np.testing.assert_allclose(original[:2], np.quantile(draws, (0.025, 0.975)))
+
+
+def test_resume_interactions_use_each_members_own_signed_target(monkeypatch):
+    scripts = Path(__file__).resolve().parents[2] / "scripts"
+    monkeypatch.syspath_prepend(str(scripts))
+    resume = importlib.import_module("xai_s09_completeness")._resume_postprocess
+    source = inspect.getsource(resume)
+    assert (
+        'target_all = np.asarray([float(row["target_native_prediction"]) '
+        'for row in baseline_rows])'
+    ) in source
+    assert 'target = target_all[mask]' in source
 
 
 def test_stratified_interaction_recovers_signed_drive_change_and_null():

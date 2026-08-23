@@ -205,7 +205,10 @@ reverted:
 7. sampling every equilibrium without replacement collapsed all bootstrap
    intervals and failed the material-width controls for all four paths; and
 8. changing the reported quantiles from 95% to 90%, or doubling the number of
-   equilibria per draw, failed exact seeded-bootstrap reconstruction controls.
+   equilibria per draw, failed exact seeded-bootstrap reconstruction controls;
+   and
+9. averaging member predictions before signed interaction estimation failed
+   the member-specific target guard and distinct-member artifact controls.
 
 ## Reproduction
 

@@ -5,6 +5,7 @@ import hashlib
 import json
 from pathlib import Path
 
+import numpy as np
 import pytest
 
 
@@ -36,9 +37,31 @@ def test_s09_manifest_hashes_every_published_artifact():
 @pytest.mark.skipif(not (ARTIFACTS / "interaction_summary.csv").is_file(), reason="S09 interaction artifacts not committed")
 def test_s09_interactions_retain_members_and_regimes():
     effects = list(csv.DictReader((ARTIFACTS / "interaction_effects.csv").open()))
+    summary = list(csv.DictReader((ARTIFACTS / "interaction_summary.csv").open()))
     hessian = list(csv.DictReader((ARTIFACTS / "integrated_hessian_terms.csv").open()))
     assert len({row["member_id"] for row in effects}) == 3
     assert {row["regime"] for row in effects} == {"all", "stable_or_near_floor", "unstable"}
     assert {row["regime"] for row in hessian} == {"all", "stable_or_near_floor", "unstable"}
     assert all(row["perturbation_validity_tag"] == "observed-comparison" for row in effects)
     assert all(float(row["fold_minimum_mixed_derivative"]) <= float(row["mixed_derivative"]) <= float(row["fold_maximum_mixed_derivative"]) for row in hessian)
+    summary_by_key = {
+        (row["regime"], row["drive"], row["concept"], row["bin_index"]): row
+        for row in summary
+    }
+    for key in summary_by_key:
+        slopes = np.asarray([
+            float(row["slope"])
+            for row in effects
+            if (row["regime"], row["drive"], row["concept"], row["bin_index"]) == key
+        ])
+        assert len(slopes) == 3
+        assert np.ptp(slopes) > 1e-9
+        expected = max(np.mean(slopes > 0), np.mean(slopes < 0))
+        assert float(summary_by_key[key]["member_sign_agreement"]) == pytest.approx(expected)
+    opposing_member_slopes = np.asarray([-2.0, 1.0, 3.0])
+    opposing_agreement = max(
+        np.mean(opposing_member_slopes > 0), np.mean(opposing_member_slopes < 0)
+    )
+    assert opposing_agreement == pytest.approx(2 / 3)
+    assert opposing_agreement < 1.0
+    assert any(float(row["member_sign_agreement"]) < 1.0 for row in summary)
