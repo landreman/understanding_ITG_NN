@@ -302,6 +302,24 @@ def _association_bootstrap_stable(result: CircularAlignment) -> bool:
     return bool(result.rank_ci_lower > 0 or result.rank_ci_upper < 0)
 
 
+def _select_alignment_case_studies(
+    result: CircularAlignment,
+    row_ids: np.ndarray,
+    groups: np.ndarray,
+    *,
+    per_direction: int,
+) -> tuple[dict[str, object], ...]:
+    """Orient cases by the independently estimated population association."""
+
+    return select_balanced_case_studies(
+        result.per_sample_rank_correlation,
+        row_ids,
+        groups,
+        per_direction=per_direction,
+        expected_sign=(1 if result.rank_correlation >= 0 else -1),
+    )
+
+
 def _lag_within_tolerance_recurrence(
     result: CircularAlignment, tolerance: int
 ) -> float:
@@ -1121,12 +1139,11 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
         result = alignment_objects[
             ("density", member_id, unit_id, "varied", "unstable", "signed")
         ]
-        selected = select_balanced_case_studies(
-            result.per_sample_rank_correlation,
+        selected = _select_alignment_case_studies(
+            result,
             rows[unstable_varied],
             groups[unstable_varied],
             per_direction=int(config["case_studies_per_direction"]),
-            expected_sign=(1 if result.rank_correlation >= 0 else -1),
         )
         for case in selected:
             position = row_to_position[int(case["row_id"])]

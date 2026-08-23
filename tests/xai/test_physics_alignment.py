@@ -22,6 +22,7 @@ from scripts.xai_s07_physics_alignment import (
     _lag_within_tolerance_recurrence,
     _pair_strata,
     _position_source,
+    _select_alignment_case_studies,
     _signed_lag,
     _strata,
     _top_mass_fraction,
@@ -51,6 +52,9 @@ def test_circular_alignment_recovers_known_lag_overlap_and_null_control() -> Non
 
     assert result.best_lag == 7
     assert result.rank_correlation == pytest.approx(1.0, abs=1e-12)
+    assert result.per_sample_rank_correlation.mean() == pytest.approx(
+        result.rank_correlation, abs=1e-12
+    )
     assert result.cross_correlation_by_lag[7] == pytest.approx(1.0, abs=1e-12)
     assert result.overlap == pytest.approx(1.0)
     assert result.lag_recurrence == pytest.approx(1.0)
@@ -341,6 +345,25 @@ def test_grouped_bootstraps_and_case_selection_are_deterministic() -> None:
     )
     assert negative_cases[0]["case_type"] == "supporting"
     assert float(negative_cases[0]["score"]) < 0
+
+    negative_alignment = replace(
+        first,
+        rank_correlation=-0.25,
+        per_sample_rank_correlation=scores,
+    )
+    aligned_cases = _select_alignment_case_studies(
+        negative_alignment,
+        row_ids,
+        case_groups,
+        per_direction=2,
+    )
+    supporting = [
+        float(case["score"])
+        for case in aligned_cases
+        if case["case_type"] == "supporting"
+    ]
+    assert supporting == [-0.9, -0.8]
+    assert {int(case["expected_sign"]) for case in aligned_cases} == {-1}
 
 
 def test_lag_stability_wrap_tolerance_and_reported_flags_are_pinned() -> None:

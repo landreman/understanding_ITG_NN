@@ -1086,7 +1086,7 @@
     "s05_motifs": "reports/xai/S05_artifacts/unit_motifs.csv",
     "s06b_manifest": "reports/xai/S06b_artifacts/manifest.json",
     "s06b_map": "output/xai/S06b/scaled-attribution-top10-panel2000-rank10-panel512/attribution_maps.h5",
-    "script_sha256": "199d2ab39fb723829846e69150475e6d7cde4598073459fdede9832e2d799dfc",
+    "script_sha256": "ad06c12374cb01fdd28988d94a58ed984d46c440b92815ac6c468b0d289122a5",
     "seed": 20260822,
     "selected_units_per_member": 3,
     "selection_null_permutations": 200,
@@ -1104,10 +1104,10 @@
     "sha256": "9d8fa52f93f2782ad9948a38bf46943c0cd6df78cd08b94a006dad4e06c1c8ad"
   },
   "device": "cpu",
-  "git_commit": "d749480f9187e2cbd4bb81959b45acf572986772",
+  "git_commit": "70e6a3adc28ffe6c034fd21f983dce4f0f312c3a",
   "git_dirty": true,
   "git_tracked_dirty": true,
-  "git_tree": "060b87ee64a23676fe5af92309439ca19c4837ab",
+  "git_tree": "db315551d593c938be16c26a3666e674304bac80",
   "gradient_set": "fixed_and_varied_separate",
   "member_ids": [
     "2864601_0.437",
@@ -3139,5 +3139,5 @@
     100596
   ],
   "seed": 20260822,
-  "wall_time_seconds": 344.4711374579929
+  "wall_time_seconds": 335.80587874999037
 }

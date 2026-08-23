@@ -299,6 +299,22 @@ def test_s07_zonal_pairing_cases_and_symmetry_keep_negative_results() -> None:
     assert all(row["validity_tag"] == "observed-comparison" for row in cases)
     assert all(row["feature_claims_permitted"] == "True" for row in cases)
     assert all(row["plasma_claims_permitted"] == "True" for row in cases)
+    spatial = _csv("spatial_alignment.csv")
+    population_sign = {
+        (row["member_id"], row["source_id"]): int(
+            np.sign(float(row["circular_spearman"]))
+        )
+        for row in spatial
+        if row["source_family"] == "s05_density"
+        and row["gradient_set"] == "varied"
+        and row["stratum"] == "unstable"
+        and row["mode"] == "signed"
+    }
+    assert all(
+        int(row["expected_sign"])
+        == population_sign[(row["member_id"], row["unit_id"])]
+        for row in cases
+    )
     assert all(
         np.sign(float(row["score"])) == int(row["expected_sign"])
         for row in cases

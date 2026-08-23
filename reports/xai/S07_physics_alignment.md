@@ -74,7 +74,7 @@ python scripts/xai_s07_physics_alignment.py \
   --config configs/xai/S07_physics_alignment.json
 ```
 
-Run `physics-alignment-top3-panel1000` took 344.47 seconds on CPU. The committed
+Run `physics-alignment-top3-panel1000` took 335.81 seconds on CPU. The committed
 [manifest](S07_artifacts/manifest.json) records the exact dataset, checkpoint,
 S04/S05 inputs, reused S06b attribution-map hash, package versions, command,
 row IDs, and output hashes.
@@ -99,6 +99,12 @@ separates the active-row association from the pooled value and makes replacing
 the former with the latter fail. Its unequal 53-position learned and 10-position
 GX mean mask widths pin both overlap normalisations: swapping either the
 overlap denominator or the chance baseline now fails.
+The final review pass found two remaining per-equilibrium gaps. The analytic
+lag-7 fixture now requires the mean of the returned per-row correlations to
+equal the registered-lag population correlation, so reading those rows at lag
+zero fails. Case selection now goes through a directly tested wrapper: for a
+negative population association, its most negative equilibrium rows must be
+the supporting cases. Forcing that orientation to positive also fails.
 
 ## Methods
 
