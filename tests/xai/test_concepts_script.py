@@ -3,6 +3,7 @@ from __future__ import annotations
 import importlib.util
 import sys
 from pathlib import Path
+from types import SimpleNamespace
 
 import numpy as np
 import pytest
@@ -39,6 +40,39 @@ def test_aggregate_cav_uses_all_normalized_counterexample_directions(s08_script)
     directions = [torch.tensor([3.0, 0.0]), torch.tensor([0.0, 4.0])]
     aggregate = s08_script._aggregate_cav_direction(directions)
     torch.testing.assert_close(aggregate, torch.tensor([1.0, 1.0]) / np.sqrt(2))
+
+
+def test_published_use_fields_keep_stable_and_unstable_results_distinct(
+    s08_script,
+) -> None:
+    use = SimpleNamespace(
+        mean_directional_derivative=7.0,
+        intervention_rms=9.0,
+        intervention_rms_stable_or_near_floor=2.0,
+        intervention_rms_unstable=6.0,
+        random_intervention_rms_median=3.0,
+        random_intervention_rms_median_stable_or_near_floor=0.5,
+        random_intervention_rms_median_unstable=2.0,
+        scale_matched_random_rms_median=1.5,
+        scale_matched_random_rms_median_stable_or_near_floor=0.25,
+        scale_matched_random_rms_median_unstable=3.0,
+        orthogonal_complement_ablation_rms=11.0,
+    )
+    fields = s08_script._published_use_fields(
+        use,
+        derivative_values=np.array([1.0, 10.0, 3.0, 14.0]),
+        stable_mask=np.array([True, False, True, False]),
+    )
+
+    assert fields["mean_directional_derivative_stable_or_near_floor"] == 2.0
+    assert fields["mean_directional_derivative_unstable"] == 12.0
+    assert fields["intervention_to_random_ratio_stable_or_near_floor"] == 4.0
+    assert fields["intervention_to_random_ratio_unstable"] == 3.0
+    assert (
+        fields["intervention_to_scale_matched_random_ratio_stable_or_near_floor"]
+        == 8.0
+    )
+    assert fields["intervention_to_scale_matched_random_ratio_unstable"] == 2.0
 
 
 def test_bootstrap_and_complete_gate_pin_production_statistics(s08_script) -> None:

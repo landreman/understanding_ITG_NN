@@ -209,6 +209,58 @@ def _aggregate_cav_direction(directions: list[torch.Tensor]) -> torch.Tensor:
     return aggregate / torch.linalg.vector_norm(aggregate).clamp_min(1e-12)
 
 
+def _published_use_fields(
+    use: Any, derivative_values: np.ndarray, stable_mask: np.ndarray
+) -> dict[str, float]:
+    """Map pooled and regime-specific direction-use results to artifact columns."""
+
+    stable_mask = np.asarray(stable_mask, dtype=bool)
+
+    def mean_for(mask: np.ndarray) -> float:
+        return float(np.mean(derivative_values[mask])) if np.any(mask) else float("nan")
+
+    def ratio(numerator: float, denominator: float) -> float:
+        return float(numerator / max(denominator, 1e-30))
+
+    return {
+        "mean_directional_derivative": use.mean_directional_derivative,
+        "mean_directional_derivative_stable_or_near_floor": mean_for(stable_mask),
+        "mean_directional_derivative_unstable": mean_for(~stable_mask),
+        "intervention_rms": use.intervention_rms,
+        "intervention_rms_stable_or_near_floor": use.intervention_rms_stable_or_near_floor,
+        "intervention_rms_unstable": use.intervention_rms_unstable,
+        "random_intervention_rms_median": use.random_intervention_rms_median,
+        "random_intervention_rms_median_stable_or_near_floor": use.random_intervention_rms_median_stable_or_near_floor,
+        "random_intervention_rms_median_unstable": use.random_intervention_rms_median_unstable,
+        "intervention_to_random_ratio": ratio(
+            use.intervention_rms, use.random_intervention_rms_median
+        ),
+        "intervention_to_random_ratio_stable_or_near_floor": ratio(
+            use.intervention_rms_stable_or_near_floor,
+            use.random_intervention_rms_median_stable_or_near_floor,
+        ),
+        "intervention_to_random_ratio_unstable": ratio(
+            use.intervention_rms_unstable,
+            use.random_intervention_rms_median_unstable,
+        ),
+        "scale_matched_random_rms_median": use.scale_matched_random_rms_median,
+        "scale_matched_random_rms_median_stable_or_near_floor": use.scale_matched_random_rms_median_stable_or_near_floor,
+        "scale_matched_random_rms_median_unstable": use.scale_matched_random_rms_median_unstable,
+        "intervention_to_scale_matched_random_ratio": ratio(
+            use.intervention_rms, use.scale_matched_random_rms_median
+        ),
+        "intervention_to_scale_matched_random_ratio_stable_or_near_floor": ratio(
+            use.intervention_rms_stable_or_near_floor,
+            use.scale_matched_random_rms_median_stable_or_near_floor,
+        ),
+        "intervention_to_scale_matched_random_ratio_unstable": ratio(
+            use.intervention_rms_unstable,
+            use.scale_matched_random_rms_median_unstable,
+        ),
+        "orthogonal_complement_ablation_rms": use.orthogonal_complement_ablation_rms,
+    }
+
+
 def _plot_matrix(path: Path, rows: list[dict[str, Any]], members: list[str], concepts: list[str]) -> None:
     figure, axes = plt.subplots(len(members), 2, figsize=(14, 3.6 * len(members)), squeeze=False)
     for member_index, member_id in enumerate(members):
@@ -528,7 +580,26 @@ def run(args: argparse.Namespace) -> Path:
                 encoded_unstable = float("nan") if np.count_nonzero(~stable) < 2 else 1.0 - float(np.sum((target[~stable] - probe.predictions[~stable]) ** 2)) / max(float(np.sum((target[~stable] - target[~stable].mean()) ** 2)), 1e-30)
                 common = {"member_id": member_id, "layer_index": layer_index, "layer_name": f"canonical_atrous_relu_pool_{layer_index + 1}", "concept": concept, "estimand": NATIVE_ESTIMAND, "canonical_function": CANONICAL_FUNCTION, "stable_rows": int(stable.sum()), "unstable_rows": int((~stable).sum()), "derivative_rows": int(len(use_positions)), "derivative_stable_rows": int(use_stable.sum()), "derivative_unstable_rows": int((~use_stable).sum()), "counterexample_max_abs_smd": balance_by_concept[concept]["max_abs_smd"]}
                 probe_row = {**common, "encoded_r2": probe.held_out_r2, "encoded_r2_stable_or_near_floor": encoded_stable, "encoded_r2_unstable": encoded_unstable, "permuted_r2": permuted.held_out_r2, "nonzero_fraction": probe.nonzero_fraction, "outer_split_unit": "equilibrium_files", "inner_split_unit": "equilibrium_files", "encoded_column": True, "used_column": False, "validity_tag": OBSERVED}
-                use_row = {**common, "direction_source": "mean_of_five_paired_matched_counterexample_CAVs", "mean_directional_derivative": use.mean_directional_derivative, "mean_directional_derivative_stable_or_near_floor": float(np.mean(derivative_values[use_stable])) if np.any(use_stable) else float("nan"), "mean_directional_derivative_unstable": float(np.mean(derivative_values[~use_stable])) if np.any(~use_stable) else float("nan"), "directional_derivative_ci95_lower": lower, "directional_derivative_ci95_upper": upper, "bootstrap_p_value": p_value, "tcav_positive_fraction": use.positive_fraction, "counterexample_set_sd": float(np.std(counter_means)), "counterexample_sign_agreement": float(max(np.mean(np.asarray(counter_means) > 0), np.mean(np.asarray(counter_means) < 0))), "counterexample_subset_max_abs_smd": max(subset_balance), "intervention_rms": use.intervention_rms, "intervention_rms_stable_or_near_floor": use.intervention_rms_stable_or_near_floor, "intervention_rms_unstable": use.intervention_rms_unstable, "random_intervention_rms_median": use.random_intervention_rms_median, "random_intervention_rms_median_stable_or_near_floor": use.random_intervention_rms_median_stable_or_near_floor, "random_intervention_rms_median_unstable": use.random_intervention_rms_median_unstable, "intervention_to_random_ratio": use.intervention_rms / max(use.random_intervention_rms_median, 1e-30), "intervention_to_random_ratio_stable_or_near_floor": use.intervention_rms_stable_or_near_floor / max(use.random_intervention_rms_median_stable_or_near_floor, 1e-30), "intervention_to_random_ratio_unstable": use.intervention_rms_unstable / max(use.random_intervention_rms_median_unstable, 1e-30), "scale_matched_random_rms_median": use.scale_matched_random_rms_median, "scale_matched_random_rms_median_stable_or_near_floor": use.scale_matched_random_rms_median_stable_or_near_floor, "scale_matched_random_rms_median_unstable": use.scale_matched_random_rms_median_unstable, "intervention_to_scale_matched_random_ratio": use.intervention_rms / max(use.scale_matched_random_rms_median, 1e-30), "intervention_to_scale_matched_random_ratio_stable_or_near_floor": use.intervention_rms_stable_or_near_floor / max(use.scale_matched_random_rms_median_stable_or_near_floor, 1e-30), "intervention_to_scale_matched_random_ratio_unstable": use.intervention_rms_unstable / max(use.scale_matched_random_rms_median_unstable, 1e-30), "orthogonal_complement_ablation_rms": use.orthogonal_complement_ablation_rms, "perturbation_validity_tag": OFF_MANIFOLD, "encoded_column": False, "used_column": True}
+                use_row = {
+                    **common,
+                    "direction_source": "mean_of_five_paired_matched_counterexample_CAVs",
+                    **_published_use_fields(use, derivative_values, use_stable),
+                    "directional_derivative_ci95_lower": lower,
+                    "directional_derivative_ci95_upper": upper,
+                    "bootstrap_p_value": p_value,
+                    "tcav_positive_fraction": use.positive_fraction,
+                    "counterexample_set_sd": float(np.std(counter_means)),
+                    "counterexample_sign_agreement": float(
+                        max(
+                            np.mean(np.asarray(counter_means) > 0),
+                            np.mean(np.asarray(counter_means) < 0),
+                        )
+                    ),
+                    "counterexample_subset_max_abs_smd": max(subset_balance),
+                    "perturbation_validity_tag": OFF_MANIFOLD,
+                    "encoded_column": False,
+                    "used_column": True,
+                }
                 probe_rows.append(probe_row)
                 use_rows.append(use_row)
                 matrix_rows.append({**probe_row, **use_row, "encoded_column": True, "used_column": True})

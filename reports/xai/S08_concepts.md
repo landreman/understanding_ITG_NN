@@ -246,8 +246,9 @@ limited: **108/150** cells sit at the minimum $2/501$.
   ratios still pooled the two output regimes, the new script-level assembly and
   gate logic lacked direct tests, and the orthogonal ablation had no numerical
   interpretation. The final run publishes both regime splits; script tests now
-  pin paired subsets, direction aggregation, bootstrap/FDR, controls, and
-  balance gates; and both reports retain the ablation contradiction.
+  pin paired subsets, direction aggregation, bootstrap/FDR, controls, balance
+  gates, and the stable/unstable artifact-column mapping; and both reports
+  retain the ablation contradiction.
 
 ## Mutation testing
 
@@ -284,7 +285,11 @@ reverted:
 15. removing centering from the orthogonal projection failed its preserved-mean
     and zero-coordinate identities; and
 16. ignoring feature scale in the matched random control failed a hand-computed
-    weighted-direction result.
+    weighted-direction result;
+17. wiring the stable/near-floor scale-matched ratio from the unstable RMS and
+    control failed an asymmetric production-script fixture; and
+18. wiring the stable/near-floor derivative column from unstable rows failed
+    the same fixture.
 
 ## Deferred
 
