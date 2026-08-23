@@ -313,6 +313,11 @@ def test_s07_zonal_pairing_cases_and_symmetry_keep_negative_results() -> None:
         stratum="both_unstable",
     )
     assert float(observed_effect["estimate"]) == np.float64(0.9570316134145961)
+    zonal_effect = paired_one(
+        quantity="log10_zonal_phi2",
+        stratum="both_unstable",
+    )
+    assert float(zonal_effect["estimate"]) == np.float64(0.6492487514893418)
     member_effect = paired_one(
         quantity="member_prediction",
         member_id="2864601_0.437",
@@ -332,6 +337,14 @@ def test_s07_zonal_pairing_cases_and_symmetry_keep_negative_results() -> None:
     assert float(attribution_effect["estimate"]) == np.float64(
         0.026322870037569945
     )
+    density_effect = paired_one(
+        quantity="learned_Qz_spatial_spearman",
+        source_family="s05_density",
+        source_id="2864601_0.409:u021",
+        mode="signed",
+        stratum="all",
+    )
+    assert float(density_effect["estimate"]) == np.float64(0.27788018916618856)
     attribution_pairs = [
         row for row in paired if row["source_family"] == "s06_attribution"
     ]

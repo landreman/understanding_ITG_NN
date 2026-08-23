@@ -116,6 +116,10 @@ an observed GX effect, a member-prediction effect, and a signed attribution
 alignment effect. Swapping fixed and varied or substituting the median now
 fails. The lag-7 fixture also requires its registered correlation to lie inside
 the fixed-selected-lag bootstrap interval.
+The two remaining paired call sites are pinned as well: both-unstable zonal
+amplitude is +0.649 dex fixed minus varied, and the all-row `.409:u021` density
+alignment change is +0.278. Reversing either call now fails after artifact
+regeneration.
 
 ## Methods
 
@@ -267,6 +271,24 @@ unstable rows gives the following deliberately off-manifold network diagnostic:
 | `.437` | -0.021 [-0.029, -0.013], -36 (82.2% within ±4); 0.013 | +0.266 [0.249, 0.285], +1; 0.035 | 2.390 |
 | `.371` | -0.013 [-0.022, -0.004], +47 (63.4% within ±4); 0.013 | +0.280 [0.260, 0.298], 0; 0.038 | 2.414 |
 | `.409` | -0.012 [-0.020, -0.003], +48 (**unstable**, 31.2% within ±4); 0.013 | +0.262 [0.243, 0.282], 0; 0.037 | 2.439 |
+
+The required original-$f_m$ comparison is weaker than the canonical one in
+every member:
+
+| member | original-$f_m$ signed $r_s$ (95% interval), lag stability; null q95 | original-$f_m$ positive-only $r_s$ (95% interval), lag; null q95 |
+|---|---:|---:|
+| `.437` | -0.0133 [-0.0209, -0.0061], -36 (44.6% within ±4); 0.0118 | +0.230 [0.211, 0.246], 0; 0.0323 |
+| `.371` | -0.0071 [-0.0144, +0.0012], +48 (19.6% within ±4); 0.0117 | +0.248 [0.231, 0.265], -1; 0.0350 |
+| `.409` | -0.0095 [-0.0169, -0.0019], -37 (26.8% within ±4); 0.0115 | +0.231 [0.214, 0.248], +1; 0.0352 |
+
+Canonical minus original $r_s$ is respectively **-0.00795, -0.00570, and
+-0.00213** for the signed result, and **+0.03566, +0.03194, and +0.03036** for
+positive-only. Thus all three original signed lags fail the registered 50%
+stability rule, only `.437` exceeds its complete-lag null, and the exact-
+invariance transform modestly strengthens rather than creates the positive-only
+pattern. These values are the prose counterpart of the registered
+`canonical_original_ig_spearman_difference_by_member` headline in
+`summary.json`.
 
 This is the central contradiction. The `.371` signed maximum lies at the
 estimated lag-search threshold (0.012764 versus q95 0.012817, too close for a

@@ -80,6 +80,17 @@ replicate.
 Moreover, the `.409` +48 offset itself is unstable: only 31.2% of resamples
 return within four positions, below the registered 50% lag-stability rule.
 
+The original, non-canonical $f_m$ models tell the same but weaker story. Their
+signed correlations are **-0.0133, -0.0071, and -0.0095**; only the first
+exceeds its complete 96-lag null (**0.0118, 0.0117, and 0.0115**), and all three
+selected lags fail the 50% stability rule. Their positive-only correlations are
+**+0.230, +0.248, and +0.231**, still well above nulls of **0.0323, 0.0350, and
+0.0352**. Canonical minus original is **-0.00795, -0.00570, and -0.00213** for
+signed correlations and **+0.03566, +0.03194, and +0.03036** for positive-only.
+Exact shift invariance therefore modestly strengthens the pattern; it does not
+create the report's negative conclusion or turn the signed evidence into a
+replicated mechanism.
+
 If all negative contributions in the off-manifold diagnostic are thrown away, the correlations rise to
 **+0.266, +0.280, and +0.262** at lag 0 or +1. That is a genuine and repeatable
 resemblance along that constructed reference path: positively contributing
