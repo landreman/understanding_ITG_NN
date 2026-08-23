@@ -58,10 +58,4 @@ def test_s09_interactions_retain_members_and_regimes():
         assert np.ptp(slopes) > 1e-9
         expected = max(np.mean(slopes > 0), np.mean(slopes < 0))
         assert float(summary_by_key[key]["member_sign_agreement"]) == pytest.approx(expected)
-    opposing_member_slopes = np.asarray([-2.0, 1.0, 3.0])
-    opposing_agreement = max(
-        np.mean(opposing_member_slopes > 0), np.mean(opposing_member_slopes < 0)
-    )
-    assert opposing_agreement == pytest.approx(2 / 3)
-    assert opposing_agreement < 1.0
     assert any(float(row["member_sign_agreement"]) < 1.0 for row in summary)

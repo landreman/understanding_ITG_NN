@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import csv
 import importlib
-import inspect
+import json
 from pathlib import Path
+from types import SimpleNamespace
 
 import numpy as np
 import pytest
@@ -154,16 +156,135 @@ def test_paired_gain_bootstrap_is_invariant_to_row_duplication(monkeypatch):
     np.testing.assert_allclose(original[:2], np.quantile(draws, (0.025, 0.975)))
 
 
-def test_resume_interactions_use_each_members_own_signed_target(monkeypatch):
+def test_resume_round_trip_keeps_member_targets_and_configured_regimes(
+    monkeypatch, tmp_path
+):
     scripts = Path(__file__).resolve().parents[2] / "scripts"
     monkeypatch.syspath_prepend(str(scripts))
-    resume = importlib.import_module("xai_s09_completeness")._resume_postprocess
-    source = inspect.getsource(resume)
-    assert (
-        'target_all = np.asarray([float(row["target_native_prediction"]) '
-        'for row in baseline_rows])'
-    ) in source
-    assert 'target = target_all[mask]' in source
+    module = importlib.import_module("xai_s09_completeness")
+    output = tmp_path / "run"
+    output.mkdir()
+    dataset, checkpoint = tmp_path / "data.h5", tmp_path / "model.pt"
+    dataset.write_bytes(b"data")
+    checkpoint.write_bytes(b"model")
+    members = ["positive", "negative"]
+    row_ids = list(range(12))
+    groups = np.asarray([f"eq-{index}" for index in row_ids])
+    drive = np.linspace(-1.0, 1.0, len(row_ids))
+    concept = drive + 0.2 * np.sin(np.arange(len(row_ids)))
+    targets = {"positive": 2.0 * concept, "negative": -2.0 * concept}
+
+    residual_rows = []
+    completeness_rows = []
+    for member in members:
+        for concept_set in ("paper_baseline", "all_candidates", "full_bottleneck"):
+            for regime in ("all", "stable_or_near_floor", "unstable"):
+                completeness_rows.append({
+                    "member_id": member,
+                    "concept_set": concept_set,
+                    "regime": regime,
+                    "held_out_r2": "0.8",
+                    "completeness_relative_to_full_bottleneck": "0.8",
+                })
+            for index in row_ids:
+                target = targets[member][index]
+                residual_rows.append({
+                    "member_id": member,
+                    "row_id": index,
+                    "equilibrium_file": groups[index],
+                    "stable_or_near_floor": str(index < 4),
+                    "concept_set": concept_set,
+                    "target_native_prediction": target,
+                    "decoder_prediction": target + 0.1 * np.cos(index),
+                    "signed_residual": -0.1 * np.cos(index),
+                })
+    (output / "completeness.csv").write_text(module._csv_text(completeness_rows))
+    (output / "concept_residuals.csv").write_text(module._csv_text(residual_rows))
+    (output / "summary.json").write_text(json.dumps({
+        "median_all_candidates_r2": 0.8,
+        "median_gain_over_paper_baseline": 0.0,
+    }))
+    (output / "manifest.json").write_text(json.dumps({
+        "dataset": {"sha256": "data.h5"},
+        "checkpoint": {"sha256": "model.pt"},
+        "member_ids": members,
+        "row_ids": row_ids,
+        "config": {"production_compute_wall_time_seconds": 1.0},
+        "wall_time_seconds": 1.0,
+        "device": "cpu",
+    }))
+
+    class ArrayValue:
+        def __init__(self, values):
+            self.values = np.asarray(values)
+
+        def numpy(self):
+            return self.values
+
+    class FakeArtifacts:
+        def __init__(self, directory):
+            self.directory = directory
+
+        def register_existing(self, _name):
+            pass
+
+        def finalize(self, **_kwargs):
+            pass
+
+    actual = np.asarray([-2.0] * 4 + [-1.5] * 4 + [0.0] * 4)
+    panel = SimpleNamespace(
+        geometry=ArrayValue(np.zeros((len(row_ids), 8, 2))),
+        actual_log_heat_flux=ArrayValue(actual),
+    )
+    selected_names = (
+        "log_f_Q", "f_stab", "log_compression", "bad_curvature",
+        "geodesic_curvature", "parallel_scale", "cross_channel_colocation",
+        "log_FSA_grad_x",
+    )
+    scores = {name: concept + 0.01 * offset for offset, name in enumerate(selected_names)}
+    metadata = {
+        "equilibrium_file": groups,
+        "a_over_lt": drive,
+        "a_over_ln": drive[::-1].copy(),
+    }
+    monkeypatch.setattr(module, "RunArtifacts", FakeArtifacts)
+    monkeypatch.setattr(module, "sha256_file", lambda path: Path(path).name)
+    monkeypatch.setattr(module, "load_hdf5_rows", lambda *_args, **_kwargs: panel)
+    monkeypatch.setattr(module, "_concept_scores", lambda *_args: (scores, metadata))
+    monkeypatch.setattr(module, "grouped_integrated_hessian", lambda *_args, **_kwargs: [])
+    monkeypatch.setattr(module, "_paired_gain", lambda *_args, **_kwargs: (-0.1, 0.1, 0.5))
+    monkeypatch.setattr(module, "_plot", lambda path, *_args: path.write_bytes(b"plot"))
+    resolved = {
+        "direct_gain_bootstrap_replicates": 20,
+        "seed": 59,
+        "stable_threshold_log_Q": -1.9,
+        "interaction_bins": 2,
+        "bootstrap_replicates": 20,
+        "outer_folds": 2,
+        "inner_folds": 2,
+        "ridge_penalties": [1e-6],
+    }
+    module._resume_postprocess(
+        output, resolved, dataset, checkpoint, tmp_path, published=None
+    )
+    effects = list(csv.DictReader((output / "interaction_effects.csv").open()))
+    selected = [
+        row for row in effects
+        if row["regime"] == "all" and row["drive"] == "a_over_LT"
+        and row["concept"] == "log_f_Q"
+    ]
+    slopes = {row["member_id"]: float(row["slope"]) for row in selected}
+    assert slopes["positive"] > 0
+    assert slopes["negative"] < 0
+    stable = [
+        row for row in effects
+        if row["member_id"] == "positive"
+        and row["regime"] == "stable_or_near_floor"
+        and row["drive"] == "a_over_LT" and row["concept"] == "log_f_Q"
+    ]
+    assert sum(int(row["rows"]) for row in stable) == 4
+    summary = list(csv.DictReader((output / "interaction_summary.csv").open()))
+    assert any(float(row["member_sign_agreement"]) == 0.5 for row in summary)
 
 
 def test_stratified_interaction_recovers_signed_drive_change_and_null():

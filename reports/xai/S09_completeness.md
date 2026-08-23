@@ -208,7 +208,9 @@ reverted:
    equilibria per draw, failed exact seeded-bootstrap reconstruction controls;
    and
 9. averaging member predictions before signed interaction estimation failed
-   the member-specific target guard and distinct-member artifact controls.
+   the synthetic resume round trip's opposite-slope control; and
+10. hard-coding the stable threshold to -1.0 instead of using the registered
+    -1.9 value failed the same round trip's regime-row count.
 
 ## Reproduction
 
