@@ -168,11 +168,21 @@ def test_resume_round_trip_keeps_member_targets_and_configured_regimes(
     dataset.write_bytes(b"data")
     checkpoint.write_bytes(b"model")
     members = ["positive", "negative"]
-    row_ids = list(range(12))
+    grid = [
+        (a_lt, a_ln, concept_value)
+        for a_lt in np.linspace(-1.0, 1.0, 6)
+        for a_ln in (-1.0, -0.3, 0.3, 1.0)
+        for concept_value in (-1.0, 1.0)
+    ]
+    row_ids = list(range(len(grid)))
     groups = np.asarray([f"eq-{index}" for index in row_ids])
-    drive = np.linspace(-1.0, 1.0, len(row_ids))
-    concept = drive + 0.2 * np.sin(np.arange(len(row_ids)))
-    targets = {"positive": 2.0 * concept, "negative": -2.0 * concept}
+    a_over_lt = np.asarray([row[0] for row in grid])
+    a_over_ln = np.asarray([row[1] for row in grid])
+    concept = np.asarray([row[2] for row in grid])
+    positive_target = (2.0 + 3.0 * a_over_lt) * concept
+    targets = {"positive": positive_target, "negative": -positive_target}
+    stable_indices = {0, 10, 29, 47}
+    intermediate_indices = {1, 11, 28, 46}
 
     residual_rows = []
     completeness_rows = []
@@ -192,7 +202,7 @@ def test_resume_round_trip_keeps_member_targets_and_configured_regimes(
                     "member_id": member,
                     "row_id": index,
                     "equilibrium_file": groups[index],
-                    "stable_or_near_floor": str(index < 4),
+                    "stable_or_near_floor": str(index in stable_indices),
                     "concept_set": concept_set,
                     "target_native_prediction": target,
                     "decoder_prediction": target + 0.1 * np.cos(index),
@@ -231,7 +241,9 @@ def test_resume_round_trip_keeps_member_targets_and_configured_regimes(
         def finalize(self, **_kwargs):
             pass
 
-    actual = np.asarray([-2.0] * 4 + [-1.5] * 4 + [0.0] * 4)
+    actual = np.zeros(len(row_ids))
+    actual[list(stable_indices)] = -2.0
+    actual[list(intermediate_indices)] = -1.5
     panel = SimpleNamespace(
         geometry=ArrayValue(np.zeros((len(row_ids), 8, 2))),
         actual_log_heat_flux=ArrayValue(actual),
@@ -244,8 +256,8 @@ def test_resume_round_trip_keeps_member_targets_and_configured_regimes(
     scores = {name: concept + 0.01 * offset for offset, name in enumerate(selected_names)}
     metadata = {
         "equilibrium_file": groups,
-        "a_over_lt": drive,
-        "a_over_ln": drive[::-1].copy(),
+        "a_over_lt": a_over_lt,
+        "a_over_ln": a_over_ln,
     }
     monkeypatch.setattr(module, "RunArtifacts", FakeArtifacts)
     monkeypatch.setattr(module, "sha256_file", lambda path: Path(path).name)
@@ -276,6 +288,21 @@ def test_resume_round_trip_keeps_member_targets_and_configured_regimes(
     slopes = {row["member_id"]: float(row["slope"]) for row in selected}
     assert slopes["positive"] > 0
     assert slopes["negative"] < 0
+    positive_by_drive = {}
+    for drive_name in ("a_over_LT", "a_over_Ln"):
+        rows = sorted(
+            (
+                row for row in effects
+                if row["member_id"] == "positive" and row["regime"] == "all"
+                and row["drive"] == drive_name and row["concept"] == "log_f_Q"
+            ),
+            key=lambda row: int(row["bin_index"]),
+        )
+        positive_by_drive[drive_name] = [float(row["slope"]) for row in rows]
+    temperature_change = abs(np.diff(positive_by_drive["a_over_LT"])[0])
+    density_change = abs(np.diff(positive_by_drive["a_over_Ln"])[0])
+    assert temperature_change > 2.0
+    assert density_change < 0.1
     stable = [
         row for row in effects
         if row["member_id"] == "positive"

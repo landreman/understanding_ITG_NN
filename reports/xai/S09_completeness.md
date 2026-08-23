@@ -210,7 +210,9 @@ reverted:
 9. averaging member predictions before signed interaction estimation failed
    the synthetic resume round trip's opposite-slope control; and
 10. hard-coding the stable threshold to -1.0 instead of using the registered
-    -1.9 value failed the same round trip's regime-row count.
+    -1.9 value failed the same round trip's regime-row count; and
+11. swapping the temperature- and density-gradient arrays failed the round
+    trip's drive-specific interaction contrast.
 
 ## Reproduction
 
