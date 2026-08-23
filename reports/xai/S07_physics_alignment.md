@@ -385,10 +385,16 @@ consistently positive (+0.034, +0.034, +0.015) and have panel lag differences
 no larger than one position. That contrast remains, but it is smaller than in
 the pooled table and cannot be promoted to plasma evidence.
 The `.409` signed term is **-0.021** under this registered all-row-lag
-convention but would be approximately **+0.024** if each panel instead used its
-unstable-only selected lag. Thus even the word “mixed” for the signed triplet is
-lag-selection-convention dependent; this reinforces rather than weakens the
-decision not to promote a mechanism.
+convention. A rough unstable-lag proxy reverses sign: the committed fixed
+unstable population correlation **+0.012192** minus the varied unstable
+population correlation **-0.011608** is **+0.023801**. This is not an exact
+alternative paired estimate: those population means cover 977 fixed and 760
+varied rows, not the same 749 both-unstable pairs. On the density rows where
+both calculations are possible, analogous proxies differ from exact paired
+effects by as much as 0.017 and flip sign in 2/9 cases. The proxy therefore
+suggests that “mixed” is sensitive to the lag/row-set convention but does not
+establish the exact alternative attribution sign; either way, no mechanism is
+promoted.
 
 ### 5. Supporting and contradicting cases
 
@@ -521,6 +527,9 @@ never send the parent IDs directly to a reader pointed at the slice.
 - The varied-unstable attribution-zonal ranges (low-pass -0.166 to +0.073;
   periodic mask +0.185 to +0.442) and their claim-permission flags are literal
   reductions in `zonal_association.csv`.
+- The `.409` unstable-lag attribution proxy is the committed population-row
+  subtraction +0.012192 - (-0.011608) = +0.023801. Its 977-versus-760 row-set
+  mismatch is explicit; it is not presented as the exact 749-pair effect.
 - Every unstable-row permutation-null distribution is reduced to its committed
   q95 and maximum. The density nulls can be recomputed on the slice; the exact
   attribution null reductions are checkable from the committed artifact.
@@ -539,7 +548,10 @@ never send the parent IDs directly to a reader pointed at the slice.
   selected review-map artifact on 16 mapped rows; agreement there checks map
   loading, axes, function/method identity, and sign handling but not the exact
   1,000-row bootstrap intervals or underlying permutation draws. Their q95 and
-  maxima are committed in `spatial_alignment.csv`.
+  maxima are committed in `spatial_alignment.csv`. The missing full-panel map
+  also prevents computing the exact 749-pair `.409` attribution effect at
+  unstable-only selected lags; the committed +0.023801 population-row proxy is
+  the closest artifact-only check and is explicitly not treated as exact.
 - `alignment_details.h5` is git-ignored (about 3.1 MB). Its hash and all headline
   reductions are committed. If the local file is present, the artifact test also
   verifies its member/sample/unit/position axes.
