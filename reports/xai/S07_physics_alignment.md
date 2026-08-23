@@ -74,7 +74,7 @@ python scripts/xai_s07_physics_alignment.py \
   --config configs/xai/S07_physics_alignment.json
 ```
 
-Run `physics-alignment-top3-panel1000` took 330.41 seconds on CPU. The committed
+Run `physics-alignment-top3-panel1000` took 332.13 seconds on CPU. The committed
 [manifest](S07_artifacts/manifest.json) records the exact dataset, checkpoint,
 S04/S05 inputs, reused S06b attribution-map hash, package versions, command,
 row IDs, and output hashes.
@@ -282,8 +282,8 @@ association is the unnamed and mostly silent `.437:u003` at -0.564, rather than
 the geodesic-curvature candidate. The zonal comparison therefore supports a
 panel-wide constant-drive geometry association, not a candidate-specific zonal
 mechanism. After excluding exact-zero summaries, the fixed-panel absolute range
-widens to 0.150–0.712; all nine remain substantial and same-signed, and
-`.437:u003` remains largest.
+widens to 0.150–0.712; all nine remain same-signed, `.371:u017` weakens most
+(0.315 to 0.150), and `.437:u003` remains largest.
 
 The pooled range partly reflects whether mostly silent units fire at all.
 `.437:u003`, the pooled varied-panel maximum above, is exactly zero on 605/760

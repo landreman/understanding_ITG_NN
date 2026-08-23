@@ -56,6 +56,7 @@ class ZonalSummaryAssociations:
     zero_count: int
     active_count: int
     zero_fraction: float
+    pooled_bootstrap_stable: bool
     active_bootstrap_stable: bool
 
 
@@ -328,6 +329,7 @@ def _zonal_summary_associations(
         )
     else:
         active = None
+    pooled_stable = pooled.ci_lower > 0 or pooled.ci_upper < 0
     active_stable = active is not None and (
         active.ci_lower > 0 or active.ci_upper < 0
     )
@@ -337,6 +339,7 @@ def _zonal_summary_associations(
         zero_count=int(np.count_nonzero(zero_summary)),
         active_count=active_count,
         zero_fraction=float(zero_summary.mean()),
+        pooled_bootstrap_stable=bool(pooled_stable),
         active_bootstrap_stable=bool(active_stable),
     )
 
@@ -798,7 +801,7 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
                     "spearman_rho": result.spearman_rho,
                     "spearman_ci95_lower": result.ci_lower,
                     "spearman_ci95_upper": result.ci_upper,
-                    "bootstrap_stable": (result.ci_lower > 0 or result.ci_upper < 0),
+                    "bootstrap_stable": associations.pooled_bootstrap_stable,
                     "learned_zero_summary_count": associations.zero_count,
                     "learned_active_summary_count": associations.active_count,
                     "learned_zero_summary_fraction": associations.zero_fraction,

@@ -20,6 +20,8 @@ from scripts.xai_s07_physics_alignment import (
     _alignment_row,
     _association_bootstrap_stable,
     _lag_within_tolerance_recurrence,
+    _position_source,
+    _strata,
     _zonal_summary_associations,
 )
 
@@ -64,6 +66,13 @@ def test_circular_alignment_recovers_known_lag_overlap_and_null_control() -> Non
     )
     assert abs(control.rank_correlation) < 0.12
     assert control.overlap_enrichment < 1.5
+    assert control.rank_ci_lower == pytest.approx(
+        np.quantile(control.bootstrap_rank_correlation, 0.025)
+    )
+    assert control.rank_ci_upper == pytest.approx(
+        np.quantile(control.bootstrap_rank_correlation, 0.975)
+    )
+    assert len(np.unique(control.bootstrap_best_lag)) > 1
 
 
 def test_alignment_is_joint_shift_invariant_and_positive_mode_clips_signs() -> None:
@@ -175,6 +184,9 @@ def test_tie_inclusive_overlap_and_lag_selection_null_are_pinned() -> None:
     )
     assert signal_null.q95 < 0.55
     assert random_null.q95 < 0.2
+    assert signal_null.q95 == pytest.approx(
+        np.quantile(signal_null.max_abs_rank_correlation, 0.95)
+    )
     assert signal_null.permutation_group == "equilibrium_files"
     np.testing.assert_array_equal(
         signal_null.max_abs_rank_correlation,
@@ -235,6 +247,29 @@ def test_average_ranks_pin_midrank_ties_and_constant_row_convention() -> None:
     )
     assert constant_result[0] == pytest.approx(0.0, abs=1e-12)
 
+
+def test_signed_position_marginal_and_stability_strata_are_pinned() -> None:
+    channels = np.asarray([[[1.0, -2.0, 3.0], [-1.0, 1.0, -4.0]]])
+    np.testing.assert_array_equal(
+        _position_source(channels, "ig_low_pass", "signed"),
+        np.asarray([[0.0, -1.0, -1.0]]),
+    )
+    np.testing.assert_array_equal(
+        _position_source(channels, "ig_low_pass", "positive_contribution"),
+        np.asarray([[1.0, 1.0, 3.0]]),
+    )
+    with pytest.raises(ValueError, match="magnitude-only"):
+        _position_source(channels, "periodic_mask", "signed")
+
+    strata = _strata(np.asarray([-2.0, -1.9, -1.0, 0.0]), threshold=-1.9)
+    assert tuple(label for label, _ in strata) == (
+        "all",
+        "stable_or_near_floor",
+        "unstable",
+    )
+    np.testing.assert_array_equal(strata[0][1], np.asarray([True, True, True, True]))
+    np.testing.assert_array_equal(strata[1][1], np.asarray([True, True, False, False]))
+    np.testing.assert_array_equal(strata[2][1], np.asarray([False, False, True, True]))
 
 def test_grouped_bootstraps_and_case_selection_are_deterministic() -> None:
     learned, physical, groups = _cyclic_fixture()
@@ -377,7 +412,40 @@ def test_scalar_and_paired_results_use_whole_equilibria_and_native_units() -> No
     assert split.pooled.spearman_rho != pytest.approx(split.active.spearman_rho)
     assert split.active.spearman_rho == pytest.approx(0.37142857142857144)
     assert split.active.ci_lower < 0 < split.active.ci_upper
+    assert split.pooled_bootstrap_stable is True
     assert split.active_bootstrap_stable is False
+
+    monotone = _zonal_summary_associations(
+        np.asarray([0.0, 0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0]),
+        np.arange(8, dtype=np.float64),
+        np.asarray([f"monotone{index}" for index in range(8)]),
+        bootstrap_replicates=80,
+        seed=28,
+    )
+    assert monotone.active is not None
+    assert monotone.active_bootstrap_stable is True
+
+    neutral = _zonal_summary_associations(
+        np.arange(6, dtype=np.float64),
+        np.asarray([0.0, 3.0, 1.0, 5.0, 2.0, 4.0]),
+        np.asarray([f"neutral{index}" for index in range(6)]),
+        bootstrap_replicates=80,
+        seed=30,
+    )
+    assert neutral.pooled.ci_lower < 0 < neutral.pooled.ci_upper
+    assert neutral.pooled_bootstrap_stable is False
+
+    guarded = _zonal_summary_associations(
+        np.asarray([0.0, 0.0, 1.0]),
+        np.asarray([2.0, 1.0, 0.0]),
+        np.asarray(["guard0", "guard1", "guard2"]),
+        bootstrap_replicates=20,
+        seed=29,
+    )
+    assert guarded.zero_count == 2
+    assert guarded.active_count == 1
+    assert guarded.active is None
+    assert guarded.active_bootstrap_stable is False
 
     fixed_native = np.asarray([-2.0, -1.0, 0.0, 1.0] * 5)
     varied_native = fixed_native - 0.5
