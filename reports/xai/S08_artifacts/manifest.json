@@ -48,7 +48,7 @@
     "published_dir": "reports/xai/S08_artifacts",
     "random_directions": 8,
     "run_id": "concept-probes-top3-panel1000",
-    "script_sha256": "1ee55dde0f3b8c0de0088edb9feb0c7199b2844795de5dc8314776d1b00ce4b1",
+    "script_sha256": "feeb8ae1ad9211281837657e2b8c5f2d86cdb78e1806ce3b82338055b632a141",
     "seed": 20260823,
     "stable_threshold_log_Q": -1.9,
     "step": "S08",
@@ -61,10 +61,10 @@
     "sha256": "9d8fa52f93f2782ad9948a38bf46943c0cd6df78cd08b94a006dad4e06c1c8ad"
   },
   "device": "cpu",
-  "git_commit": "8036646aed899fe05d11d679f72f9285b846a49f",
+  "git_commit": "eb056fabc6711cc9785df20b4f8226d169bf8daa",
   "git_dirty": true,
   "git_tracked_dirty": false,
-  "git_tree": "25df22940469346924c0e05587492dd0d1e193e4",
+  "git_tree": "b4e53891e064951b19cea6c8ffc917ac6fa11004",
   "gradient_set": "varied",
   "member_ids": [
     "2864601_0.437",
@@ -1094,5 +1094,5 @@
     100596
   ],
   "seed": 20260823,
-  "wall_time_seconds": 1.2376464999979362
+  "wall_time_seconds": 1.189415916975122
 }

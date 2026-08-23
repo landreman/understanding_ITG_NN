@@ -73,8 +73,8 @@ The registered run is `concept-probes-top3-panel1000`. The published
 checkpoint SHA-256
 `d5e092348514a5ee85b68bcdcf51dbb32eaa344beea1daa28f5aaeba9e86eefb`,
 CPU execution, seed 20260823, and **2,203.10 s (36.72 min)** measured directly
-by the fresh final production run. A 1.24 s hash-validated resume from commit
-`8036646` copied that measured time into
+by the fresh final production run. A 1.19 s hash-validated resume from commit
+`eb056fa` copied that measured time into
 `production_compute_wall_time_seconds`; the published manifest itself records
 the resume duration and `git_tracked_dirty: false`.
 
