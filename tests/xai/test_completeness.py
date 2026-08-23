@@ -75,6 +75,26 @@ def test_stratified_interaction_recovers_signed_drive_change_and_null():
     assert all(row.validity_tag == "observed-comparison" for row in rows)
 
 
+def test_stratified_interaction_bootstrap_is_invariant_to_row_duplication():
+    groups, signal, _, drive, native = _cyclic_fixture()
+    kwargs = dict(bins=3, bootstrap_replicates=100, seed=37)
+    original = stratified_directional_effects(
+        {"signal": signal}, drive, native, groups, **kwargs
+    )
+    duplicated = stratified_directional_effects(
+        {"signal": np.repeat(signal, 3)},
+        np.repeat(drive, 3),
+        np.repeat(native, 3),
+        np.repeat(groups, 3),
+        **kwargs,
+    )
+    np.testing.assert_allclose(
+        [(row.ci95_lower, row.ci95_upper) for row in original],
+        [(row.ci95_lower, row.ci95_upper) for row in duplicated],
+        atol=1e-12,
+    )
+
+
 def test_grouped_integrated_hessian_recovers_selected_mixed_term():
     groups, signal, null, drive, native = _cyclic_fixture()
     values = np.column_stack([drive, np.zeros_like(drive), signal, null])
@@ -118,6 +138,23 @@ def test_grouped_integrated_hessian_reports_fold_sign_disagreement():
     assert term.fold_minimum_mixed_derivative < -1.0
     assert term.fold_maximum_mixed_derivative > 1.0
     assert term.fold_sign_agreement < 1.0
+    duplicated = grouped_integrated_hessian(
+        np.repeat(np.column_stack([drive, np.zeros_like(drive), signal]), 3, axis=0),
+        np.repeat(native, 3),
+        np.repeat(groups, 3),
+        concept_names=("signal",),
+        outer_folds=4,
+        inner_folds=3,
+        penalties=(1e-8,),
+        bootstrap_replicates=20,
+        seed=seed,
+    )
+    duplicated_term = next(row for row in duplicated if row.drive_index == 0)
+    np.testing.assert_allclose(
+        (term.ci95_lower, term.ci95_upper),
+        (duplicated_term.ci95_lower, duplicated_term.ci95_upper),
+        atol=1e-8,
+    )
 
 
 def test_repeated_rows_with_too_few_equilibria_are_rejected():

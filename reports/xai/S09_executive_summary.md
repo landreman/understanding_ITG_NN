@@ -65,9 +65,8 @@ The fitted relationships vary with drive, although the clearest apparent
 example is not statistically resolved. At low $a/L_T$, increasing the observed
 bad-curvature score has median slope **-0.858**; at high $a/L_T$, the point
 estimate is **+0.356**. All three members show that direction, but the grouped
-95% intervals for the high-minus-low change are **[-0.630,+3.071]**,
-**[-0.698,+2.919]**, and **[-0.471,+3.057]**. Thus the bad-curvature reversal
-is a suggestive roughly 1.5-sigma hypothesis, not a resolved result. Geodesic
+95% interval for each endpoint crosses zero in every member. Thus the
+bad-curvature reversal is a hypothesis, not a resolved result. Geodesic
 curvature strengthens sharply with $a/L_T$, while cross-channel co-location
 remains positive but weakens.
 
