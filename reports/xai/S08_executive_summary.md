@@ -88,6 +88,19 @@ discovery rate (limiting the expected share of chance findings among declared
 results), and intervention superiority. The gap is not lost signal; it is the
 value of the safeguards.
 
+The intervention comparison is now also reported separately by regime. It
+beats the scale-matched control in 116 of 150 stable/near-floor cells and 117 of
+150 unstable cells, but 19 pooled passes fail on the stable/near-floor rows.
+Accordingly, the 83-cell headline is an average-cohort statement, not evidence
+that every permitted direction matters near the clipped output floor.
+
+Removing each concept direction—the orthogonal-complement projection
+diagnostic—changes the output more than the small directional edit in all 150
+cells (median RMS 0.609 versus 0.140). Zonal flow has the second-largest median
+removal effect, 0.896, despite failing the encoding gate. This reinforces the
+negative-control lesson: a disruptive artificial hidden-state edit is not, by
+itself, evidence that the network learned a physical concept.
+
 ## What these results do and do not mean
 
 The results show how the trained networks organize and use information. They do

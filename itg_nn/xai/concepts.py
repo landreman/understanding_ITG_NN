@@ -40,6 +40,12 @@ class DirectionUse:
     scale_matched_random_rms_median: float
     scale_matched_random_rms_q95: float
     orthogonal_complement_ablation_rms: float
+    intervention_rms_stable_or_near_floor: float
+    intervention_rms_unstable: float
+    random_intervention_rms_median_stable_or_near_floor: float
+    random_intervention_rms_median_unstable: float
+    scale_matched_random_rms_median_stable_or_near_floor: float
+    scale_matched_random_rms_median_unstable: float
     validity_tag: str
 
 
@@ -296,6 +302,7 @@ def representation_direction_use(
     intervention_scale: float,
     seed: int,
     feature_scale: torch.Tensor | None = None,
+    stable_mask: torch.Tensor | None = None,
 ) -> DirectionUse:
     if random_directions < 1 or intervention_scale <= 0:
         raise ValueError("random_directions and intervention_scale must be positive")
@@ -310,8 +317,8 @@ def representation_direction_use(
         minus = output_from_representation(base.detach() - intervention_scale * direction)
         intervention = (plus - minus) / 2
         generator = torch.Generator(device=base.device).manual_seed(seed)
-        controls: list[float] = []
-        scale_matched_controls: list[float] = []
+        control_effects: list[torch.Tensor] = []
+        scale_matched_control_effects: list[torch.Tensor] = []
         scale = (
             torch.ones_like(direction)
             if feature_scale is None
@@ -331,9 +338,7 @@ def representation_direction_use(
             random_minus = output_from_representation(
                 base.detach() - intervention_scale * random
             )
-            controls.append(
-                float(torch.sqrt(torch.mean(((random_plus - random_minus) / 2) ** 2)))
-            )
+            control_effects.append((random_plus - random_minus) / 2)
             scale_matched = torch.randn(
                 direction.shape,
                 generator=generator,
@@ -347,14 +352,38 @@ def representation_direction_use(
             scale_minus = output_from_representation(
                 base.detach() - intervention_scale * scale_matched
             )
-            scale_matched_controls.append(
-                float(torch.sqrt(torch.mean(((scale_plus - scale_minus) / 2) ** 2)))
-            )
+            scale_matched_control_effects.append((scale_plus - scale_minus) / 2)
         center = base.detach().mean(dim=0, keepdim=True)
         coordinate = (base.detach() - center) @ direction
         orthogonal = base.detach() - coordinate[:, None] * direction[None, :]
         orthogonal_output = output_from_representation(orthogonal)
         orthogonal_effect = torch.sqrt(torch.mean((orthogonal_output - output.detach()) ** 2))
+        control_matrix = torch.stack(control_effects)
+        scale_control_matrix = torch.stack(scale_matched_control_effects)
+        controls = torch.sqrt(torch.mean(control_matrix**2, dim=1)).cpu().numpy()
+        scale_matched_controls = torch.sqrt(
+            torch.mean(scale_control_matrix**2, dim=1)
+        ).cpu().numpy()
+        mask = (
+            torch.zeros(len(base), dtype=torch.bool, device=base.device)
+            if stable_mask is None
+            else stable_mask.to(device=base.device, dtype=torch.bool)
+        )
+        if mask.shape != (len(base),):
+            raise ValueError("stable_mask must have one value per representation row")
+
+        def rms(values: torch.Tensor, selection: torch.Tensor) -> float:
+            return (
+                float(torch.sqrt(torch.mean(values[selection] ** 2)))
+                if bool(selection.any())
+                else float("nan")
+            )
+
+        def median_control_rms(values: torch.Tensor, selection: torch.Tensor) -> float:
+            if not bool(selection.any()):
+                return float("nan")
+            per_direction = torch.sqrt(torch.mean(values[:, selection] ** 2, dim=1))
+            return float(np.median(per_direction.cpu().numpy()))
     return DirectionUse(
         mean_directional_derivative=float(derivatives.mean()),
         positive_fraction=float((derivatives > 0).float().mean()),
@@ -364,6 +393,20 @@ def representation_direction_use(
         scale_matched_random_rms_median=float(np.median(scale_matched_controls)),
         scale_matched_random_rms_q95=float(np.quantile(scale_matched_controls, 0.95)),
         orthogonal_complement_ablation_rms=float(orthogonal_effect),
+        intervention_rms_stable_or_near_floor=rms(intervention, mask),
+        intervention_rms_unstable=rms(intervention, ~mask),
+        random_intervention_rms_median_stable_or_near_floor=median_control_rms(
+            control_matrix, mask
+        ),
+        random_intervention_rms_median_unstable=median_control_rms(
+            control_matrix, ~mask
+        ),
+        scale_matched_random_rms_median_stable_or_near_floor=median_control_rms(
+            scale_control_matrix, mask
+        ),
+        scale_matched_random_rms_median_unstable=median_control_rms(
+            scale_control_matrix, ~mask
+        ),
         validity_tag="deliberately_off_manifold_diagnostic",
     )
 

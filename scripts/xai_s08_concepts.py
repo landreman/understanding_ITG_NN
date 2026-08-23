@@ -180,6 +180,42 @@ def _bootstrap_inference(
     return float(lower), float(upper), float(min(1.0, 2 * min(negative, positive)))
 
 
+def _paired_counterexample_subsets(
+    match: Any, *, sets: int, fraction: float, seed: int
+) -> list[tuple[np.ndarray, np.ndarray]]:
+    """Draw deterministic joint subsamples of already matched high/low pairs."""
+
+    result: list[tuple[np.ndarray, np.ndarray]] = []
+    count = max(2, int(fraction * len(match.high)))
+    for counter_set in range(sets):
+        pair_index = np.random.default_rng(seed + counter_set).choice(
+            len(match.high), size=count, replace=False
+        )
+        result.append((match.high[pair_index], match.low[pair_index]))
+    return result
+
+
+def _aggregate_cav_direction(directions: list[Any]) -> Any:
+    """Normalize each CAV, average all counterexample sets, and renormalize."""
+
+    if not directions:
+        raise ValueError("at least one counterexample direction is required")
+    if isinstance(directions[0], torch.Tensor):
+        normalized = [
+            value / torch.linalg.vector_norm(value).clamp_min(1e-12)
+            for value in directions
+        ]
+        aggregate = torch.stack(normalized).mean(0)
+        return aggregate / torch.linalg.vector_norm(aggregate).clamp_min(1e-12)
+    normalized_np = [
+        np.asarray(value, dtype=np.float64)
+        / max(float(np.linalg.norm(value)), 1e-12)
+        for value in directions
+    ]
+    aggregate_np = np.mean(normalized_np, axis=0)
+    return aggregate_np / max(float(np.linalg.norm(aggregate_np)), 1e-12)
+
+
 def _plot_matrix(path: Path, rows: list[dict[str, Any]], members: list[str], concepts: list[str]) -> None:
     figure, axes = plt.subplots(len(members), 2, figsize=(14, 3.6 * len(members)), squeeze=False)
     for member_index, member_id in enumerate(members):
@@ -205,7 +241,8 @@ def _add_claim_gates(row: dict[str, Any]) -> dict[str, Any]:
     upper = float(row["directional_derivative_ci95_upper"])
     encoded_pass = encoded >= 0.1 and encoded - permuted >= 0.1
     stable_pass = float(row["counterexample_sign_agreement"]) >= 0.8
-    interval_pass = lower * upper > 0 and float(row["bootstrap_fdr_q_value"]) <= 0.05
+    interval_pass = lower * upper > 0
+    fdr_pass = float(row["bootstrap_fdr_q_value"]) <= 0.05
     intervention_pass = float(row["intervention_to_scale_matched_random_ratio"]) > 1.0
     balance_pass = max(
         float(row.get("counterexample_max_abs_smd", 0.0)),
@@ -216,18 +253,32 @@ def _add_claim_gates(row: dict[str, Any]) -> dict[str, Any]:
             "encoded_generalizes_by_equilibrium": encoded_pass,
             "tcav_stable_across_counterexamples": stable_pass,
             "tcav_ci_excludes_zero": interval_pass,
-            "tcav_fdr_q_le_0_05": float(row["bootstrap_fdr_q_value"]) <= 0.05,
+            "tcav_fdr_q_le_0_05": fdr_pass,
+            "tcav_interval_and_fdr_pass": interval_pass and fdr_pass,
             "direction_intervention_beats_random": intervention_pass,
             "counterexample_balance_pass": balance_pass,
             "use_claim_permitted": encoded_pass
             and stable_pass
             and interval_pass
+            and fdr_pass
             and intervention_pass
             and balance_pass,
             "use_claim_rule": "encoded_r2>=0.1; gain_over_permutation>=0.1; counterexample_sign_agreement>=0.8; grouped_CI_excludes_0; BH_FDR_q<=0.05_across_complete_member_layer_concept_family; scale_matched_intervention_ratio>1; parent_and_subset_matched_max_abs_SMD<=0.25",
         }
     )
     return row
+
+
+def _finalize_claim_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Apply family-wide multiplicity correction and every registered gate."""
+
+    q_values = benjamini_hochberg(
+        np.asarray([float(row["bootstrap_p_value"]) for row in rows])
+    )
+    return [
+        _add_claim_gates({**row, "bootstrap_fdr_q_value": float(q_values[index])})
+        for index, row in enumerate(rows)
+    ]
 
 
 def _matching_balance(match_rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -308,6 +359,7 @@ def _resume_claim_gates(
             "tcav_stable_across_counterexamples",
             "tcav_ci_excludes_zero",
             "tcav_fdr_q_le_0_05",
+            "tcav_interval_and_fdr_pass",
             "direction_intervention_beats_random",
             "counterexample_balance_pass",
             "use_claim_permitted",
@@ -442,17 +494,13 @@ def run(args: argparse.Namespace) -> Path:
                     ),
                     layer_map,
                 )
-                for counter_set in range(int(resolved["counterexample_sets"])):
-                    local_rng = np.random.default_rng(int(resolved["seed"]) + 100000 * member_index + 1000 * layer_index + 10 * concept_index + counter_set)
-                    # Subsample matched pairs jointly so the nuisance balance
-                    # certified for the parent matched set is not discarded.
-                    pair_index = local_rng.choice(
-                        len(matches[concept].high),
-                        size=max(2, int(0.75 * len(matches[concept].high))),
-                        replace=False,
-                    )
-                    high = matches[concept].high[pair_index]
-                    low = matches[concept].low[pair_index]
+                counter_subsets = _paired_counterexample_subsets(
+                    matches[concept],
+                    sets=int(resolved["counterexample_sets"]),
+                    fraction=0.75,
+                    seed=int(resolved["seed"]) + 100000 * member_index + 1000 * layer_index + 10 * concept_index,
+                )
+                for high, low in counter_subsets:
                     counter_raw = representation[high].mean(0) - representation[low].mean(0)
                     counter_tensor = torch.as_tensor(counter_raw, dtype=gradient.dtype, device=gradient.device)
                     counter_tensor /= torch.linalg.vector_norm(counter_tensor).clamp_min(1e-12)
@@ -469,8 +517,7 @@ def run(args: argparse.Namespace) -> Path:
                     subset_balance.append(max(subset_smd))
                 # One aggregate matched-example CAV is used for the reported
                 # derivative, interval, intervention, and orthogonal ablation.
-                aggregate_direction = torch.stack(counter_directions).mean(0)
-                aggregate_direction /= torch.linalg.vector_norm(aggregate_direction).clamp_min(1e-12)
+                aggregate_direction = _aggregate_cav_direction(counter_directions)
                 derivative_values = (gradient @ aggregate_direction).detach().cpu().numpy()
                 lower, upper, p_value = _bootstrap_inference(derivative_values, metadata["equilibrium_file"][use_positions], int(resolved["bootstrap_replicates"]), int(resolved["seed"]) + member_index * 1000 + layer_index * 100 + concept_index)
                 use = representation_direction_use(
@@ -481,13 +528,14 @@ def run(args: argparse.Namespace) -> Path:
                     intervention_scale=float(resolved["intervention_scale"]),
                     seed=int(resolved["seed"]) + 10000 * member_index + 100 * layer_index + concept_index,
                     feature_scale=torch.as_tensor(feature_scale, dtype=layer_map.dtype, device=layer_map.device),
+                    stable_mask=torch.as_tensor(stable[use_positions], device=layer_map.device),
                 )
                 use_stable = stable[use_positions]
                 encoded_stable = float("nan") if np.count_nonzero(stable) < 2 else 1.0 - float(np.sum((target[stable] - probe.predictions[stable]) ** 2)) / max(float(np.sum((target[stable] - target[stable].mean()) ** 2)), 1e-30)
                 encoded_unstable = float("nan") if np.count_nonzero(~stable) < 2 else 1.0 - float(np.sum((target[~stable] - probe.predictions[~stable]) ** 2)) / max(float(np.sum((target[~stable] - target[~stable].mean()) ** 2)), 1e-30)
                 common = {"member_id": member_id, "layer_index": layer_index, "layer_name": f"canonical_atrous_relu_pool_{layer_index + 1}", "concept": concept, "estimand": NATIVE_ESTIMAND, "canonical_function": CANONICAL_FUNCTION, "stable_rows": int(stable.sum()), "unstable_rows": int((~stable).sum()), "derivative_rows": int(len(use_positions)), "derivative_stable_rows": int(use_stable.sum()), "derivative_unstable_rows": int((~use_stable).sum()), "counterexample_max_abs_smd": balance_by_concept[concept]["max_abs_smd"]}
                 probe_row = {**common, "encoded_r2": probe.held_out_r2, "encoded_r2_stable_or_near_floor": encoded_stable, "encoded_r2_unstable": encoded_unstable, "permuted_r2": permuted.held_out_r2, "nonzero_fraction": probe.nonzero_fraction, "outer_split_unit": "equilibrium_files", "inner_split_unit": "equilibrium_files", "encoded_column": True, "used_column": False, "validity_tag": OBSERVED}
-                use_row = {**common, "direction_source": "mean_of_five_paired_matched_counterexample_CAVs", "mean_directional_derivative": use.mean_directional_derivative, "mean_directional_derivative_stable_or_near_floor": float(np.mean(derivative_values[use_stable])) if np.any(use_stable) else float("nan"), "mean_directional_derivative_unstable": float(np.mean(derivative_values[~use_stable])) if np.any(~use_stable) else float("nan"), "directional_derivative_ci95_lower": lower, "directional_derivative_ci95_upper": upper, "bootstrap_p_value": p_value, "tcav_positive_fraction": use.positive_fraction, "counterexample_set_sd": float(np.std(counter_means)), "counterexample_sign_agreement": float(max(np.mean(np.asarray(counter_means) > 0), np.mean(np.asarray(counter_means) < 0))), "counterexample_subset_max_abs_smd": max(subset_balance), "intervention_rms": use.intervention_rms, "random_intervention_rms_median": use.random_intervention_rms_median, "intervention_to_random_ratio": use.intervention_rms / max(use.random_intervention_rms_median, 1e-30), "scale_matched_random_rms_median": use.scale_matched_random_rms_median, "intervention_to_scale_matched_random_ratio": use.intervention_rms / max(use.scale_matched_random_rms_median, 1e-30), "orthogonal_complement_ablation_rms": use.orthogonal_complement_ablation_rms, "perturbation_validity_tag": OFF_MANIFOLD, "encoded_column": False, "used_column": True}
+                use_row = {**common, "direction_source": "mean_of_five_paired_matched_counterexample_CAVs", "mean_directional_derivative": use.mean_directional_derivative, "mean_directional_derivative_stable_or_near_floor": float(np.mean(derivative_values[use_stable])) if np.any(use_stable) else float("nan"), "mean_directional_derivative_unstable": float(np.mean(derivative_values[~use_stable])) if np.any(~use_stable) else float("nan"), "directional_derivative_ci95_lower": lower, "directional_derivative_ci95_upper": upper, "bootstrap_p_value": p_value, "tcav_positive_fraction": use.positive_fraction, "counterexample_set_sd": float(np.std(counter_means)), "counterexample_sign_agreement": float(max(np.mean(np.asarray(counter_means) > 0), np.mean(np.asarray(counter_means) < 0))), "counterexample_subset_max_abs_smd": max(subset_balance), "intervention_rms": use.intervention_rms, "intervention_rms_stable_or_near_floor": use.intervention_rms_stable_or_near_floor, "intervention_rms_unstable": use.intervention_rms_unstable, "random_intervention_rms_median": use.random_intervention_rms_median, "random_intervention_rms_median_stable_or_near_floor": use.random_intervention_rms_median_stable_or_near_floor, "random_intervention_rms_median_unstable": use.random_intervention_rms_median_unstable, "intervention_to_random_ratio": use.intervention_rms / max(use.random_intervention_rms_median, 1e-30), "intervention_to_random_ratio_stable_or_near_floor": use.intervention_rms_stable_or_near_floor / max(use.random_intervention_rms_median_stable_or_near_floor, 1e-30), "intervention_to_random_ratio_unstable": use.intervention_rms_unstable / max(use.random_intervention_rms_median_unstable, 1e-30), "scale_matched_random_rms_median": use.scale_matched_random_rms_median, "scale_matched_random_rms_median_stable_or_near_floor": use.scale_matched_random_rms_median_stable_or_near_floor, "scale_matched_random_rms_median_unstable": use.scale_matched_random_rms_median_unstable, "intervention_to_scale_matched_random_ratio": use.intervention_rms / max(use.scale_matched_random_rms_median, 1e-30), "intervention_to_scale_matched_random_ratio_stable_or_near_floor": use.intervention_rms_stable_or_near_floor / max(use.scale_matched_random_rms_median_stable_or_near_floor, 1e-30), "intervention_to_scale_matched_random_ratio_unstable": use.intervention_rms_unstable / max(use.scale_matched_random_rms_median_unstable, 1e-30), "orthogonal_complement_ablation_rms": use.orthogonal_complement_ablation_rms, "perturbation_validity_tag": OFF_MANIFOLD, "encoded_column": False, "used_column": True}
                 probe_rows.append(probe_row)
                 use_rows.append(use_row)
                 matrix_rows.append({**probe_row, **use_row, "encoded_column": True, "used_column": True})
@@ -518,24 +566,20 @@ def run(args: argparse.Namespace) -> Path:
                 }
             )
             print(f"{member_id} layer {layer_index + 1}/5 complete", flush=True)
-    q_values = benjamini_hochberg(
-        np.asarray([row["bootstrap_p_value"] for row in use_rows], dtype=np.float64)
-    )
+    matrix_rows = _finalize_claim_rows(matrix_rows)
     gate_fields = (
         "encoded_generalizes_by_equilibrium",
         "tcav_stable_across_counterexamples",
         "tcav_ci_excludes_zero",
         "tcav_fdr_q_le_0_05",
+        "tcav_interval_and_fdr_pass",
         "direction_intervention_beats_random",
         "counterexample_balance_pass",
         "use_claim_permitted",
         "use_claim_rule",
     )
-    for index, q_value in enumerate(q_values):
-        use_rows[index]["bootstrap_fdr_q_value"] = float(q_value)
-        matrix_rows[index]["bootstrap_fdr_q_value"] = float(q_value)
-        gated = _add_claim_gates(matrix_rows[index])
-        matrix_rows[index] = gated
+    for index, gated in enumerate(matrix_rows):
+        use_rows[index]["bootstrap_fdr_q_value"] = gated["bootstrap_fdr_q_value"]
         for field in gate_fields:
             use_rows[index][field] = gated[field]
     artifacts.write_text("matched_examples.csv", _csv_text(match_rows))

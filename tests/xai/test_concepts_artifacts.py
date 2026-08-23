@@ -21,9 +21,8 @@ def _csv(name: str) -> list[dict[str, str]]:
 def test_registered_manifest_and_small_artifact_hashes_are_complete() -> None:
     manifest = json.loads((ARTIFACTS / "manifest.json").read_text(encoding="utf-8"))
     assert manifest["config"]["run_id"] == "concept-probes-top3-panel1000"
-    assert manifest["config"]["production_compute_wall_time_seconds"] == pytest.approx(
-        3139.6117550420167
-    )
+    assert "production_compute_wall_time_seconds" not in manifest["config"]
+    assert manifest["wall_time_seconds"] == pytest.approx(2203.1035236670286)
     assert len(manifest["row_ids"]) == 1000
     assert len(set(manifest["row_ids"])) == 1000
     assert len(manifest["member_ids"]) == 3
@@ -54,6 +53,12 @@ def test_encoding_and_use_are_separate_grouped_member_level_columns() -> None:
     }
     assert all("bootstrap_fdr_q_value" in row for row in matrix)
     assert all("orthogonal_complement_ablation_rms" in row for row in matrix)
+    for suffix in ("stable_or_near_floor", "unstable"):
+        assert all(f"intervention_rms_{suffix}" in row for row in matrix)
+        assert all(
+            f"intervention_to_scale_matched_random_ratio_{suffix}" in row
+            for row in matrix
+        )
 
 
 def test_controls_and_claim_gate_preserve_the_zonal_contradiction() -> None:

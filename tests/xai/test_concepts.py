@@ -126,6 +126,7 @@ def test_directional_use_explains_native_output_and_beats_random_controls() -> N
         intervention_scale=0.2,
         seed=12,
         feature_scale=torch.tensor([4.0, 1.0, 1.0, 1.0, 1.0]),
+        stable_mask=torch.arange(64) < 16,
     )
     assert use.mean_directional_derivative == np.float64(2.5)
     assert use.intervention_rms > use.scale_matched_random_rms_median
@@ -136,6 +137,8 @@ def test_directional_use_explains_native_output_and_beats_random_controls() -> N
         abs(use.mean_directional_derivative) * 0.2
     )
     assert use.orthogonal_complement_ablation_rms > 0
+    assert use.intervention_rms_stable_or_near_floor == pytest.approx(0.5)
+    assert use.intervention_rms_unstable == pytest.approx(0.5)
     assert use.validity_tag == "deliberately_off_manifold_diagnostic"
 
 
@@ -153,10 +156,13 @@ def test_random_controls_receive_exactly_the_concept_step_size() -> None:
         intervention_scale=0.3,
         seed=6,
         feature_scale=torch.tensor([7.0]),
+        stable_mask=torch.arange(16) < 4,
     )
     assert use.intervention_rms == pytest.approx(0.9)
     assert use.random_intervention_rms_median == pytest.approx(0.9)
     assert use.scale_matched_random_rms_median == pytest.approx(0.9)
+    assert use.scale_matched_random_rms_median_stable_or_near_floor == pytest.approx(0.9)
+    assert use.scale_matched_random_rms_median_unstable == pytest.approx(0.9)
 
 
 def test_uniform_edit_gradient_matches_finite_hidden_map_intervention() -> None:

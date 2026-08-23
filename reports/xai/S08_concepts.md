@@ -72,10 +72,9 @@ The registered run is `concept-probes-top3-panel1000`. The published
 `9d8fa52f93f2782ad9948a38bf46943c0cd6df78cd08b94a006dad4e06c1c8ad`,
 checkpoint SHA-256
 `d5e092348514a5ee85b68bcdcf51dbb32eaa344beea1daa28f5aaeba9e86eefb`,
-CPU execution, seed 20260823, and **3,139.61 s** of corrected production
-computation. A 1.46 s hash-validated final resume applied the conservative
-subset-balance gate and republished hashes without changing any fitted
-direction, derivative, or intervention value.
+CPU execution, seed 20260823, and **2,203.10 s (36.72 min)** measured directly
+by the fresh final production run. No resume replaced that measured wall time
+in the published manifest.
 
 ## Methods
 
@@ -145,6 +144,26 @@ artificially weak and supply the claim gate; both ratios are published.
 [TCAV/use results](S08_artifacts/tcav_use.csv) retain the raw results even when
 the combined claim gate fails.
 
+The pooled scale-matched intervention ratio exceeds one in 119/150 cells. It
+does so separately in **116/150 stable/near-floor** cells and **117/150
+unstable** cells; these are not the same cells. Nineteen pooled passes fail on
+the stable/near-floor stratum, so `use_claim_permitted` is a pooled-cohort claim,
+not a claim that the direction is used near the output floor. The artifact
+therefore publishes concept-effect RMS, both control RMS medians, and both
+ratios separately for the 25 stable/near-floor and 71 unstable derivative rows.
+
+The orthogonal-complement projection ablation is much larger than the small
+$\pm0.2$ direction intervention by construction: median RMS **0.609** versus
+**0.140**, and larger in **150/150** cells. Its largest concept-family medians
+are $f_{\mathrm{stab}}$ (**0.958**) and, contradictorily, zonal magnitude
+(**0.896**). Thus the ablation also cannot rescue a zonal-use claim; removing a
+row's entire coordinate is disruptive even when that concept is not decodable.
+For transparency, this projection ablation is the operational substitute for
+PLAN's “intervene along orthogonal complements,” and activation-scale matching
+is the operational substitute for “equally decodable random directions.” The
+latter is stronger than the old isotropic control but does not assert identical
+concept decodability.
+
 ### Claim rule
 
 A cell is called encoded and used only when all of the following hold:
@@ -161,6 +180,12 @@ A cell is called encoded and used only when all of the following hold:
 
 This rule is a reporting gate, not a tuned classifier. Every component and the
 final Boolean appear in the [encoding/use matrix](S08_artifacts/encoding_use_matrix.csv).
+Three new safeguards were conservative but mostly non-binding in this run:
+using scale-matched rather than isotropic controls changes **0/83** final
+verdicts; FDR adjustment changes **0/83** (one interval-level verdict changes,
+but that cell already fails another condition); and subset-balance gating
+removes **3** otherwise permitted cells. The 500-resample p-value resolution is
+limited: **108/150** cells sit at the minimum $2/501$.
 
 ## Negative and contradictory results
 
@@ -212,6 +237,12 @@ final Boolean appear in the [encoding/use matrix](S08_artifacts/encoding_use_mat
   statistics were discarded. The corrected production run uses one direction,
   publishes both control families, labels 25/71 regime counts, implements
   orthogonal-complement ablation, and adds multiple-testing control.
+- The second automated review closed those blockers but found that intervention
+  ratios still pooled the two output regimes, the new script-level assembly and
+  gate logic lacked direct tests, and the orthogonal ablation had no numerical
+  interpretation. The final run publishes both regime splits; script tests now
+  pin paired subsets, direction aggregation, bootstrap/FDR, controls, and
+  balance gates; and both reports retain the ablation contradiction.
 
 ## Mutation testing
 
@@ -231,12 +262,18 @@ reverted:
    expanded noisy-feature permutation fixture; and
 7. giving isotropic random controls half the concept edit magnitude failed the
    one-dimensional equal-step control fixture.
+8. using only the first counterexample CAV instead of all normalized directions
+   failed the production-script aggregate-direction test;
+9. gating on the isotropic rather than activation-scale-matched ratio failed the
+   production-script complete-gate test; and
+10. relaxing subset balance from 0.25 to 0.50 failed the same end-to-end gate
+    fixture.
 
 ## Deferred
 
 Network-dissection IoU, mutual information, and selectivity tables (item 5) are
 deferred. The MVD (items 1–3) and item 4's direction interventions are complete;
-adding a second mask-downsampling pipeline after a 46.5-minute corrected run
+adding a second mask-downsampling pipeline after a 36.72-minute final run
 would exceed S08's one-session budget. S05 already publishes unit/concept mask
 overlap at the bottleneck; S08 protects the layerwise encoding/use result.
 
@@ -248,12 +285,12 @@ MPLCONFIGDIR=/private/tmp/mpl-s08-pilot XDG_CACHE_HOME=/private/tmp/cache-s08-pi
   .venv-xai/bin/python scripts/xai_s08_concepts.py --pilot --no-publish
 MPLCONFIGDIR=/private/tmp/mpl-s08-prod XDG_CACHE_HOME=/private/tmp/cache-s08-prod \
   .venv-xai/bin/python scripts/xai_s08_concepts.py \
-  --output-dir output/xai/S08/concept-probes-top3-panel1000-review2
+  --output-dir output/xai/S08/concept-probes-top3-panel1000-review3
 MPLCONFIGDIR=/private/tmp/mpl-s08-resume XDG_CACHE_HOME=/private/tmp/cache-s08-resume \
-  .venv-xai/bin/python scripts/xai_s08_concepts.py --resume \
-  --output-dir output/xai/S08/concept-probes-top3-panel1000-review2
+  .venv-xai/bin/python scripts/xai_s08_concepts.py --resume --no-publish \
+  --output-dir output/xai/S08/concept-probes-top3-panel1000-review3
 .venv-xai/bin/python -m pytest tests/xai/test_concepts.py \
-  tests/xai/test_concepts_artifacts.py -q
+  tests/xai/test_concepts_script.py tests/xai/test_concepts_artifacts.py -q
 source .venv-xai/bin/activate && make check
 ```
 
@@ -266,7 +303,7 @@ recompute the ten concept scores, exact class membership, nuisance balance,
 five-layer canonical representations, grouped outer predictions, permutation
 and random-concept controls, TCAV signs, and intervention ratios for all three
 members. The derivative/intervention row IDs are the deterministic 96-row
-subsample recorded by the config and seed. The full run took 3,139.61 s, so the
+subsample recorded by the config and seed. The full run took 2,203.10 s, so the
 96-row pilot is the practical proxy; agreement on axes, grouped folds, signs,
 and claim gates checks the wiring.
 
