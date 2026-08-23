@@ -201,7 +201,9 @@ reverted:
    panel mean failed the deliberately sign-inconsistent fold-spread test; and
 6. resampling individual rows instead of `equilibrium_files` failed the row-
    duplication invariance controls for the completeness, direct-gain,
-   directional-effect, and mixed-term bootstraps.
+   directional-effect, and mixed-term bootstraps; and
+7. sampling every equilibrium without replacement collapsed all bootstrap
+   intervals and failed the material-width controls for all four paths.
 
 ## Reproduction
 

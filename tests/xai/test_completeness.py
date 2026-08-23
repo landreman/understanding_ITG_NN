@@ -87,6 +87,7 @@ def test_completeness_bootstrap_is_invariant_to_row_duplication():
         (duplicated.increment_ci95_lower, duplicated.increment_ci95_upper),
         atol=1e-8,
     )
+    assert original.increment_ci95_upper - original.increment_ci95_lower > 0.01
 
 
 def test_paired_gain_bootstrap_is_invariant_to_row_duplication(monkeypatch):
@@ -109,6 +110,7 @@ def test_paired_gain_bootstrap_is_invariant_to_row_duplication(monkeypatch):
         53,
     )
     np.testing.assert_allclose(original, duplicated, atol=1e-12)
+    assert original[1] - original[0] > 0.01
 
 
 def test_stratified_interaction_recovers_signed_drive_change_and_null():
@@ -142,6 +144,7 @@ def test_stratified_interaction_bootstrap_is_invariant_to_row_duplication():
         [(row.ci95_lower, row.ci95_upper) for row in duplicated],
         atol=1e-12,
     )
+    assert all(row.ci95_upper - row.ci95_lower > 0.05 for row in original)
 
 
 def test_grouped_integrated_hessian_recovers_selected_mixed_term():
@@ -204,6 +207,7 @@ def test_grouped_integrated_hessian_reports_fold_sign_disagreement():
         (duplicated_term.ci95_lower, duplicated_term.ci95_upper),
         atol=1e-8,
     )
+    assert term.ci95_upper - term.ci95_lower > 0.1
 
 
 def test_repeated_rows_with_too_few_equilibria_are_rejected():
