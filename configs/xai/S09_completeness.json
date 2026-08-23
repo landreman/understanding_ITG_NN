@@ -1,0 +1,27 @@
+{
+  "step": "S09",
+  "run_id": "completeness-top3-panel1000",
+  "seed": 20260823,
+  "device": "cpu",
+  "members": 3,
+  "panel_varied_rows": 1000,
+  "batch_size": 64,
+  "stable_threshold_log_Q": -1.9,
+  "outer_folds": 5,
+  "inner_folds": 3,
+  "ridge_penalties": [0.001, 0.01, 0.1, 1.0],
+  "bootstrap_replicates": 500,
+  "interaction_bins": 3,
+  "dataset": "/Users/mattland/20260523-01-files_for_Kosmos_interpreting_neural_networks/20250102-01_GX_stellarator_dataset.h5",
+  "checkpoint": "models/cyclic_ensemble_pre2.pt",
+  "cohorts": "reports/xai/S01_artifacts/cohorts.json",
+  "published_dir": "reports/xai/S09_artifacts",
+  "pilot": {
+    "run_id": "pilot-top1-panel96",
+    "members": 1,
+    "panel_varied_rows": 96,
+    "outer_folds": 3,
+    "inner_folds": 2,
+    "bootstrap_replicates": 100
+  }
+}
