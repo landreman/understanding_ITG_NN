@@ -74,7 +74,7 @@ python scripts/xai_s07_physics_alignment.py \
   --config configs/xai/S07_physics_alignment.json
 ```
 
-Run `physics-alignment-top3-panel1000` took 332.13 seconds on CPU. The committed
+Run `physics-alignment-top3-panel1000` took 344.47 seconds on CPU. The committed
 [manifest](S07_artifacts/manifest.json) records the exact dataset, checkpoint,
 S04/S05 inputs, reused S06b attribution-map hash, package versions, command,
 row IDs, and output hashes.

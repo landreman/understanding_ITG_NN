@@ -20,8 +20,11 @@ from scripts.xai_s07_physics_alignment import (
     _alignment_row,
     _association_bootstrap_stable,
     _lag_within_tolerance_recurrence,
+    _pair_strata,
     _position_source,
+    _signed_lag,
     _strata,
+    _top_mass_fraction,
     _zonal_summary_associations,
 )
 
@@ -73,6 +76,7 @@ def test_circular_alignment_recovers_known_lag_overlap_and_null_control() -> Non
         np.quantile(control.bootstrap_rank_correlation, 0.975)
     )
     assert len(np.unique(control.bootstrap_best_lag)) > 1
+    assert 0 < control.lag_recurrence < 1
 
 
 def test_alignment_is_joint_shift_invariant_and_positive_mode_clips_signs() -> None:
@@ -270,6 +274,32 @@ def test_signed_position_marginal_and_stability_strata_are_pinned() -> None:
     np.testing.assert_array_equal(strata[0][1], np.asarray([True, True, True, True]))
     np.testing.assert_array_equal(strata[1][1], np.asarray([True, True, False, False]))
     np.testing.assert_array_equal(strata[2][1], np.asarray([False, False, True, True]))
+
+    pair_strata = _pair_strata(
+        np.asarray([-2.0, -1.0, -2.0, -1.0]),
+        np.asarray([-1.0, -2.0, -2.0, -1.0]),
+        threshold=-1.9,
+    )
+    assert tuple(label for label, _ in pair_strata) == (
+        "all",
+        "either_stable_or_near_floor",
+        "both_unstable",
+    )
+    np.testing.assert_array_equal(
+        pair_strata[1][1], np.asarray([True, True, True, False])
+    )
+    np.testing.assert_array_equal(
+        pair_strata[2][1], np.asarray([False, False, False, True])
+    )
+
+    assert _signed_lag(0) == 0
+    assert _signed_lag(48) == 48
+    assert _signed_lag(60) == -36
+    assert _signed_lag(95) == -1
+
+    mass = np.asarray([[[1.0] * 9 + [9.0]]])
+    np.testing.assert_allclose(_top_mass_fraction(mass), np.asarray([0.5]))
+
 
 def test_grouped_bootstraps_and_case_selection_are_deterministic() -> None:
     learned, physical, groups = _cyclic_fixture()
@@ -482,6 +512,13 @@ def test_scalar_and_paired_results_use_whole_equilibria_and_native_units() -> No
         [group_means[rng.integers(0, 3, size=3)].mean() for _ in range(12)]
     )
     np.testing.assert_allclose(grouped.bootstrap_difference, expected)
+    assert grouped.ci_lower == pytest.approx(
+        np.quantile(grouped.bootstrap_difference, 0.025)
+    )
+    assert grouped.ci_upper == pytest.approx(
+        np.quantile(grouped.bootstrap_difference, 0.975)
+    )
+    assert grouped.ci_lower < grouped.ci_upper
 
 
 def test_alignment_rejects_row_bootstrap_labels_and_misaligned_pairs() -> None:

@@ -281,6 +281,23 @@ def _strata(target: np.ndarray, threshold: float) -> tuple[tuple[str, np.ndarray
     )
 
 
+def _pair_strata(
+    fixed_target: np.ndarray, varied_target: np.ndarray, threshold: float
+) -> tuple[tuple[str, np.ndarray], ...]:
+    """Partition natural pairs by whether either observed target is near floor."""
+
+    fixed = np.asarray(fixed_target, dtype=np.float64)
+    varied = np.asarray(varied_target, dtype=np.float64)
+    if fixed.shape != varied.shape or fixed.ndim != 1:
+        raise ValueError("paired targets must be aligned one-dimensional arrays")
+    either_near_floor = (fixed <= threshold) | (varied <= threshold)
+    return (
+        ("all", np.ones(len(fixed), dtype=bool)),
+        ("either_stable_or_near_floor", either_near_floor),
+        ("both_unstable", ~either_near_floor),
+    )
+
+
 def _association_bootstrap_stable(result: CircularAlignment) -> bool:
     return bool(result.rank_ci_lower > 0 or result.rank_ci_upper < 0)
 
@@ -892,13 +909,8 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
     fixed_target = panel_data["fixed"].actual_log_heat_flux
     varied_target = panel_data["varied"].actual_log_heat_flux
     assert fixed_target is not None and varied_target is not None
-    either_near_floor = (fixed_target.numpy() <= threshold) | (
-        varied_target.numpy() <= threshold
-    )
-    pair_strata = (
-        ("all", np.ones(len(groups), dtype=bool)),
-        ("either_stable_or_near_floor", either_near_floor),
-        ("both_unstable", ~either_near_floor),
+    pair_strata = _pair_strata(
+        fixed_target.numpy(), varied_target.numpy(), threshold
     )
 
     def add_paired_difference(
