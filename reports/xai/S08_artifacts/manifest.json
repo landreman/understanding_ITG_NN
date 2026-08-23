@@ -16,7 +16,7 @@
     "bootstrap_replicates": 500,
     "checkpoint": "models/cyclic_ensemble_pre2.pt",
     "cohorts": "reports/xai/S01_artifacts/cohorts.json",
-    "concept_module_sha256": "f8e400b482dfbdee45bbd82e00e932ed6b0d8df666597e804ce09fcb84bda257",
+    "concept_module_sha256": "b59213333bc95f4581d245ad63ba9429f253bf7a39468cce39885b27063577f6",
     "counterexample_sets": 5,
     "dataset": "/Users/mattland/20260523-01-files_for_Kosmos_interpreting_neural_networks/20250102-01_GX_stellarator_dataset.h5",
     "device": "cpu",
@@ -48,7 +48,7 @@
     "published_dir": "reports/xai/S08_artifacts",
     "random_directions": 8,
     "run_id": "concept-probes-top3-panel1000",
-    "script_sha256": "b9ae3ce7b6b4de1ea2abc6da8686de15fee17a6dee5c9e7e88982f48e8227d0e",
+    "script_sha256": "1ee55dde0f3b8c0de0088edb9feb0c7199b2844795de5dc8314776d1b00ce4b1",
     "seed": 20260823,
     "stable_threshold_log_Q": -1.9,
     "step": "S08",
@@ -61,10 +61,10 @@
     "sha256": "9d8fa52f93f2782ad9948a38bf46943c0cd6df78cd08b94a006dad4e06c1c8ad"
   },
   "device": "cpu",
-  "git_commit": "f339fa8d394d3730cf90dc48d14d7564922788c0",
+  "git_commit": "8036646aed899fe05d11d679f72f9285b846a49f",
   "git_dirty": true,
   "git_tracked_dirty": false,
-  "git_tree": "7963d93da2e664e98dd54325c0f0fa2f9b3ed4a1",
+  "git_tree": "25df22940469346924c0e05587492dd0d1e193e4",
   "gradient_set": "varied",
   "member_ids": [
     "2864601_0.437",
@@ -1094,5 +1094,5 @@
     100596
   ],
   "seed": 20260823,
-  "wall_time_seconds": 0.872133249999024
+  "wall_time_seconds": 1.2376464999979362
 }
