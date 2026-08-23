@@ -5,6 +5,7 @@ import pytest
 
 from itg_nn.xai.completeness import (
     _expand,
+    _folds,
     _predict,
     _ridge_fit,
     grouped_completeness,
@@ -89,6 +90,34 @@ def test_grouped_integrated_hessian_recovers_selected_mixed_term():
     assert lookup[(0, "signal")].fold_sign_agreement == 1.0
     assert abs(lookup[(0, "null")].mixed_derivative) < 0.3
     assert all(row.validity_tag == "observed-comparison" for row in rows)
+
+
+def test_grouped_integrated_hessian_reports_fold_sign_disagreement():
+    rng = np.random.default_rng(23)
+    groups = np.repeat(np.arange(40), 4)
+    drive = rng.uniform(-1, 1, len(groups))
+    signal = rng.normal(size=len(groups))
+    seed = 41
+    fold = _folds(groups, 4, seed)
+    # Holding out fold 0 fits three positive-interaction cohorts; holding out
+    # any other fold includes the deliberately dominant negative cohort.
+    coefficient = np.where(fold == 0, -30.0, 10.0)
+    native = coefficient * drive * signal
+    rows = grouped_integrated_hessian(
+        np.column_stack([drive, np.zeros_like(drive), signal]),
+        native,
+        groups,
+        concept_names=("signal",),
+        outer_folds=4,
+        inner_folds=3,
+        penalties=(1e-8,),
+        bootstrap_replicates=20,
+        seed=seed,
+    )
+    term = next(row for row in rows if row.drive_index == 0)
+    assert term.fold_minimum_mixed_derivative < -1.0
+    assert term.fold_maximum_mixed_derivative > 1.0
+    assert term.fold_sign_agreement < 1.0
 
 
 def test_repeated_rows_with_too_few_equilibria_are_rejected():

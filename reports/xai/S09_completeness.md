@@ -26,10 +26,19 @@ claims.
 Drive interaction is nevertheless reproducible on the varied-gradient panel.
 All **48/48** concept × drive × drive-bin signs agree across all three members
 on the pooled cohort, and **48/48** agree on unstable rows. Stable/near-floor
-rows are weaker: **36/48** signs agree. The clearest pooled change is bad
-curvature versus $a/L_T$: its median observed directional slope changes from
-**-0.858** in the low-drive bin to **+0.356** in the high-drive bin in all
-three members. Geodesic-curvature slope rises from **0.220 to 3.553** across
+rows are weaker: **36/48** signs agree. The largest pooled point-estimate change
+is bad curvature versus $a/L_T$: its median observed directional slope changes
+from **-0.858** in the low-drive bin to **+0.356** in the high-drive bin in all
+three members. However, neither endpoint is individually resolved in any
+member: the three low-bin 95% intervals span **[-2.569,+0.931]** to
+**[-2.355,+0.739]**, and the high-bin intervals span **[-0.206,+0.914]** to
+**[-0.111,+0.808]**. A direct grouped bootstrap of the high-minus-low
+difference gives **+1.222 [-0.630,+3.071]**, **+1.082 [-0.698,+2.919]**, and
+**+1.313 [-0.471,+3.057]** across members (4,000 draws); this is a suggestive
+roughly 1.5-sigma contrast, not a resolved reversal. The automated-review code
+produced these contrast intervals by resampling `equilibrium_files` and
+recomputing both OLS slopes on each shared draw. Geodesic-curvature slope rises
+from **0.220 to 3.553** across
 $a/L_T$ bins, while co-location declines from **1.270 to 0.279** but stays
 positive. These are observed comparisons and decoder diagnostics, not valid
 single-channel plasma interventions.
@@ -176,7 +185,7 @@ resolved reversal.
 | --- | --- |
 | “high fidelity is demonstrated on held-out equilibria” | **Pass.** All-candidate member $R^2=0.9080$–0.9174 under nested equilibrium-grouped folds; median held-out fidelity is 0.9087 with an exact-head ceiling of 1 by construction. |
 | “added complexity has an uncertainty-qualified gain” | **Pass with an important qualification.** All-candidate gain over the paper baseline is 0.0849 [0.0705, 0.0998], 0.0953 [0.0800, 0.1108], and 0.0895 [0.0764, 0.1040]. Geometry-only gain is 0.0117 [-0.0044, 0.0260], 0.0221 [0.0111, 0.0332], and 0.0193 [0.0085, 0.0300]; the larger gain includes target-side diagnostics. |
-| “interaction conclusions reproduce across members and do not rest on the fixed-gradient set alone” | **Qualified pass.** The observed-slope calculation uses varied rows only. Pooled and unstable signs reproduce in 48/48 cells across all three members; stable/near-floor signs reproduce in 36/48. The bad-curvature $a/L_T$ sign reversal is shared, but true network-input mixed derivatives and paired grouped finite differences are deferred. |
+| “interaction conclusions reproduce across members and do not rest on the fixed-gradient set alone” | **Qualified pass.** The observed-slope calculation uses varied rows only. Pooled and unstable point-estimate signs reproduce in 48/48 cells across all three members; stable/near-floor signs reproduce in 36/48, but only 19/144 stable-row slopes have 95% intervals excluding zero. The bad-curvature $a/L_T$ point estimates reverse in every member, yet direct high-minus-low intervals are +1.222 [-0.630,+3.071], +1.082 [-0.698,+2.919], and +1.313 [-0.471,+3.057], so the reversal is not resolved. True network-input mixed derivatives and paired grouped finite differences are deferred. |
 
 ## Mutation testing
 
@@ -188,9 +197,11 @@ reverted:
 2. exponentiating the native output reduced the analytic native-target fidelity
    and failed the native-output assertion; and
 3. dropping the drive-by-concept product changed the known mixed derivative
-   from 3 to approximately zero and failed the integrated-Hessian control.
+   from 3 to approximately zero and failed the integrated-Hessian control;
 4. fitting the outer decoder on all rows, including its held-out fold, failed
-   the explicit manual out-of-fold prediction comparison.
+   the explicit manual out-of-fold prediction comparison; and
+5. replacing the five fold-specific mixed derivatives with their repeated
+   panel mean failed the deliberately sign-inconsistent fold-spread test.
 
 ## Reproduction
 
@@ -212,14 +223,18 @@ source .venv-xai/bin/activate && make check
 `load_review_slice_index().slice_rows()` before loading. The reviewer can
 recompute every concept score, canonical member prediction, grouped fold,
 out-of-fold decoder prediction, regime metric, directional slope, and selected
-mixed term for the three named members. The practical proxy is the 96-row pilot;
+mixed term for the three named members. The high-minus-low intervals above are
+recomputable by resampling the panel's `equilibrium_files` 4,000 times and
+subtracting the low-bin OLS slope from the high-bin OLS slope on every shared
+draw. The practical proxy is the 96-row pilot;
 agreement on folds, signed interaction controls, axes, and artifact columns
 checks the wiring, while the full slice reproduces the production numbers.
 Because the frozen panel deliberately contains one row per equilibrium,
 equilibrium-grouped and row-grouped folds coincide for this production cohort;
 the repeated-group synthetic test is what exercises the grouping protection.
 
-**Checkable from committed artifacts alone.** Every headline above recomputes
+**Checkable from committed artifacts alone.** Apart from the separately
+documented high-minus-low contrast calculation, every headline above recomputes
 from `completeness.csv`, `concept_residuals.csv`, `interaction_summary.csv`, and
 `integrated_hessian_terms.csv`. Artifact tests recompute median completeness,
 direct-gain verdicts, regimes, and all seven manifest hashes. The committed

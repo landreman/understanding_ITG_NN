@@ -61,19 +61,24 @@ in this particular decoder.
 
 ## How geometry changes with drive
 
-The networks do not use one fixed geometry rule at every drive. The clearest
-example is bad curvature. At low $a/L_T$, increasing the observed bad-curvature
-score is associated with a lower prediction (median slope **-0.858**); at high
-$a/L_T$, it is associated with a higher prediction (**+0.356**). All three
-members show that reversal. Geodesic curvature strengthens sharply with
-$a/L_T$, while cross-channel co-location remains positive but weakens.
+The fitted relationships vary with drive, although the clearest apparent
+example is not statistically resolved. At low $a/L_T$, increasing the observed
+bad-curvature score has median slope **-0.858**; at high $a/L_T$, the point
+estimate is **+0.356**. All three members show that direction, but the grouped
+95% intervals for the high-minus-low change are **[-0.630,+3.071]**,
+**[-0.698,+2.919]**, and **[-0.471,+3.057]**. Thus the bad-curvature reversal
+is a suggestive roughly 1.5-sigma hypothesis, not a resolved result. Geodesic
+curvature strengthens sharply with $a/L_T$, while cross-channel co-location
+remains positive but weakens.
 
 These patterns reproduce on unstable rows: every one of the 48
-concept-by-drive-bin signs agrees across all three members. Near the clipped
-output floor, only 36 of 48 agree. That weaker agreement is itself useful: the
-network's stiffness behavior well above threshold is much more coherent than
-its fine-grained geometry response where the output is compressed against the
-floor. The three member outputs are themselves extremely correlated
+concept-by-drive-bin point-estimate signs agree across all three members. Near
+the clipped output floor, only 36 of 48 agree, and only 19 of 144 individual
+stable-row slopes have 95% intervals excluding zero. That weaker agreement is
+itself useful: the network's stiffness behavior well above threshold is much
+more coherent than its fine-grained geometry response where the output is
+compressed against the floor. The three member outputs are themselves
+extremely correlated
 ($r=0.994$ pairwise), so sign agreement is descriptive evidence and may partly
 reflect shared training bias.
 
@@ -90,11 +95,13 @@ drive-plus-$f_Q$ baseline. The additional geometric story is real but small,
 and the strongest remaining predictive gain comes from simulation diagnostics
 that must not be mistaken for causal inputs.
 
-The most valuable new result is consequently the drive dependence: shared
-members reverse or strengthen particular geometry relationships as turbulence
-drive changes. Those relationships are observed comparisons, not physical
-interventions. They identify focused hypotheses for later compact formulas and
-equilibrium-consistent GX tests; they do not yet establish plasma causality.
+The drive-dependent point estimates consequently provide focused hypotheses:
+shared members appear to reverse or strengthen particular geometry
+relationships as turbulence drive changes, but the headline bad-curvature
+reversal is not resolved at 95%. Those relationships are observed comparisons,
+not physical interventions. They identify focused hypotheses for later compact
+formulas and equilibrium-consistent GX tests; they do not yet establish plasma
+causality.
 
 The nested completeness result is complete. True mixed derivatives of the
 network with respect to geometry inputs and drive, plus paired grouped finite
