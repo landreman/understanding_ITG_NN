@@ -506,10 +506,29 @@ def test_s07_zonal_pairing_cases_and_symmetry_keep_negative_results() -> None:
         for row in cases
         if row["case_type"] == "contradicting"
     )
+    bad_curvature = [
+        row for row in cases if row["hypothesis"] == "bad_curvature_flux_compression"
+    ]
+    supporting_scores = [
+        float(row["score"])
+        for row in bad_curvature
+        if row["case_type"] == "supporting"
+    ]
+    contradicting_scores = [
+        float(row["score"])
+        for row in bad_curvature
+        if row["case_type"] == "contradicting"
+    ]
+    assert min(supporting_scores) == np.float64(
+        -0.9529138871264665
+    )
+    assert max(contradicting_scores) == np.float64(0.8642424995088118)
 
     summary = json.loads((ARTIFACTS / "summary.json").read_text(encoding="utf-8"))
     assert summary["symmetry"]["s07_joint_shift_lag_curve_max_abs_error"] == 0.0
     assert summary["stable_feature_claims_permitted"] is False
+    assert summary["cohort"]["rows_per_gradient_set"] == 1000
+    assert summary["cohort"]["selected_unit_ids"][0][0] == "2864601_0.437:u001"
 
     spatial = _csv("spatial_alignment.csv")
     zonal_rows = _csv("zonal_association.csv")

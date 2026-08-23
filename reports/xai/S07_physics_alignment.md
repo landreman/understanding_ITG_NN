@@ -126,11 +126,13 @@ original-model attribution pins make collapsing those model functions onto one
 another fail as well.
 Later seed-drift mutations moved the spatial, pooled-zonal, active-row-zonal,
 and paired bootstrap intervals without changing their point estimates. Exact
-artifact pins now make every such mutation fail, including insertions later in
-the running counter sequences. The zonal pooled stability verdict is pinned for
-one unresolved row and by its full-table 190/116 count; changing unresolved
-rows to resolved now fails. The artifact suite also pins the Integrated
-Gradients backend, GX quantity, and spatial-distinction metadata.
+artifact pins now catch seed changes at named sentinel rows in each of those
+families, including the separately seeded active-row zonal branch; they do not
+pin every reported interval or every later insertion in a running counter
+sequence. The zonal pooled stability verdict is pinned for one unresolved row
+and by its full-table 190/116 count; changing unresolved rows to resolved now
+fails. The artifact suite also pins the Integrated Gradients backend, GX
+quantity, and spatial-distinction metadata.
 
 ## Methods
 
