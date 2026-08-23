@@ -447,6 +447,97 @@ def test_s07_zonal_pairing_cases_and_symmetry_keep_negative_results() -> None:
     assert summary["symmetry"]["s07_joint_shift_lag_curve_max_abs_error"] == 0.0
     assert summary["stable_feature_claims_permitted"] is False
 
+    spatial = _csv("spatial_alignment.csv")
+    zonal_rows = _csv("zonal_association.csv")
+    paired_rows = _csv("paired_analysis.csv")
+    lag_rows = _csv("lag_curves.csv")
+    summary_counts = summary["counts"]
+    assert summary_counts == {
+        "association_bootstrap_stable_spatial_rows": sum(
+            row["association_bootstrap_stable"] == "True" for row in spatial
+        ),
+        "case_study_rows": len(cases),
+        "lag_bootstrap_stable_spatial_rows": sum(
+            row["lag_bootstrap_stable"] == "True" for row in spatial
+        ),
+        "lag_curve_rows": len(lag_rows),
+        "paired_analysis_rows": len(paired_rows),
+        "spatial_alignment_rows": len(spatial),
+        "zonal_association_rows": len(zonal_rows),
+    }
+    assert summary_counts["lag_bootstrap_stable_spatial_rows"] == 161
+    assert summary_counts["association_bootstrap_stable_spatial_rows"] == 203
+
+    def assert_summary_row(block: dict[str, object], row: dict[str, str]) -> None:
+        for key, expected in block.items():
+            assert key in row
+            if isinstance(expected, bool):
+                actual: object = row[key] == "True"
+            elif isinstance(expected, int):
+                actual = int(row[key])
+            elif isinstance(expected, float):
+                actual = float(row[key])
+            else:
+                actual = row[key]
+            assert actual == expected
+
+    headline = summary["headline"]
+    density_headline = headline["strongest_varied_unstable_density_Qz"]
+    density_match = [
+        row
+        for row in spatial
+        if row["source_id"] == density_headline["source_id"]
+        and row["gradient_set"] == "varied"
+        and row["stratum"] == "unstable"
+        and row["mode"] == "signed"
+    ]
+    assert len(density_match) == 1
+    assert density_headline["source_id"] == "2864601_0.437:u001"
+    assert_summary_row(density_headline, density_match[0])
+
+    ig_headline = headline["strongest_varied_unstable_canonical_ig_Qz"]
+    ig_match = [
+        row
+        for row in spatial
+        if row["source_family"] == "s06_attribution"
+        and row["member_id"] == ig_headline["member_id"]
+        and row["function"] == "invariant_tilde_f"
+        and row["method"] == "ig_low_pass"
+        and row["gradient_set"] == "varied"
+        and row["stratum"] == "unstable"
+        and row["mode"] == "signed"
+    ]
+    assert len(ig_match) == 1
+    assert ig_headline["member_id"] == "2864601_0.437"
+    assert_summary_row(ig_headline, ig_match[0])
+
+    zonal_headline = headline["strongest_varied_unstable_zonal_association"]
+    zonal_match = [
+        row
+        for row in zonal_rows
+        if row["source_id"] == zonal_headline["source_id"]
+        and row["gradient_set"] == "varied"
+        and row["stratum"] == "unstable"
+    ]
+    assert len(zonal_match) == 1
+    assert zonal_headline["source_id"] == "2864601_0.437:u003"
+    assert_summary_row(zonal_headline, zonal_match[0])
+
+    function_differences = headline[
+        "canonical_original_ig_spearman_difference_by_member"
+    ]
+    assert {row["member_id"] for row in function_differences} == {
+        "2864601_0.437",
+        "2864601_0.371",
+        "2864601_0.409",
+    }
+    differences = [row["canonical"] - row["original"] for row in function_differences]
+    np.testing.assert_allclose(
+        differences,
+        [-0.007949790015641457, -0.005696698101801684, -0.002132017764995072],
+    )
+    assert all(value != 0.0 for value in differences)
+
 
 def test_s07_large_artifact_preserves_member_sample_and_position_axes() -> None:
     manifest = json.loads((ARTIFACTS / "manifest.json").read_text(encoding="utf-8"))

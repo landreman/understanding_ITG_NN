@@ -349,6 +349,14 @@ crossing zero in every member (-0.026, -0.032, -0.054 point estimates). Absolute
 attribution mass is negatively associated in all three (-0.144, -0.159,
 -0.131, intervals excluding zero), but absolute mass discards sign and measures
 how much the model responds, not whether that response raises heat flux.
+Across all varied-unstable attribution summaries, low-pass Integrated Gradients
+zonal associations span **-0.166 to +0.073**, while periodic-mask summaries span
+**+0.185 to +0.442**; the largest is canonical `.409` positive-cell sum at
+**+0.442 [+0.389, +0.496]**. The periodic-mask rows carry
+`feature_claims_permitted=False` because that method failed S06b's shift-
+symmetry check, and every attribution row carries
+`plasma_claims_permitted=False` because the reference comparison is
+off-manifold. No zonal mechanism claim rests on these larger values.
 
 ### 4. Fixed/varied natural pairs
 
