@@ -140,6 +140,13 @@ def test_s07_lag_curve_artifact_preserves_rank_and_raw_value_curves() -> None:
 
 def test_s07_headline_spatial_results_pin_signed_and_positive_conclusions() -> None:
     rows = _csv("spatial_alignment.csv")
+    assert all(row["gx_quantity"] == "Q_avgs_vs_z" for row in rows)
+    assert {
+        row["estimator_backend"]
+        for row in rows
+        if row["source_family"] == "s06_attribution"
+        and row["method"] == "ig_low_pass"
+    } == {"integrated_gradients_captum"}
 
     def one(**expected: str) -> dict[str, str]:
         matches = [
@@ -281,6 +288,10 @@ def test_s07_headline_spatial_results_pin_signed_and_positive_conclusions() -> N
 
 def test_s07_zonal_pairing_cases_and_symmetry_keep_negative_results() -> None:
     zonal = _csv("zonal_association.csv")
+    assert Counter(row["bootstrap_stable"] for row in zonal) == {
+        "True": 190,
+        "False": 116,
+    }
     assert all(
         int(row["learned_zero_summary_count"])
         + int(row["learned_active_summary_count"])
@@ -307,6 +318,16 @@ def test_s07_zonal_pairing_cases_and_symmetry_keep_negative_results() -> None:
         np.float64(-0.18339575629260024),
         np.float64(-0.06012982420600932),
     )
+
+    unresolved_pooled = [
+        row
+        for row in zonal
+        if row["source_id"] == "2864601_0.437:u001"
+        and row["gradient_set"] == "varied"
+        and row["stratum"] == "unstable"
+    ]
+    assert len(unresolved_pooled) == 1
+    assert unresolved_pooled[0]["bootstrap_stable"] == "False"
 
     mostly_silent_zonal = [
         row
