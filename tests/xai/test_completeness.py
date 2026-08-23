@@ -9,12 +9,19 @@ import pytest
 from itg_nn.xai.completeness import (
     _expand,
     _folds,
+    _nested_prediction,
     _predict,
     _ridge_fit,
+    _slope,
     grouped_completeness,
     grouped_integrated_hessian,
     stratified_directional_effects,
 )
+
+
+def _test_r2(target: np.ndarray, prediction: np.ndarray) -> float:
+    denominator = float(np.sum((target - target.mean()) ** 2))
+    return 1.0 - float(np.sum((target - prediction) ** 2)) / denominator
 
 
 def _cyclic_fixture(seed: int = 7):
@@ -88,6 +95,25 @@ def test_completeness_bootstrap_is_invariant_to_row_duplication():
         atol=1e-8,
     )
     assert original.increment_ci95_upper - original.increment_ci95_lower > 0.01
+    unique = np.unique(groups)
+    positions_by_group = {group: np.flatnonzero(groups == group) for group in unique}
+    rng = np.random.default_rng(kwargs["seed"] + 65537)
+    baseline = np.full_like(native, native.mean())
+    draws = []
+    for _ in range(kwargs["bootstrap_replicates"]):
+        positions = np.concatenate([
+            positions_by_group[group]
+            for group in rng.choice(unique, len(unique), replace=True)
+        ])
+        draws.append(
+            _test_r2(native[positions], original.prediction[positions])
+            - _test_r2(native[positions], baseline[positions])
+        )
+    np.testing.assert_allclose(
+        (original.increment_ci95_lower, original.increment_ci95_upper),
+        np.quantile(draws, (0.025, 0.975)),
+        atol=1e-12,
+    )
 
 
 def test_paired_gain_bootstrap_is_invariant_to_row_duplication(monkeypatch):
@@ -111,6 +137,20 @@ def test_paired_gain_bootstrap_is_invariant_to_row_duplication(monkeypatch):
     )
     np.testing.assert_allclose(original, duplicated, atol=1e-12)
     assert original[1] - original[0] > 0.01
+    unique = np.unique(groups)
+    positions_by_group = {group: np.flatnonzero(groups == group) for group in unique}
+    draw_rng = np.random.default_rng(53)
+    draws = []
+    for _ in range(100):
+        positions = np.concatenate([
+            positions_by_group[group]
+            for group in draw_rng.choice(unique, len(unique), replace=True)
+        ])
+        draws.append(
+            _test_r2(target[positions], candidate[positions])
+            - _test_r2(target[positions], baseline[positions])
+        )
+    np.testing.assert_allclose(original[:2], np.quantile(draws, (0.025, 0.975)))
 
 
 def test_stratified_interaction_recovers_signed_drive_change_and_null():
@@ -145,6 +185,29 @@ def test_stratified_interaction_bootstrap_is_invariant_to_row_duplication():
         atol=1e-12,
     )
     assert all(row.ci95_upper - row.ci95_lower > 0.05 for row in original)
+    edges = np.quantile(drive, np.linspace(0, 1, 4))
+    positions_by_group = {
+        group: np.flatnonzero(groups == group) for group in np.unique(groups)
+    }
+    for bin_index, row in enumerate(original):
+        mask = (drive >= edges[bin_index]) & (
+            (drive <= edges[bin_index + 1])
+            if bin_index == 2 else (drive < edges[bin_index + 1])
+        )
+        present = np.unique(groups[mask])
+        draw_rng = np.random.default_rng(37 + bin_index)
+        draws = []
+        for _ in range(100):
+            positions = np.concatenate([
+                positions_by_group[group]
+                for group in draw_rng.choice(present, len(present), replace=True)
+            ])
+            positions = positions[mask[positions]]
+            draws.append(_slope(signal[positions], native[positions]))
+        np.testing.assert_allclose(
+            (row.ci95_lower, row.ci95_upper),
+            np.quantile(draws, (0.025, 0.975)),
+        )
 
 
 def test_grouped_integrated_hessian_recovers_selected_mixed_term():
@@ -208,6 +271,48 @@ def test_grouped_integrated_hessian_reports_fold_sign_disagreement():
         atol=1e-8,
     )
     assert term.ci95_upper - term.ci95_lower > 0.1
+    raw = np.column_stack([drive, np.zeros_like(drive), signal])
+    expanded = _expand(raw)
+    _, selected = _nested_prediction(
+        expanded,
+        native,
+        groups,
+        outer_fold=fold,
+        inner_folds=3,
+        penalties=(1e-8,),
+        seed=seed,
+    )
+    scale = np.subtract(*np.quantile(raw, (0.75, 0.25), axis=0))
+    scale[scale < 1e-8] = 1.0
+    h_drive, h_signal = 0.1 * scale[0], 0.1 * scale[2]
+    mixed = np.empty(len(native))
+    for outer in np.unique(fold):
+        train, test = fold != outer, fold == outer
+        model = _ridge_fit(expanded[train], native[train], float(selected[int(outer)]))
+        evaluations = []
+        for drive_sign, signal_sign in ((1, 1), (1, -1), (-1, 1), (-1, -1)):
+            changed = raw[test].copy()
+            changed[:, 0] += drive_sign * h_drive
+            changed[:, 2] += signal_sign * h_signal
+            evaluations.append(_predict(model, _expand(changed)))
+        mixed[test] = (
+            evaluations[0] - evaluations[1] - evaluations[2] + evaluations[3]
+        ) / (4 * h_drive * h_signal)
+    unique = np.unique(groups)
+    positions_by_group = {group: np.flatnonzero(groups == group) for group in unique}
+    draw_rng = np.random.default_rng(seed)
+    draws = []
+    for _ in range(20):
+        positions = np.concatenate([
+            positions_by_group[group]
+            for group in draw_rng.choice(unique, len(unique), replace=True)
+        ])
+        draws.append(float(np.mean(mixed[positions])))
+    np.testing.assert_allclose(
+        (term.ci95_lower, term.ci95_upper),
+        np.quantile(draws, (0.025, 0.975)),
+        atol=1e-12,
+    )
 
 
 def test_repeated_rows_with_too_few_equilibria_are_rejected():

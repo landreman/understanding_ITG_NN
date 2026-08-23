@@ -203,7 +203,9 @@ reverted:
    duplication invariance controls for the completeness, direct-gain,
    directional-effect, and mixed-term bootstraps; and
 7. sampling every equilibrium without replacement collapsed all bootstrap
-   intervals and failed the material-width controls for all four paths.
+   intervals and failed the material-width controls for all four paths; and
+8. changing the reported quantiles from 95% to 90%, or doubling the number of
+   equilibria per draw, failed exact seeded-bootstrap reconstruction controls.
 
 ## Reproduction
 
