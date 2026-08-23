@@ -190,10 +190,13 @@ separate from the deliberately off-manifold reference path inherited by the
 attribution source.
 
 For spatial alignment differences, each panel's per-equilibrium correlations
-are evaluated at that panel's separately selected lag before fixed minus varied
-is taken. These are therefore not common-lag contrasts: where the two selected
-lags differ, the reported change can partly reflect the lag search landing at a
-different spatial offset.
+are evaluated at that panel's separately selected **all-row-stratum** lag before
+fixed minus varied is taken, including when the effect is later reported for
+the both-unstable pair stratum. Near-floor rows therefore help select those
+offsets even though they are excluded from that effect estimate. These are not
+common-lag or stratum-selected-lag contrasts: where the two selected lags differ,
+the reported change can partly reflect the lag search landing at a different
+spatial offset.
 
 ### Cases and symmetry control
 
@@ -381,6 +384,11 @@ change with different selected spatial offsets. Positive-only changes are
 consistently positive (+0.034, +0.034, +0.015) and have panel lag differences
 no larger than one position. That contrast remains, but it is smaller than in
 the pooled table and cannot be promoted to plasma evidence.
+The `.409` signed term is **-0.021** under this registered all-row-lag
+convention but would be approximately **+0.024** if each panel instead used its
+unstable-only selected lag. Thus even the word “mixed” for the signed triplet is
+lag-selection-convention dependent; this reinforces rather than weakens the
+decision not to promote a mechanism.
 
 ### 5. Supporting and contradicting cases
 
@@ -506,6 +514,13 @@ never send the parent IDs directly to a reader pointed at the slice.
   canonical-minus-original subtractions, and both functions' periodic-mask
   rows are checkable in `spatial_alignment.csv`; no external map is needed to
   verify those published reductions.
+- `summary.json`'s three registered headline blocks are checked field by field
+  against their CSV rows; its counts are independently recomputed and the 161
+  lag-stable and 203 association-stable spatial totals are pinned. The
+  canonical-minus-original differences must also remain nonzero.
+- The varied-unstable attribution-zonal ranges (low-pass -0.166 to +0.073;
+  periodic mask +0.185 to +0.442) and their claim-permission flags are literal
+  reductions in `zonal_association.csv`.
 - Every unstable-row permutation-null distribution is reduced to its committed
   q95 and maximum. The density nulls can be recomputed on the slice; the exact
   attribution null reductions are checkable from the committed artifact.
