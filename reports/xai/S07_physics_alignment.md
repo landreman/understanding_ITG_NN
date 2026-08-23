@@ -372,7 +372,7 @@ that the models track the large observed panel difference in their native
 estimand, not a controlled estimate of drive causality.
 
 The two physical $Q(z)$ profiles for the same geometry remain related. Across
-all rows, signed circular $r_s=0.736$ **[0.710, 0.760]**, lag 0, and overlap
+all rows, signed circular $r_s=0.736$ **[0.708, 0.762]**, lag 0, and overlap
 0.588. On the 749 both-unstable pairs it strengthens to **0.874**
 **[0.860, 0.888]**, lag 0, and overlap 0.686.
 

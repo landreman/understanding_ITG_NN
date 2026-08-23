@@ -134,7 +134,7 @@ different heat flux. Across all rows, fixed minus varied GX flux is **+1.559
 simulation is stable/near-floor and +0.957 when both are unstable, so the pooled
 value must not be read as a single-regime effect. Each member predicts almost
 the same all-row difference. The physical $Q(z)$ curves remain strongly related:
-spatial rank correlation **0.736 [0.710, 0.760]** over all rows and **0.874
+spatial rank correlation **0.736 [0.708, 0.762]** over all rows and **0.874
 [0.860, 0.888]** over the 749 both-unstable pairs, both at lag 0.
 
 This is a natural paired comparison, not a constant-drive comparison within
