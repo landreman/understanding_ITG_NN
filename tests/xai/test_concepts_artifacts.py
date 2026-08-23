@@ -21,8 +21,11 @@ def _csv(name: str) -> list[dict[str, str]]:
 def test_registered_manifest_and_small_artifact_hashes_are_complete() -> None:
     manifest = json.loads((ARTIFACTS / "manifest.json").read_text(encoding="utf-8"))
     assert manifest["config"]["run_id"] == "concept-probes-top3-panel1000"
-    assert "production_compute_wall_time_seconds" not in manifest["config"]
-    assert manifest["wall_time_seconds"] == pytest.approx(2203.1035236670286)
+    assert manifest["config"]["production_compute_wall_time_seconds"] == pytest.approx(
+        2203.1035236670286
+    )
+    assert manifest["wall_time_seconds"] < 5
+    assert manifest["git_tracked_dirty"] is False
     assert len(manifest["row_ids"]) == 1000
     assert len(set(manifest["row_ids"])) == 1000
     assert len(manifest["member_ids"]) == 3

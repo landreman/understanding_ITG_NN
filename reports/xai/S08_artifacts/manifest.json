@@ -7,6 +7,7 @@
   },
   "command": [
     "scripts/xai_s08_concepts.py",
+    "--resume",
     "--output-dir",
     "output/xai/S08/concept-probes-top3-panel1000-review3"
   ],
@@ -43,6 +44,7 @@
       0.01,
       0.1
     ],
+    "production_compute_wall_time_seconds": 2203.1035236670286,
     "published_dir": "reports/xai/S08_artifacts",
     "random_directions": 8,
     "run_id": "concept-probes-top3-panel1000",
@@ -59,10 +61,10 @@
     "sha256": "9d8fa52f93f2782ad9948a38bf46943c0cd6df78cd08b94a006dad4e06c1c8ad"
   },
   "device": "cpu",
-  "git_commit": "a3a3b6f315efe0f9d4d8160d70f0c8db944395ac",
+  "git_commit": "f339fa8d394d3730cf90dc48d14d7564922788c0",
   "git_dirty": true,
-  "git_tracked_dirty": true,
-  "git_tree": "fc2a71891113ff3c48894bbee9595d557c1f6369",
+  "git_tracked_dirty": false,
+  "git_tree": "7963d93da2e664e98dd54325c0f0fa2f9b3ed4a1",
   "gradient_set": "varied",
   "member_ids": [
     "2864601_0.437",
@@ -1092,5 +1094,5 @@
     100596
   ],
   "seed": 20260823,
-  "wall_time_seconds": 2203.1035236670286
+  "wall_time_seconds": 0.872133249999024
 }
