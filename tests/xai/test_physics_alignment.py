@@ -60,6 +60,27 @@ def test_circular_alignment_recovers_known_lag_overlap_and_null_control() -> Non
     assert result.lag_recurrence == pytest.approx(1.0)
     assert result.bootstrap_group == "equilibrium_files"
 
+    nonlinear = circular_alignment(
+        np.roll(physical**3, 7, axis=1),
+        physical,
+        groups,
+        mode="signed",
+        sparsity=0.1,
+        bootstrap_replicates=20,
+        seed=20,
+    )
+    expected_cross = np.mean(
+        [
+            np.corrcoef(np.roll(physical[index] ** 3, 7), np.roll(physical[index], 7))[
+                0, 1
+            ]
+            for index in range(len(physical))
+        ]
+    )
+    assert nonlinear.rank_correlation_by_lag[7] == pytest.approx(1.0, abs=1e-12)
+    assert nonlinear.cross_correlation_by_lag[7] == pytest.approx(expected_cross)
+    assert nonlinear.cross_correlation_by_lag[7] < 0.9
+
     rng = np.random.default_rng(702)
     null = rng.normal(size=learned.shape)
     control = circular_alignment(
@@ -172,6 +193,9 @@ def test_tie_inclusive_overlap_and_lag_selection_null_are_pinned() -> None:
     assert mixed_result.overlap_enrichment == pytest.approx(
         1.8113207547169812, abs=1e-12
     )
+    np.testing.assert_allclose(
+        mixed_result.per_sample_overlap, np.ones(len(mixed_learned)), atol=0.0
+    )
 
     learned, physical, paired_groups = _cyclic_fixture()
     signal_null = lag_selection_permutation_null(
@@ -195,6 +219,10 @@ def test_tie_inclusive_overlap_and_lag_selection_null_are_pinned() -> None:
     assert signal_null.q95 == pytest.approx(
         np.quantile(signal_null.max_abs_rank_correlation, 0.95)
     )
+    assert signal_null.maximum == pytest.approx(
+        signal_null.max_abs_rank_correlation.max()
+    )
+    assert signal_null.maximum > signal_null.max_abs_rank_correlation.mean()
     assert signal_null.permutation_group == "equilibrium_files"
     np.testing.assert_array_equal(
         signal_null.max_abs_rank_correlation,

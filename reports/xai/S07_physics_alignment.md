@@ -105,6 +105,11 @@ equal the registered-lag population correlation, so reading those rows at lag
 zero fails. Case selection now goes through a directly tested wrapper: for a
 negative population association, its most negative equilibrium rows must be
 the supporting cases. Forcing that orientation to positive also fails.
+The last coverage pass adds a monotone-nonlinear fixture that separates the raw
+cross-correlation curve from the rank curve, pins every returned per-row overlap
+on the mixed active/silent fixture, and requires the lag-selection null maximum
+to be the maximum of its stored permutation draws. Substituting the rank curve,
+returning chance overlap, or returning the mean null maximum now each fails.
 
 ## Methods
 
@@ -173,6 +178,12 @@ pairs, pairs where either physical target is stable/near-floor, and pairs where
 both are unstable. The study does not use the off-manifold `-3` marker; that is
 separate from the deliberately off-manifold reference path inherited by the
 attribution source.
+
+For spatial alignment differences, each panel's per-equilibrium correlations
+are evaluated at that panel's separately selected lag before fixed minus varied
+is taken. These are therefore not common-lag contrasts: where the two selected
+lags differ, the reported change can partly reflect the lag search landing at a
+different spatial offset.
 
 ### Cases and symmetry control
 
@@ -324,9 +335,12 @@ all rows, signed circular $r_s=0.736$ **[0.710, 0.760]**, lag 0, and overlap
 
 On those both-unstable pairs, deliberately off-manifold canonical attribution's
 fixed-minus-varied signed alignment changes remain mixed across members
-(+0.006, +0.026, -0.021), while positive-only changes are consistently positive
-(+0.034, +0.034, +0.015). The positive-only contrast remains, but it is smaller
-than in the pooled table and cannot be promoted to plasma evidence.
+(+0.006, +0.026, -0.021), with circular absolute panel lag differences of 0,
+29, and 19 grid positions respectively. The latter two therefore mix a panel
+change with different selected spatial offsets. Positive-only changes are
+consistently positive (+0.034, +0.034, +0.015) and have panel lag differences
+no larger than one position. That contrast remains, but it is smaller than in
+the pooled table and cannot be promoted to plasma evidence.
 
 ### 5. Supporting and contradicting cases
 

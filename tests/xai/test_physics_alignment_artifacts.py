@@ -69,6 +69,10 @@ def test_s07_spatial_table_keeps_functions_strata_signs_lags_and_grouping() -> N
     unstable = [row for row in rows if row["stratum"] == "unstable"]
     assert all(int(row["selection_null_permutations"]) == 200 for row in unstable)
     assert all(row["selection_null_q95"] for row in unstable)
+    assert all(
+        float(row["selection_null_max"]) >= float(row["selection_null_q95"])
+        for row in unstable
+    )
     assert all(row["overlap_orientation"] for row in rows)
     assert all(int(row["learned_constant_profile_count"]) >= 0 for row in rows)
     assert all(int(row["learned_active_profile_count"]) >= 0 for row in rows)
@@ -93,6 +97,45 @@ def test_s07_spatial_table_keeps_functions_strata_signs_lags_and_grouping() -> N
         if row["source_family"] == "s05_density" and row["stratum"] == "unstable"
     ]
     assert all(row["plasma_claims_permitted"] == "True" for row in density_unstable)
+
+
+def test_s07_lag_curve_artifact_preserves_rank_and_raw_value_curves() -> None:
+    spatial = _csv("spatial_alignment.csv")
+    curves = _csv("lag_curves.csv")
+    key_fields = (
+        "source_family",
+        "source_id",
+        "member_id",
+        "function",
+        "method",
+        "gradient_set",
+        "stratum",
+        "mode",
+    )
+    grouped: dict[tuple[str, ...], list[dict[str, str]]] = {}
+    for row in curves:
+        grouped.setdefault(tuple(row[field] for field in key_fields), []).append(row)
+
+    assert len(curves) == len(spatial) * 96
+    assert len(grouped) == len(spatial)
+    maximum_curve_difference = 0.0
+    for row in spatial:
+        key = tuple(row[field] for field in key_fields)
+        curve = sorted(grouped[key], key=lambda item: int(item["lag_index_0_to_95"]))
+        assert [int(item["lag_index_0_to_95"]) for item in curve] == list(range(96))
+        rank = np.asarray(
+            [float(item["mean_within_tube_spearman"]) for item in curve]
+        )
+        cross = np.asarray(
+            [float(item["mean_within_tube_cross_correlation"]) for item in curve]
+        )
+        selected = int(row["best_lag_index_0_to_95"])
+        assert int(np.argmax(np.abs(rank))) == selected
+        assert rank[selected] == np.float64(row["circular_spearman"])
+        maximum_curve_difference = max(
+            maximum_curve_difference, float(np.max(np.abs(rank - cross)))
+        )
+    assert maximum_curve_difference > 0.09
 
 
 def test_s07_headline_spatial_results_pin_signed_and_positive_conclusions() -> None:
