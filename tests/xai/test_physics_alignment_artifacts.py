@@ -157,7 +157,12 @@ def test_s07_headline_spatial_results_pin_signed_and_positive_conclusions() -> N
         mode="signed",
     )
     assert float(density["circular_spearman"]) == np.float64(-0.360511998599993)
-    assert float(density["circular_spearman_ci95_upper"]) < -0.33
+    assert float(density["circular_spearman_ci95_lower"]) == np.float64(
+        -0.3883653797328812
+    )
+    assert float(density["circular_spearman_ci95_upper"]) == np.float64(
+        -0.332533286776065
+    )
     assert int(density["best_lag"]) == 22
     assert float(density["best_lag_within_tolerance_recurrence"]) == 0.912
     assert float(density["overlap_enrichment"]) > 1.63
@@ -312,6 +317,8 @@ def test_s07_zonal_pairing_cases_and_symmetry_keep_negative_results() -> None:
     assert len(physical) == 1
     assert int(physical[0]["best_lag"]) == 0
     assert float(physical[0]["circular_spearman"]) == np.float64(0.7355389542305631)
+    assert float(physical[0]["ci95_lower"]) == np.float64(0.7083975230968925)
+    assert float(physical[0]["ci95_upper"]) == np.float64(0.7618774315953174)
     assert float(physical[0]["lag_recurrence"]) == 1.0
 
     assert len(paired) == 138

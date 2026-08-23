@@ -120,6 +120,10 @@ The two remaining paired call sites are pinned as well: both-unstable zonal
 amplitude is +0.649 dex fixed minus varied, and the all-row `.409:u021` density
 alignment change is +0.278. Reversing either call now fails after artifact
 regeneration.
+The artifact suite also cross-checks every registered summary headline against
+its source CSV, so corrupting a summary block fails. Separate canonical- and
+original-model attribution pins make collapsing those model functions onto one
+another fail as well.
 
 ## Methods
 
