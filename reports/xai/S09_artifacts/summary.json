@@ -1,0 +1,37 @@
+{
+  "bootstrap": {
+    "replicates": 500,
+    "unit": "equilibrium_files"
+  },
+  "canonical_function": "invariant_tilde_f",
+  "cohort": {
+    "rows": 1000,
+    "stable_or_near_floor": 240,
+    "unique_equilibrium_files": 1000,
+    "unstable": 760
+  },
+  "direct_gain_bootstrap": {
+    "replicates": 5000,
+    "unit": "equilibrium_files"
+  },
+  "estimand": "native max(log Q, -2)",
+  "integrated_hessian_rows": 144,
+  "interaction_rows": 432,
+  "interaction_source": "varied-gradient panel only",
+  "interaction_summary_rows": 144,
+  "median_all_candidates_r2": 0.9086978622606711,
+  "median_candidate_to_simple_bottleneck_decoder_ratio": 1.0450322414742963,
+  "median_completeness_relative_to_full_bottleneck": 0.9086978622606711,
+  "median_full_bottleneck_r2": 1.0,
+  "median_full_bottleneck_simple_decoder_r2": 0.86954050429938,
+  "median_gain_over_paper_baseline": 0.08953967679772179,
+  "median_paper_baseline_r2": 0.82310253285661,
+  "members": [
+    "2864601_0.437",
+    "2864601_0.371",
+    "2864601_0.409"
+  ],
+  "mode": "production",
+  "run_id": "completeness-top3-panel1000",
+  "step": "S09"
+}
