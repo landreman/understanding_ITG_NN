@@ -25,11 +25,13 @@ from itg_nn.ensemble import load_ensemble
 from itg_nn.xai.artifacts import RunArtifacts, sha256_file
 from itg_nn.xai.bottleneck import registered_invariants
 from itg_nn.xai.concepts import (
+    benjamini_hochberg,
     canonical_output_from_layer,
     grouped_nested_sparse_probe,
     invariant_layer_maps,
     matched_extremes,
     representation_direction_use,
+    uniform_edit_gradient,
 )
 from itg_nn.xai.runtime import set_deterministic_seed
 from itg_nn.xai.symmetry import CANONICAL_FUNCTION, InvariantMember
@@ -161,7 +163,9 @@ def _layer_representations(member: InvariantMember, geometry: torch.Tensor, batc
     return [np.concatenate(layer_chunks).astype(np.float64) for layer_chunks in chunks]
 
 
-def _bootstrap_interval(values: np.ndarray, groups: np.ndarray, replicates: int, seed: int) -> tuple[float, float]:
+def _bootstrap_inference(
+    values: np.ndarray, groups: np.ndarray, replicates: int, seed: int
+) -> tuple[float, float, float]:
     unique = np.unique(groups)
     rng = np.random.default_rng(seed)
     draws = np.empty(replicates, dtype=np.float64)
@@ -169,7 +173,11 @@ def _bootstrap_interval(values: np.ndarray, groups: np.ndarray, replicates: int,
         chosen = rng.choice(unique, size=len(unique), replace=True)
         positions = np.concatenate([np.flatnonzero(groups == group) for group in chosen])
         draws[draw] = float(np.mean(values[positions]))
-    return tuple(np.quantile(draws, [0.025, 0.975]))  # type: ignore[return-value]
+    lower, upper = np.quantile(draws, [0.025, 0.975])
+    # Add one pseudo-count so an empirical tail probability is never zero.
+    negative = (np.count_nonzero(draws <= 0) + 1) / (replicates + 1)
+    positive = (np.count_nonzero(draws >= 0) + 1) / (replicates + 1)
+    return float(lower), float(upper), float(min(1.0, 2 * min(negative, positive)))
 
 
 def _plot_matrix(path: Path, rows: list[dict[str, Any]], members: list[str], concepts: list[str]) -> None:
@@ -197,14 +205,18 @@ def _add_claim_gates(row: dict[str, Any]) -> dict[str, Any]:
     upper = float(row["directional_derivative_ci95_upper"])
     encoded_pass = encoded >= 0.1 and encoded - permuted >= 0.1
     stable_pass = float(row["counterexample_sign_agreement"]) >= 0.8
-    interval_pass = lower * upper > 0
-    intervention_pass = float(row["intervention_to_random_ratio"]) > 1.0
-    balance_pass = float(row.get("counterexample_max_abs_smd", 0.0)) <= 0.25
+    interval_pass = lower * upper > 0 and float(row["bootstrap_fdr_q_value"]) <= 0.05
+    intervention_pass = float(row["intervention_to_scale_matched_random_ratio"]) > 1.0
+    balance_pass = max(
+        float(row.get("counterexample_max_abs_smd", 0.0)),
+        float(row.get("counterexample_subset_max_abs_smd", 0.0)),
+    ) <= 0.25
     row.update(
         {
             "encoded_generalizes_by_equilibrium": encoded_pass,
             "tcav_stable_across_counterexamples": stable_pass,
             "tcav_ci_excludes_zero": interval_pass,
+            "tcav_fdr_q_le_0_05": float(row["bootstrap_fdr_q_value"]) <= 0.05,
             "direction_intervention_beats_random": intervention_pass,
             "counterexample_balance_pass": balance_pass,
             "use_claim_permitted": encoded_pass
@@ -212,7 +224,7 @@ def _add_claim_gates(row: dict[str, Any]) -> dict[str, Any]:
             and interval_pass
             and intervention_pass
             and balance_pass,
-            "use_claim_rule": "encoded_r2>=0.1; gain_over_permutation>=0.1; counterexample_sign_agreement>=0.8; grouped_CI_excludes_0; intervention_ratio>1; matched_max_abs_SMD<=0.25",
+            "use_claim_rule": "encoded_r2>=0.1; gain_over_permutation>=0.1; counterexample_sign_agreement>=0.8; grouped_CI_excludes_0; BH_FDR_q<=0.05_across_complete_member_layer_concept_family; scale_matched_intervention_ratio>1; parent_and_subset_matched_max_abs_SMD<=0.25",
         }
     )
     return row
@@ -267,24 +279,35 @@ def _resume_claim_gates(
     balance = {row["concept"]: row for row in balance_rows}
     matrix = list(csv.DictReader((output_dir / "encoding_use_matrix.csv").open(newline="", encoding="utf-8")))
     use = list(csv.DictReader((output_dir / "tcav_use.csv").open(newline="", encoding="utf-8")))
+    if not all("bootstrap_p_value" in row for row in use):
+        raise RuntimeError("resume artifact predates the S08 review corrections; rerun production")
+    q_values = benjamini_hochberg(
+        np.asarray([float(row["bootstrap_p_value"]) for row in use])
+    )
     matrix = [
         _add_claim_gates(
-            {**dict(row), "counterexample_max_abs_smd": balance[row["concept"]]["max_abs_smd"]}
+            {
+                **dict(row),
+                "bootstrap_fdr_q_value": float(q_values[index]),
+                "counterexample_max_abs_smd": balance[row["concept"]]["max_abs_smd"],
+            }
         )
-        for row in matrix
+        for index, row in enumerate(matrix)
     ]
     probe_lookup = {
         (row["member_id"], row["layer_index"], row["concept"]): row
         for row in matrix
     }
     gated_use: list[dict[str, Any]] = []
-    for row in use:
+    for index, row in enumerate(use):
+        row["bootstrap_fdr_q_value"] = float(q_values[index])
         merged = {**probe_lookup[(row["member_id"], row["layer_index"], row["concept"])], **row}
         gated = _add_claim_gates(merged)
         gated_use.append({**row, **{key: gated[key] for key in (
             "encoded_generalizes_by_equilibrium",
             "tcav_stable_across_counterexamples",
             "tcav_ci_excludes_zero",
+            "tcav_fdr_q_le_0_05",
             "direction_intervention_beats_random",
             "counterexample_balance_pass",
             "use_claim_permitted",
@@ -297,6 +320,12 @@ def _resume_claim_gates(
     summary = json.loads(summary_path.read_text(encoding="utf-8"))
     summary["encoded_generalizes_fraction"] = float(np.mean([row["encoded_generalizes_by_equilibrium"] for row in matrix]))
     summary["use_claim_permitted_fraction"] = float(np.mean([row["use_claim_permitted"] for row in matrix]))
+    summary["intervention_beats_scale_matched_random_fraction"] = float(
+        np.mean([float(row["intervention_to_scale_matched_random_ratio"]) > 1 for row in matrix])
+    )
+    summary["fdr_significant_fraction"] = float(
+        np.mean([float(row["bootstrap_fdr_q_value"]) <= 0.05 for row in matrix])
+    )
     summary["use_claim_rule"] = matrix[0]["use_claim_rule"]
     summary["counterexample_balance_failed_concepts"] = [
         row["concept"] for row in balance_rows if not row["balance_pass"]
@@ -305,7 +334,14 @@ def _resume_claim_gates(
         float(row["max_abs_smd"]) for row in balance_rows
     )
     summary_path.write_text(json.dumps(summary, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    resolved["production_compute_wall_time_seconds"] = old_manifest["wall_time_seconds"]
+    resolved["production_compute_wall_time_seconds"] = float(
+        resolved.get(
+            "production_compute_wall_time_seconds",
+            old_manifest["config"].get(
+                "production_compute_wall_time_seconds", old_manifest["wall_time_seconds"]
+            ),
+        )
+    )
     artifacts = RunArtifacts(output_dir)
     for name in ("matched_examples.csv", "matching_balance.csv", "probe_scores.csv", "tcav_use.csv", "encoding_use_matrix.csv", "layer_concept_matrix.png", "summary.json"):
         artifacts.register_existing(name)
@@ -389,61 +425,72 @@ def run(args: argparse.Namespace) -> Path:
             for concept_index, (concept, target) in enumerate(scores.items()):
                 probe = grouped_nested_sparse_probe(representation, target, metadata["equilibrium_file"], outer_folds=int(resolved["outer_folds"]), inner_folds=int(resolved["inner_folds"]), penalties=tuple(resolved["probe_penalties"]), seed=int(resolved["seed"]) + 1000 * member_index + 100 * layer_index + concept_index)
                 permuted = grouped_nested_sparse_probe(representation, target, metadata["equilibrium_file"], outer_folds=int(resolved["outer_folds"]), inner_folds=int(resolved["inner_folds"]), penalties=tuple(resolved["probe_penalties"]), seed=int(resolved["seed"]) + 1000 * member_index + 100 * layer_index + concept_index, permute_target=True)
-                coefficient = probe.coefficients * feature_scale
-                if np.linalg.norm(coefficient) < 1e-12:
-                    coefficient = (representation[matches[concept].high].mean(0) - representation[matches[concept].low].mean(0)) / feature_scale
-                direction = torch.as_tensor(coefficient, dtype=layer_map.dtype, device=layer_map.device)
-                direction = direction / torch.linalg.vector_norm(direction).clamp_min(1e-12)
-                raw_direction = direction * torch.as_tensor(feature_scale, dtype=layer_map.dtype, device=layer_map.device)
-                raw_direction = raw_direction / torch.sqrt(torch.mean(raw_direction**2)).clamp_min(1e-12)
                 def output_from_mean_edit(values: torch.Tensor) -> torch.Tensor:
                     delta = values - layer_map.mean(-1)
                     changed = layer_map + delta[:, :, None]
                     return canonical_output_from_layer(model, layer_index, changed, use_lt, use_ln)
-                use = representation_direction_use(output_from_mean_edit, layer_map.mean(-1), raw_direction, random_directions=int(resolved["random_directions"]), intervention_scale=float(resolved["intervention_scale"]), seed=int(resolved["seed"]) + 10000 * member_index + 100 * layer_index + concept_index)
                 # Multiple matched counterexample subsets calibrate TCAV direction stability.
                 counter_means: list[float] = []
                 counter_positive: list[float] = []
-                counter_derivatives: list[np.ndarray] = []
-                base = layer_map.detach().clone().requires_grad_(True)
-                output = canonical_output_from_layer(model, layer_index, base, use_lt, use_ln)
+                counter_directions: list[torch.Tensor] = []
+                subset_balance: list[float] = []
                 # A direction is added uniformly at every position, so its
                 # derivative is the sum (not mean) of spatial cell gradients.
-                gradient = torch.autograd.grad(output.sum(), base)[0].sum(-1)
+                gradient = uniform_edit_gradient(
+                    lambda values: canonical_output_from_layer(
+                        model, layer_index, values, use_lt, use_ln
+                    ),
+                    layer_map,
+                )
                 for counter_set in range(int(resolved["counterexample_sets"])):
                     local_rng = np.random.default_rng(int(resolved["seed"]) + 100000 * member_index + 1000 * layer_index + 10 * concept_index + counter_set)
-                    high = local_rng.choice(matches[concept].high, size=max(2, int(0.75 * len(matches[concept].high))), replace=False)
-                    low = local_rng.choice(matches[concept].low, size=max(2, int(0.75 * len(matches[concept].low))), replace=False)
-                    counter_direction = (representation[high].mean(0) - representation[low].mean(0)) / feature_scale
-                    counter_raw = counter_direction * feature_scale
+                    # Subsample matched pairs jointly so the nuisance balance
+                    # certified for the parent matched set is not discarded.
+                    pair_index = local_rng.choice(
+                        len(matches[concept].high),
+                        size=max(2, int(0.75 * len(matches[concept].high))),
+                        replace=False,
+                    )
+                    high = matches[concept].high[pair_index]
+                    low = matches[concept].low[pair_index]
+                    counter_raw = representation[high].mean(0) - representation[low].mean(0)
                     counter_tensor = torch.as_tensor(counter_raw, dtype=gradient.dtype, device=gradient.device)
                     counter_tensor /= torch.linalg.vector_norm(counter_tensor).clamp_min(1e-12)
                     derivative = gradient @ counter_tensor
                     counter_means.append(float(derivative.mean()))
                     counter_positive.append(float((derivative > 0).float().mean()))
-                    counter_derivatives.append(derivative.detach().cpu().numpy())
-                derivative_values = np.mean(counter_derivatives, axis=0)
-                lower, upper = _bootstrap_interval(derivative_values, metadata["equilibrium_file"][use_positions], int(resolved["bootstrap_replicates"]), int(resolved["seed"]) + member_index * 1000 + layer_index * 100 + concept_index)
+                    counter_directions.append(counter_tensor)
+                    subset_smd = []
+                    for nuisance_column in ("a_over_lt", "a_over_ln", "geometry_scale"):
+                        high_values = np.asarray(metadata[nuisance_column])[high]
+                        low_values = np.asarray(metadata[nuisance_column])[low]
+                        pooled = np.sqrt((high_values.var() + low_values.var()) / 2)
+                        subset_smd.append(0.0 if pooled == 0 else abs(float((high_values.mean() - low_values.mean()) / pooled)))
+                    subset_balance.append(max(subset_smd))
+                # One aggregate matched-example CAV is used for the reported
+                # derivative, interval, intervention, and orthogonal ablation.
+                aggregate_direction = torch.stack(counter_directions).mean(0)
+                aggregate_direction /= torch.linalg.vector_norm(aggregate_direction).clamp_min(1e-12)
+                derivative_values = (gradient @ aggregate_direction).detach().cpu().numpy()
+                lower, upper, p_value = _bootstrap_inference(derivative_values, metadata["equilibrium_file"][use_positions], int(resolved["bootstrap_replicates"]), int(resolved["seed"]) + member_index * 1000 + layer_index * 100 + concept_index)
+                use = representation_direction_use(
+                    output_from_mean_edit,
+                    layer_map.mean(-1),
+                    aggregate_direction,
+                    random_directions=int(resolved["random_directions"]),
+                    intervention_scale=float(resolved["intervention_scale"]),
+                    seed=int(resolved["seed"]) + 10000 * member_index + 100 * layer_index + concept_index,
+                    feature_scale=torch.as_tensor(feature_scale, dtype=layer_map.dtype, device=layer_map.device),
+                )
                 use_stable = stable[use_positions]
                 encoded_stable = float("nan") if np.count_nonzero(stable) < 2 else 1.0 - float(np.sum((target[stable] - probe.predictions[stable]) ** 2)) / max(float(np.sum((target[stable] - target[stable].mean()) ** 2)), 1e-30)
                 encoded_unstable = float("nan") if np.count_nonzero(~stable) < 2 else 1.0 - float(np.sum((target[~stable] - probe.predictions[~stable]) ** 2)) / max(float(np.sum((target[~stable] - target[~stable].mean()) ** 2)), 1e-30)
-                common = {"member_id": member_id, "layer_index": layer_index, "layer_name": f"canonical_atrous_relu_pool_{layer_index + 1}", "concept": concept, "estimand": NATIVE_ESTIMAND, "canonical_function": CANONICAL_FUNCTION, "stable_rows": int(stable.sum()), "unstable_rows": int((~stable).sum()), "counterexample_max_abs_smd": balance_by_concept[concept]["max_abs_smd"]}
+                common = {"member_id": member_id, "layer_index": layer_index, "layer_name": f"canonical_atrous_relu_pool_{layer_index + 1}", "concept": concept, "estimand": NATIVE_ESTIMAND, "canonical_function": CANONICAL_FUNCTION, "stable_rows": int(stable.sum()), "unstable_rows": int((~stable).sum()), "derivative_rows": int(len(use_positions)), "derivative_stable_rows": int(use_stable.sum()), "derivative_unstable_rows": int((~use_stable).sum()), "counterexample_max_abs_smd": balance_by_concept[concept]["max_abs_smd"]}
                 probe_row = {**common, "encoded_r2": probe.held_out_r2, "encoded_r2_stable_or_near_floor": encoded_stable, "encoded_r2_unstable": encoded_unstable, "permuted_r2": permuted.held_out_r2, "nonzero_fraction": probe.nonzero_fraction, "outer_split_unit": "equilibrium_files", "inner_split_unit": "equilibrium_files", "encoded_column": True, "used_column": False, "validity_tag": OBSERVED}
-                use_row = {**common, "mean_directional_derivative": float(np.mean(counter_means)), "mean_directional_derivative_stable_or_near_floor": float(np.mean(derivative_values[use_stable])) if np.any(use_stable) else float("nan"), "mean_directional_derivative_unstable": float(np.mean(derivative_values[~use_stable])) if np.any(~use_stable) else float("nan"), "directional_derivative_ci95_lower": lower, "directional_derivative_ci95_upper": upper, "tcav_positive_fraction": float(np.mean(counter_positive)), "counterexample_set_sd": float(np.std(counter_means)), "counterexample_sign_agreement": float(max(np.mean(np.asarray(counter_means) > 0), np.mean(np.asarray(counter_means) < 0))), "intervention_rms": use.intervention_rms, "random_intervention_rms_median": use.random_intervention_rms_median, "intervention_to_random_ratio": use.intervention_rms / max(use.random_intervention_rms_median, 1e-30), "perturbation_validity_tag": OFF_MANIFOLD, "encoded_column": False, "used_column": True}
+                use_row = {**common, "direction_source": "mean_of_five_paired_matched_counterexample_CAVs", "mean_directional_derivative": use.mean_directional_derivative, "mean_directional_derivative_stable_or_near_floor": float(np.mean(derivative_values[use_stable])) if np.any(use_stable) else float("nan"), "mean_directional_derivative_unstable": float(np.mean(derivative_values[~use_stable])) if np.any(~use_stable) else float("nan"), "directional_derivative_ci95_lower": lower, "directional_derivative_ci95_upper": upper, "bootstrap_p_value": p_value, "tcav_positive_fraction": use.positive_fraction, "counterexample_set_sd": float(np.std(counter_means)), "counterexample_sign_agreement": float(max(np.mean(np.asarray(counter_means) > 0), np.mean(np.asarray(counter_means) < 0))), "counterexample_subset_max_abs_smd": max(subset_balance), "intervention_rms": use.intervention_rms, "random_intervention_rms_median": use.random_intervention_rms_median, "intervention_to_random_ratio": use.intervention_rms / max(use.random_intervention_rms_median, 1e-30), "scale_matched_random_rms_median": use.scale_matched_random_rms_median, "intervention_to_scale_matched_random_ratio": use.intervention_rms / max(use.scale_matched_random_rms_median, 1e-30), "orthogonal_complement_ablation_rms": use.orthogonal_complement_ablation_rms, "perturbation_validity_tag": OFF_MANIFOLD, "encoded_column": False, "used_column": True}
                 probe_rows.append(probe_row)
-                gated_matrix = _add_claim_gates({**common, **probe_row, **use_row})
-                for key in (
-                    "encoded_generalizes_by_equilibrium",
-                    "tcav_stable_across_counterexamples",
-                    "tcav_ci_excludes_zero",
-                    "direction_intervention_beats_random",
-                    "counterexample_balance_pass",
-                    "use_claim_permitted",
-                    "use_claim_rule",
-                ):
-                    use_row[key] = gated_matrix[key]
                 use_rows.append(use_row)
-                matrix_rows.append(gated_matrix)
+                matrix_rows.append({**probe_row, **use_row, "encoded_column": True, "used_column": True})
             random_target = np.random.default_rng(
                 int(resolved["seed"]) + 900000 + member_index * 10 + layer_index
             ).normal(size=len(rows))
@@ -471,6 +518,26 @@ def run(args: argparse.Namespace) -> Path:
                 }
             )
             print(f"{member_id} layer {layer_index + 1}/5 complete", flush=True)
+    q_values = benjamini_hochberg(
+        np.asarray([row["bootstrap_p_value"] for row in use_rows], dtype=np.float64)
+    )
+    gate_fields = (
+        "encoded_generalizes_by_equilibrium",
+        "tcav_stable_across_counterexamples",
+        "tcav_ci_excludes_zero",
+        "tcav_fdr_q_le_0_05",
+        "direction_intervention_beats_random",
+        "counterexample_balance_pass",
+        "use_claim_permitted",
+        "use_claim_rule",
+    )
+    for index, q_value in enumerate(q_values):
+        use_rows[index]["bootstrap_fdr_q_value"] = float(q_value)
+        matrix_rows[index]["bootstrap_fdr_q_value"] = float(q_value)
+        gated = _add_claim_gates(matrix_rows[index])
+        matrix_rows[index] = gated
+        for field in gate_fields:
+            use_rows[index][field] = gated[field]
     artifacts.write_text("matched_examples.csv", _csv_text(match_rows))
     artifacts.write_text("matching_balance.csv", _csv_text(balance_rows))
     artifacts.write_text("probe_scores.csv", _csv_text(probe_rows))
@@ -490,6 +557,8 @@ def run(args: argparse.Namespace) -> Path:
         "median_random_concept_r2": float(np.median([row["encoded_r2"] for row in probe_rows if row["concept"] == "random_concept_control"])),
         "stable_counterexample_fraction": float(np.mean([row["counterexample_sign_agreement"] >= 0.8 for row in use_rows])),
         "intervention_beats_random_fraction": float(np.mean([row["intervention_to_random_ratio"] > 1 for row in use_rows])),
+        "intervention_beats_scale_matched_random_fraction": float(np.mean([row["intervention_to_scale_matched_random_ratio"] > 1 for row in use_rows])),
+        "fdr_significant_fraction": float(np.mean([row["bootstrap_fdr_q_value"] <= 0.05 for row in use_rows])),
         "encoded_generalizes_fraction": float(np.mean([row["encoded_generalizes_by_equilibrium"] for row in matrix_rows])),
         "use_claim_permitted_fraction": float(np.mean([row["use_claim_permitted"] for row in matrix_rows])),
         "use_claim_rule": matrix_rows[0]["use_claim_rule"],

@@ -7,14 +7,16 @@
   },
   "command": [
     "scripts/xai_s08_concepts.py",
-    "--resume"
+    "--resume",
+    "--output-dir",
+    "output/xai/S08/concept-probes-top3-panel1000-review2"
   ],
   "config": {
     "batch_size": 64,
     "bootstrap_replicates": 500,
     "checkpoint": "models/cyclic_ensemble_pre2.pt",
     "cohorts": "reports/xai/S01_artifacts/cohorts.json",
-    "concept_module_sha256": "06cc5716ac94fb7fc888b4118a6ceab3109199a1859ae0d21018c7a9f4621752",
+    "concept_module_sha256": "ccbf8439a1fa7f19eb39e67697e3f0d008325e0155ba9269f6273b80470f8d08",
     "counterexample_sets": 5,
     "dataset": "/Users/mattland/20260523-01-files_for_Kosmos_interpreting_neural_networks/20250102-01_GX_stellarator_dataset.h5",
     "device": "cpu",
@@ -42,11 +44,11 @@
       0.01,
       0.1
     ],
-    "production_compute_wall_time_seconds": 2789.139480917016,
+    "production_compute_wall_time_seconds": 3139.6117550420167,
     "published_dir": "reports/xai/S08_artifacts",
     "random_directions": 8,
     "run_id": "concept-probes-top3-panel1000",
-    "script_sha256": "0434b16c5dfe34bb02afc919b45a0ad35fe6e5acf665987d0fc92069d972abd3",
+    "script_sha256": "ad269b80d225b2d4a6cd48be4e308c2c795f39ef68ad915087c0ac3a43772a15",
     "seed": 20260823,
     "stable_threshold_log_Q": -1.9,
     "step": "S08",
@@ -59,10 +61,10 @@
     "sha256": "9d8fa52f93f2782ad9948a38bf46943c0cd6df78cd08b94a006dad4e06c1c8ad"
   },
   "device": "cpu",
-  "git_commit": "bea4e001a7419068a61b5e58ad8dd85d1728ca00",
+  "git_commit": "2a30cb6d3fbdea07d44913f4c6560ceb12633f18",
   "git_dirty": true,
-  "git_tracked_dirty": false,
-  "git_tree": "261a16ae01ce9030fab170e1c9930127d97df7db",
+  "git_tracked_dirty": true,
+  "git_tree": "0a1c405cc41e67f7948ab04bbb6f71c7b2dce77e",
   "gradient_set": "varied",
   "member_ids": [
     "2864601_0.437",
@@ -70,13 +72,13 @@
     "2864601_0.409"
   ],
   "output_hashes": {
-    "encoding_use_matrix.csv": "11a6b6301212a89d6e9ba5813dd6fe9f5c27ccca913894b5e720e123b5a69b2e",
-    "layer_concept_matrix.png": "3bc25dcd215ae7acc91378179d11587ccf6443e76eded3c4c724beca1d451a0f",
+    "encoding_use_matrix.csv": "58c3e6579d20282ec1daf5882eca0043ad0cea7d64663c86a864a75721879c46",
+    "layer_concept_matrix.png": "6cf62293118a929797b87b071a5c5211fe5909ced6b1894c2db7b91e5a108104",
     "matched_examples.csv": "6c4f8d6573507f42adf782c174a256ce22a59098283861ccaf060d4a9f3cd551",
     "matching_balance.csv": "96263268bc88983bc6d11190b354fa2fbacf1bd4b11644c99c4c97f3b1f0b792",
-    "probe_scores.csv": "2897621cfcbc295c288857a89b7cc6225cb0b3a7bd0cb9056aa51fee6a590845",
-    "summary.json": "92ec60518ef4406de9db19622b2b09829423a7fa7f0d26f5be26e78839dab56d",
-    "tcav_use.csv": "80be6351b6dfae40ee8261f4eeb6e8d814a6f3ffe9f766723c179c1988cfab97"
+    "probe_scores.csv": "d98c98c633e8116faa4071782fc175ac449ddd16831e28f0ad9ab021c8ba5aa1",
+    "summary.json": "a96582ce3b460bea0393222422619d8799d9437a0e15c7b22e850175f9d92562",
+    "tcav_use.csv": "9b06042e9cd0fd729bf325eb729005a0528c5d19b8ceee81709e6479f4078434"
   },
   "package_versions": {
     "captum": "0.9.0",
@@ -1092,5 +1094,5 @@
     100596
   ],
   "seed": 20260823,
-  "wall_time_seconds": 1.225153750012396
+  "wall_time_seconds": 1.459845499979565
 }

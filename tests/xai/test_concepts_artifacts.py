@@ -22,7 +22,7 @@ def test_registered_manifest_and_small_artifact_hashes_are_complete() -> None:
     manifest = json.loads((ARTIFACTS / "manifest.json").read_text(encoding="utf-8"))
     assert manifest["config"]["run_id"] == "concept-probes-top3-panel1000"
     assert manifest["config"]["production_compute_wall_time_seconds"] == pytest.approx(
-        2789.139480917016
+        3139.6117550420167
     )
     assert len(manifest["row_ids"]) == 1000
     assert len(set(manifest["row_ids"])) == 1000
@@ -45,6 +45,15 @@ def test_encoding_and_use_are_separate_grouped_member_level_columns() -> None:
     assert {row["canonical_function"] for row in matrix} == {"invariant_tilde_f"}
     assert all("encoded_r2_stable_or_near_floor" in row for row in matrix)
     assert all("mean_directional_derivative_unstable" in row for row in matrix)
+    assert {(row["derivative_rows"], row["derivative_stable_rows"], row["derivative_unstable_rows"]) for row in matrix} == {("96", "25", "71")}
+    assert {row["direction_source"] for row in matrix} == {
+        "mean_of_five_paired_matched_counterexample_CAVs"
+    }
+    assert {(row["encoded_column"], row["used_column"]) for row in matrix} == {
+        ("True", "True")
+    }
+    assert all("bootstrap_fdr_q_value" in row for row in matrix)
+    assert all("orthogonal_complement_ablation_rms" in row for row in matrix)
 
 
 def test_controls_and_claim_gate_preserve_the_zonal_contradiction() -> None:
@@ -68,10 +77,12 @@ def test_headline_acceptance_numbers_are_pinned_to_the_tables() -> None:
     assert summary["median_probe_r2"] == pytest.approx(0.7471185927044091)
     assert summary["median_permuted_r2"] == pytest.approx(-0.0020780937051435577)
     assert summary["median_random_concept_r2"] == pytest.approx(-0.0022791902498608962)
-    assert summary["stable_counterexample_fraction"] == pytest.approx(148 / 150)
-    assert summary["intervention_beats_random_fraction"] == pytest.approx(2 / 3)
-    assert sum(row["use_claim_permitted"] == "True" for row in matrix) == 72
-    assert summary["use_claim_permitted_fraction"] == pytest.approx(72 / 150)
+    assert summary["stable_counterexample_fraction"] == pytest.approx(146 / 150)
+    assert summary["intervention_beats_random_fraction"] == pytest.approx(120 / 150)
+    assert summary["intervention_beats_scale_matched_random_fraction"] == pytest.approx(119 / 150)
+    assert summary["fdr_significant_fraction"] == pytest.approx(124 / 150)
+    assert sum(row["use_claim_permitted"] == "True" for row in matrix) == 83
+    assert summary["use_claim_permitted_fraction"] == pytest.approx(83 / 150)
     assert summary["cohort"] == {
         "panel_rows": 1000,
         "unique_equilibrium_files": 1000,

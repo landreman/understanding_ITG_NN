@@ -10,7 +10,8 @@ pattern. S08 asked two separate questions at every convolutional layer:
    the concept from the hidden activations on equilibria it did not fit?
 2. **Is the concept used?** Does moving the hidden activation along that
    concept's direction reliably change the network's native
-   $\max(\log Q,-2)$ prediction more than an equally large random direction?
+   $\max(\log Q,-2)$ prediction more than a random direction matched to the
+   hidden units' ordinary activation scales?
 
 Keeping these questions separate is the central safeguard of this step.
 
@@ -29,7 +30,16 @@ features) was trained and tested with entire equilibria kept together. TCAV
 changes along hidden-layer directions associated with high versus low examples
 of each concept. Those examples were matched on gradient drive, equilibrium
 class, and a simple geometry scale. Finally, the same hidden-layer edits were
-compared with random directions of equal size.
+compared with ordinary random directions and a stronger control weighted by
+each hidden unit's observed activation range. The derivative and intervention
+use exactly the same concept direction. Projecting activations into its
+orthogonal complement (removing the component along that direction) supplies a
+second diagnostic.
+
+The encoding analysis uses all 1,000 equilibria. The more expensive derivative
+and intervention analysis uses a fixed random subset of 96: 25 stable/near-floor
+and 71 unstable. The uncertainty calculation resamples those 96 equilibria, and
+every artifact labels these counts explicitly.
 
 ## Main conclusions
 
@@ -40,10 +50,10 @@ zero. Nine of the ten concepts met the encoding requirement at every layer in
 every member.
 
 The strongest evidence for both encoding and use belongs to
-$f_{\mathrm{stab}}$ and $\log f_Q$: each passed the complete five-part gate in
-13 of 15 member/layer combinations. Compression passed in 10, and the known
-$\log\langle|\nabla x|\rangle$ term in 8. This supports the broad physical
-feature families emphasized by the paper, while showing that no single concept
+$f_{\mathrm{stab}}$, which passed the complete gate in all 15 member/layer
+combinations. Compression, cross-channel co-location, and $\log f_Q$ passed in
+12; geodesic curvature passed in 10. This supports the broad physical feature
+families emphasized by the paper, while showing that no single concept
 describes every layer or member.
 
 The way concepts are used changes with depth. Bad-curvature,
@@ -70,10 +80,13 @@ would look like strong evidence that the network uses zonal flow—even though
 zonal flow was not a network input and cannot be read reliably from its hidden
 state. The complete gate correctly permits **zero** zonal-use claims.
 
-Overall, 100 of 150 raw concept interventions beat random controls, but only 72
-pass every condition: held-out encoding, balanced examples, stable sign,
-uncertainty excluding zero, and intervention superiority. The gap between 100
-and 72 is not lost signal; it is the value of the safeguards.
+Overall, 120 of 150 raw concept interventions beat ordinary isotropic random
+controls, and 119 beat the stronger activation-scale-matched controls. Only 83
+pass every condition: held-out encoding, parent- and subset-level balanced
+examples, stable sign, uncertainty excluding zero after controlling the false
+discovery rate (limiting the expected share of chance findings among declared
+results), and intervention superiority. The gap is not lost signal; it is the
+value of the safeguards.
 
 ## What these results do and do not mean
 

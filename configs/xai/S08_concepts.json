@@ -1,6 +1,7 @@
 {
   "step": "S08",
   "run_id": "concept-probes-top3-panel1000",
+  "production_compute_wall_time_seconds": 3139.6117550420167,
   "seed": 20260823,
   "device": "cpu",
   "members": 3,

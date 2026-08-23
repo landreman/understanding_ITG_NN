@@ -32,7 +32,9 @@
   "encoded_and_used_separate": true,
   "encoded_generalizes_fraction": 0.9,
   "estimand": "native max(log Q, -2)",
-  "intervention_beats_random_fraction": 0.6666666666666666,
+  "fdr_significant_fraction": 0.8266666666666667,
+  "intervention_beats_random_fraction": 0.8,
+  "intervention_beats_scale_matched_random_fraction": 0.7933333333333333,
   "layers": 5,
   "median_permuted_r2": -0.0020780937051435577,
   "median_probe_r2": 0.7471185927044091,
@@ -44,8 +46,8 @@
   ],
   "mode": "production",
   "run_id": "concept-probes-top3-panel1000",
-  "stable_counterexample_fraction": 0.9866666666666667,
+  "stable_counterexample_fraction": 0.9733333333333334,
   "step": "S08",
-  "use_claim_permitted_fraction": 0.48,
-  "use_claim_rule": "encoded_r2>=0.1; gain_over_permutation>=0.1; counterexample_sign_agreement>=0.8; grouped_CI_excludes_0; intervention_ratio>1; matched_max_abs_SMD<=0.25"
+  "use_claim_permitted_fraction": 0.5533333333333333,
+  "use_claim_rule": "encoded_r2>=0.1; gain_over_permutation>=0.1; counterexample_sign_agreement>=0.8; grouped_CI_excludes_0; BH_FDR_q<=0.05_across_complete_member_layer_concept_family; scale_matched_intervention_ratio>1; parent_and_subset_matched_max_abs_SMD<=0.25"
 }

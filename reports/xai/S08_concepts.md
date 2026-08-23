@@ -13,27 +13,28 @@ its median $R^2$ is **0.031**, and no zonal cell is called encoded or used.
 
 TCAV-like tests (Testing with Concept Activation Vectors: measuring the native
 output derivative along a hidden-layer direction associated with a concept)
-are sign-stable across five independently subsampled counterexample sets in
-**148/150** cells. Raw uniform-direction interventions exceed eight
-norm-matched random directions in **100/150** cells. The complete claim gate is
-stricter: held-out encoding, matched-example balance, counterexample sign
-stability, a 500-resample equilibrium interval excluding zero, and an
-intervention/random ratio above one. **72/150** cells pass all five conditions.
+are sign-stable across five paired matched-example subsamples in **146/150**
+cells. Raw uniform-direction interventions exceed eight isotropic random
+directions in **120/150** cells and activation-scale-matched random directions
+in **119/150**. The complete claim gate is stricter: held-out encoding,
+parent- and subset-level matched-example balance, counterexample sign stability,
+a false-discovery-rate-adjusted 500-resample interval, and a scale-matched
+intervention/random ratio above one. **83/150** cells pass all conditions.
 
-The most replicated concepts are $f_{\mathrm{stab}}$ and $\log f_Q$: each is
-encoded and used in **13/15** member/layer cells. Compression passes in
-**10/15** and $\log\langle|\nabla x|\rangle$ in **8/15**. Bad curvature,
-cross-channel co-location, and geodesic-curvature magnitude each pass in
-**7/15**; local $Q(z)$ concentration passes in **5/15**; parallel scale in only
-**2/15**. These counts preserve signed member/layer results rather than
-averaging members before testing.
+The most replicated concept is $f_{\mathrm{stab}}$, encoded and used in
+**15/15** member/layer cells. Compression, cross-channel co-location, and
+$\log f_Q$ each pass in **12/15**; geodesic-curvature magnitude passes in
+**10/15**; bad curvature and local $Q(z)$ concentration in **7/15**; parallel
+scale in **6/15**; and $\log\langle|\nabla x|\rangle$ in **2/15**. These counts
+preserve signed member/layer results rather than averaging members before
+testing.
 
-Depth matters. Median TCAV derivatives for bad curvature change from **-0.457**
-at layer 1 to **+0.142** at layer 5; geodesic curvature changes from **-0.562**
-to **+0.141**; cross-channel co-location changes from **-0.604** to **+0.299**.
-In contrast, $f_{\mathrm{stab}}$ is positive at every layer (median **+0.323**
-to **+0.667**), while parallel scale is negative early (**-0.710**) and near
-zero late (**+0.008**). A single unsigned or depth-averaged concept score would
+Depth matters. Median TCAV derivatives for bad curvature change from **-0.460**
+at layer 1 to **+0.136** at layer 5; geodesic curvature changes from **-0.554**
+to **+0.147**; cross-channel co-location changes from **-0.596** to **+0.304**.
+In contrast, $f_{\mathrm{stab}}$ is positive at every layer (median **+0.327**
+to **+0.678**), while parallel scale is negative early (**-0.699**) and near
+zero late (**+0.004**). A single unsigned or depth-averaged concept score would
 hide these opposing mechanisms.
 
 ## Estimand and cohort
@@ -59,15 +60,22 @@ tube from each of 1,000 `equilibrium_files`: **240 stable/near-floor** and
 concept vocabulary. Production read the external HDF5 dataset, never
 `tests/data/review_slice.h5`.
 
+Probe fitting and matched-example construction use all 1,000 equilibria. The
+more expensive directional-derivative and hidden-intervention calculations use
+a deterministic random subsample of **96 equilibria: 25 stable/near-floor and
+71 unstable**. Every artifact row distinguishes these `derivative_*` counts
+from the full probe cohort. The number 96 here means equilibria; separately,
+each layer map has 96 spatial grid positions.
+
 The registered run is `concept-probes-top3-panel1000`. The published
 [manifest](S08_artifacts/manifest.json) records the external dataset SHA-256
 `9d8fa52f93f2782ad9948a38bf46943c0cd6df78cd08b94a006dad4e06c1c8ad`,
 checkpoint SHA-256
 `d5e092348514a5ee85b68bcdcf51dbb32eaa344beea1daa28f5aaeba9e86eefb`,
-CPU execution, seed 20260823, and **2,789.14 s** of production computation. A
-1.23 s hash-validated resume added the explicit balance/claim-gate columns and
-republished hashes without changing any fitted direction, derivative, or
-intervention value.
+CPU execution, seed 20260823, and **3,139.61 s** of corrected production
+computation. A 1.46 s hash-validated final resume applied the conservative
+subset-balance gate and republished hashes without changing any fitted
+direction, derivative, or intervention value.
 
 ## Methods
 
@@ -110,27 +118,46 @@ shrinks further.
 
 ### Directional derivatives and interventions
 
-Five CAVs per cell come from 75% subsamples of the matched high and low sets.
-The derivative sums gradients over all 96 positions because the direction is
-added uniformly to the layer map. Member/sample signs are retained. Intervals
-resample complete `equilibrium_files` 500 times.
+Five CAVs per cell come from 75% subsamples of the matched high/low *pairs*;
+sampling pair indices jointly preserves the nearest-neighbor pairing. The
+artifact reports the worst nuisance imbalance among those five subsets. Their
+five normalized directions are averaged into one declared CAV. That same CAV
+produces the reported derivative, interval, signed intervention, and
+orthogonal-complement ablation, so the evidence is not combined across two
+different vectors. The derivative sums gradients over all 96 spatial positions
+because the direction is added uniformly to the layer map. Member/sample signs
+are retained. Intervals resample all 96 selected `equilibrium_files` 500 times.
+
+The in-repository TCAV implementation is deliberate: it exposes regression
+derivatives and the exact hidden continuation used here directly, whereas
+Captum's packaged TCAV workflow is classifier-oriented. Captum is installed in
+the environment but does not produce an S08 artifact column.
 
 The intervention shifts the real hidden representation in both directions and
-continues the canonical network from that layer. It is tagged
+continues the canonical network from that layer. Projecting each centered
+representation into the CAV's orthogonal complement provides the registered
+direction-removal diagnostic. Both edits are tagged
 `deliberately_off_manifold_diagnostic`: a hidden activation edit diagnoses the
-network, not the plasma. Eight random directions of equal norm receive the same
-edit magnitude. [TCAV/use results](S08_artifacts/tcav_use.csv) retain the raw
-results even when the combined claim gate fails.
+network, not the plasma. Eight isotropic equal-norm directions and eight random
+directions weighted by each hidden unit's panel interquartile range receive the
+same edit magnitude. The latter prevent near-dead units from making the control
+artificially weak and supply the claim gate; both ratios are published.
+[TCAV/use results](S08_artifacts/tcav_use.csv) retain the raw results even when
+the combined claim gate fails.
 
 ### Claim rule
 
 A cell is called encoded and used only when all of the following hold:
 
 1. outer-fold $R^2\ge0.1$ and at least 0.1 above its permuted control;
-2. matched-example maximum absolute standardized mean difference $\le0.25$;
+2. both the parent matched set and every counterexample subset have maximum
+   absolute standardized mean difference at most 0.25;
 3. at least 80% of counterexample sets give the same derivative sign;
-4. the equilibrium-bootstrap 95% interval excludes zero; and
-5. the concept-direction intervention RMS exceeds the median random-direction RMS.
+4. the equilibrium-bootstrap 95% interval excludes zero and its p-value passes
+   Benjamini-Hochberg false-discovery-rate control at 0.05 across all 150 cells;
+   and
+5. the concept-direction intervention RMS exceeds the median
+   activation-scale-matched random-direction RMS.
 
 This rule is a reporting gate, not a tuned classifier. Every component and the
 final Boolean appear in the [encoding/use matrix](S08_artifacts/encoding_use_matrix.csv).
@@ -141,12 +168,13 @@ final Boolean appear in the [encoding/use matrix](S08_artifacts/encoding_use_mat
   matching misses the balance threshold, yet all 15 arbitrary zonal directions
   beat the random intervention median. This is evidence that an intervention
   ratio alone can manufacture a use story; **0/15** zonal claims are permitted.
-- Direction intervention is not universal: 50/150 cells fail even the raw
-  intervention/random comparison, and only 72/150 pass the complete gate.
-- Parallel scale is decodable (median $R^2=0.544$) but used in only **2/15**
+- Direction intervention is not universal: 30/150 cells fail the isotropic
+  random comparison, 31/150 fail the stronger activation-scale-matched
+  comparison, and only 83/150 pass the complete gate.
+- Parallel scale is decodable (median $R^2=0.544$) but used in only **6/15**
   cells. Information available to a probe need not drive the prediction.
 - Local $Q(z)$ concentration is weakly encoded overall and fails on
-  stable/near-floor rows, although five later-layer cells pass the full use gate.
+  stable/near-floor rows, although seven member/layer cells pass the full gate.
 - Bad-curvature, geodesic-curvature, and co-location directions reverse sign
   with depth. They cannot be summarized as monotone positive mechanisms.
 - Hidden interventions are off-manifold. Even a fully gated cell explains the
@@ -156,10 +184,10 @@ final Boolean appear in the [encoding/use matrix](S08_artifacts/encoding_use_mat
 
 | PLAN criterion | Verdict and evidence |
 | --- | --- |
-| “encoded” and “used” are separate columns | **Pass.** All 150 rows carry separate held-out `encoded_r2`, signed derivative, intervention, component-gate, and final `use_claim_permitted` columns. Only 72/150 pass the complete rule. |
+| “encoded” and “used” are separate columns | **Pass.** All 150 rows carry separate held-out `encoded_r2`, signed derivative, intervention, component-gate, and final `use_claim_permitted` columns. Only 83/150 pass the complete rule. |
 | concept classifiers generalize by equilibrium | **Qualified pass.** Median outer-fold $R^2=0.747$ versus -0.00208 permuted and -0.00228 random; nine concepts pass in all 15 cells. Zonal magnitude fails in all 15 and is retained as a negative result. Both nested levels split by `equilibrium_files`. |
-| TCAV is stable across counterexample sets | **Pass with one matching failure exposed.** 148/150 cells retain their sign across five sets. Nine concept families meet the 0.25 nuisance-balance threshold; zonal magnitude fails at 0.352 and receives no use claim. |
-| direction interventions beat matched random controls | **Qualified pass.** 100/150 raw interventions beat the random median; $f_{\mathrm{stab}}$ passes in 13/15 and $\log f_Q$ in 14/15. The complete gate permits 72/150; failures and ratios remain published. |
+| TCAV is stable across counterexample sets | **Pass with matching failures exposed.** 146/150 cells retain their sign across five paired subsets; parent and subset nuisance balance is published and included in the gate. Zonal parent balance fails at 0.352 and receives no use claim. |
+| direction interventions beat matched random controls | **Qualified pass.** 120/150 raw interventions beat the isotropic random median and 119/150 beat activation-scale-matched random controls; $f_{\mathrm{stab}}$ passes the complete gate in 15/15 cells. The full gate permits 83/150; failures and both ratios remain published. |
 
 ## Failed checks
 
@@ -177,6 +205,13 @@ final Boolean appear in the [encoding/use matrix](S08_artifacts/encoding_use_mat
   made it pass. The original production run was discarded and recomputed.
 - The corrected run leaves one explicit failed balance check: zonal $a/L_T$
   imbalance is 0.352 versus the 0.25 threshold. It is gated out, not hidden.
+- The first automated review reproduced every checked number but found that the
+  reported derivative and intervention used different directions, random
+  controls ignored hidden-unit activation scale, and the 96-equilibrium use
+  subsample was labeled as if it contained all 1,000 rows. The original use
+  statistics were discarded. The corrected production run uses one direction,
+  publishes both control families, labels 25/71 regime counts, implements
+  orthogonal-complement ablation, and adds multiple-testing control.
 
 ## Mutation testing
 
@@ -189,6 +224,13 @@ reverted:
    balance test (standardized difference 1.99); and
 3. exponentiating the native scalar in the analytic direction test changed the
    known derivative away from 2.5 and failed the native-output assertion.
+4. replacing the uniform-edit spatial gradient sum by a mean failed the finite
+   hidden-map intervention comparison;
+5. negating that gradient failed the same comparison with the opposite sign;
+6. reporting the all-panel in-sample probe fit as held-out $R^2$ failed the
+   expanded noisy-feature permutation fixture; and
+7. giving isotropic random controls half the concept edit magnitude failed the
+   one-dimensional equal-step control fixture.
 
 ## Deferred
 
@@ -205,9 +247,11 @@ bash scripts/setup_xai_env.sh
 MPLCONFIGDIR=/private/tmp/mpl-s08-pilot XDG_CACHE_HOME=/private/tmp/cache-s08-pilot \
   .venv-xai/bin/python scripts/xai_s08_concepts.py --pilot --no-publish
 MPLCONFIGDIR=/private/tmp/mpl-s08-prod XDG_CACHE_HOME=/private/tmp/cache-s08-prod \
-  .venv-xai/bin/python scripts/xai_s08_concepts.py
+  .venv-xai/bin/python scripts/xai_s08_concepts.py \
+  --output-dir output/xai/S08/concept-probes-top3-panel1000-review2
 MPLCONFIGDIR=/private/tmp/mpl-s08-resume XDG_CACHE_HOME=/private/tmp/cache-s08-resume \
-  .venv-xai/bin/python scripts/xai_s08_concepts.py --resume
+  .venv-xai/bin/python scripts/xai_s08_concepts.py --resume \
+  --output-dir output/xai/S08/concept-probes-top3-panel1000-review2
 .venv-xai/bin/python -m pytest tests/xai/test_concepts.py \
   tests/xai/test_concepts_artifacts.py -q
 source .venv-xai/bin/activate && make check
@@ -221,8 +265,10 @@ source .venv-xai/bin/activate && make check
 recompute the ten concept scores, exact class membership, nuisance balance,
 five-layer canonical representations, grouped outer predictions, permutation
 and random-concept controls, TCAV signs, and intervention ratios for all three
-members. The full run took 2,789 s, so the 96-row pilot is the practical proxy;
-agreement on axes, grouped folds, signs, and claim gates checks the wiring.
+members. The derivative/intervention row IDs are the deterministic 96-row
+subsample recorded by the config and seed. The full run took 3,139.61 s, so the
+96-row pilot is the practical proxy; agreement on axes, grouped folds, signs,
+and claim gates checks the wiring.
 
 **Checkable from committed artifacts alone.** The 150-cell matrix, 165 probe
 rows, 3,940 matched-example rows, balance table, summary, figure, and manifest

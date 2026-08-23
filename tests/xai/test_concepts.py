@@ -1,14 +1,17 @@
 from __future__ import annotations
 
 import numpy as np
+import pytest
 import torch
 
 from itg_nn.xai.concepts import (
+    benjamini_hochberg,
     canonical_output_from_layer,
     grouped_nested_sparse_probe,
     invariant_layer_maps,
     matched_extremes,
     representation_direction_use,
+    uniform_edit_gradient,
 )
 from itg_nn.ensemble import load_ensemble
 from itg_nn.xai.symmetry import InvariantMember, circular_shift
@@ -25,7 +28,11 @@ def _cyclic_fixture(seed: int = 9) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     amplitude = rng.uniform(0.3, 2.0, size=48)[groups]
     traces = amplitude[:, None] * signal + 0.05 * rng.normal(size=signal.shape)
     representation = np.column_stack(
-        (np.mean(traces * signal, axis=1), nuisance, rng.normal(size=len(groups)))
+        (
+            np.mean(traces * signal, axis=1),
+            nuisance,
+            rng.normal(size=(len(groups), 8)),
+        )
     )
     return representation, amplitude, groups
 
@@ -53,6 +60,9 @@ def test_nested_sparse_probe_recovers_cyclic_concept_and_permutation_null() -> N
     )
     assert fitted.held_out_r2 > 0.9
     assert permuted.held_out_r2 < 0.2
+    assert permuted.held_out_r2 < 1.0 - np.sum(
+        (target - (representation @ permuted.coefficients + permuted.intercept)) ** 2
+    ) / np.sum((target - target.mean()) ** 2)
     assert fitted.nonzero_fraction < 0.8
     np.testing.assert_allclose(fitted.predictions, grouped_nested_sparse_probe(
         representation, target, groups, outer_folds=4, inner_folds=3,
@@ -115,10 +125,62 @@ def test_directional_use_explains_native_output_and_beats_random_controls() -> N
         random_directions=32,
         intervention_scale=0.2,
         seed=12,
+        feature_scale=torch.tensor([4.0, 1.0, 1.0, 1.0, 1.0]),
     )
     assert use.mean_directional_derivative == np.float64(2.5)
-    assert use.intervention_rms > 2.0 * use.random_intervention_rms_median
+    assert use.intervention_rms > use.scale_matched_random_rms_median
+    # The finite symmetric edit must agree with the analytic derivative times
+    # the step. This catches a sign flip, spatial mean in place of a sum, or an
+    # intervention along a vector different from the derivative vector.
+    assert use.intervention_rms == pytest.approx(
+        abs(use.mean_directional_derivative) * 0.2
+    )
+    assert use.orthogonal_complement_ablation_rms > 0
     assert use.validity_tag == "deliberately_off_manifold_diagnostic"
+
+
+def test_random_controls_receive_exactly_the_concept_step_size() -> None:
+    representation = torch.linspace(-1, 1, 16)[:, None]
+
+    def native_output(values: torch.Tensor) -> torch.Tensor:
+        return 3.0 * values[:, 0]
+
+    use = representation_direction_use(
+        native_output,
+        representation,
+        torch.ones(1),
+        random_directions=4,
+        intervention_scale=0.3,
+        seed=6,
+        feature_scale=torch.tensor([7.0]),
+    )
+    assert use.intervention_rms == pytest.approx(0.9)
+    assert use.random_intervention_rms_median == pytest.approx(0.9)
+    assert use.scale_matched_random_rms_median == pytest.approx(0.9)
+
+
+def test_uniform_edit_gradient_matches_finite_hidden_map_intervention() -> None:
+    torch.manual_seed(29)
+    layer_map = torch.randn(12, 3, 8)
+    direction = torch.tensor([1.0, 0.0, 0.0])
+
+    def continue_native(values: torch.Tensor) -> torch.Tensor:
+        return 2.5 * values[:, 0].mean(-1) - 0.2 * values[:, 1].mean(-1)
+
+    gradient = uniform_edit_gradient(continue_native, layer_map)
+    derivative = gradient @ direction
+    step = 0.2
+    finite = (
+        continue_native(layer_map + step * direction[None, :, None])
+        - continue_native(layer_map - step * direction[None, :, None])
+    ) / (2 * step)
+    torch.testing.assert_close(derivative, finite)
+    torch.testing.assert_close(derivative, torch.full((12,), 2.5))
+
+
+def test_benjamini_hochberg_controls_the_complete_cell_family() -> None:
+    adjusted = benjamini_hochberg(np.array([0.001, 0.01, 0.04, 0.8]))
+    np.testing.assert_allclose(adjusted, [0.004, 0.02, 0.05333333333333334, 0.8])
 
 
 def test_canonical_layer_representations_are_shift_invariant_and_continue_exactly() -> None:
@@ -131,7 +193,7 @@ def test_canonical_layer_representations_are_shift_invariant_and_continue_exactl
     maps = invariant_layer_maps(member, geometry)
     shifted = invariant_layer_maps(member, circular_shift(geometry, 17))
     for base, moved in zip(maps, shifted):
-        torch.testing.assert_close(base.mean(-1), moved.mean(-1), atol=2e-5, rtol=2e-5)
+        torch.testing.assert_close(base.mean(-1), moved.mean(-1), atol=1e-6, rtol=1e-6)
     continued = canonical_output_from_layer(
         member, 2, maps[2], a_over_lt, a_over_ln
     )

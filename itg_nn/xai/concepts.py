@@ -37,7 +37,25 @@ class DirectionUse:
     intervention_rms: float
     random_intervention_rms_median: float
     random_intervention_rms_q95: float
+    scale_matched_random_rms_median: float
+    scale_matched_random_rms_q95: float
+    orthogonal_complement_ablation_rms: float
     validity_tag: str
+
+
+def benjamini_hochberg(p_values: np.ndarray) -> np.ndarray:
+    """Return false-discovery-rate adjusted p-values for one test family."""
+
+    values = np.asarray(p_values, dtype=np.float64)
+    if values.ndim != 1 or np.any((values < 0) | (values > 1)):
+        raise ValueError("p_values must be a one-dimensional array in [0, 1]")
+    order = np.argsort(values)
+    ranked = values[order]
+    adjusted_ranked = ranked * len(values) / np.arange(1, len(values) + 1)
+    adjusted_ranked = np.minimum.accumulate(adjusted_ranked[::-1])[::-1]
+    adjusted = np.empty_like(values)
+    adjusted[order] = np.minimum(adjusted_ranked, 1.0)
+    return adjusted
 
 
 def invariant_layer_maps(
@@ -277,6 +295,7 @@ def representation_direction_use(
     random_directions: int,
     intervention_scale: float,
     seed: int,
+    feature_scale: torch.Tensor | None = None,
 ) -> DirectionUse:
     if random_directions < 1 or intervention_scale <= 0:
         raise ValueError("random_directions and intervention_scale must be positive")
@@ -292,6 +311,12 @@ def representation_direction_use(
         intervention = (plus - minus) / 2
         generator = torch.Generator(device=base.device).manual_seed(seed)
         controls: list[float] = []
+        scale_matched_controls: list[float] = []
+        scale = (
+            torch.ones_like(direction)
+            if feature_scale is None
+            else feature_scale.to(base).reshape(-1)
+        )
         for _ in range(random_directions):
             random = torch.randn(
                 direction.shape,
@@ -309,11 +334,48 @@ def representation_direction_use(
             controls.append(
                 float(torch.sqrt(torch.mean(((random_plus - random_minus) / 2) ** 2)))
             )
+            scale_matched = torch.randn(
+                direction.shape,
+                generator=generator,
+                device=base.device,
+                dtype=base.dtype,
+            ) * scale
+            scale_matched /= torch.linalg.vector_norm(scale_matched).clamp_min(1e-12)
+            scale_plus = output_from_representation(
+                base.detach() + intervention_scale * scale_matched
+            )
+            scale_minus = output_from_representation(
+                base.detach() - intervention_scale * scale_matched
+            )
+            scale_matched_controls.append(
+                float(torch.sqrt(torch.mean(((scale_plus - scale_minus) / 2) ** 2)))
+            )
+        center = base.detach().mean(dim=0, keepdim=True)
+        coordinate = (base.detach() - center) @ direction
+        orthogonal = base.detach() - coordinate[:, None] * direction[None, :]
+        orthogonal_output = output_from_representation(orthogonal)
+        orthogonal_effect = torch.sqrt(torch.mean((orthogonal_output - output.detach()) ** 2))
     return DirectionUse(
         mean_directional_derivative=float(derivatives.mean()),
         positive_fraction=float((derivatives > 0).float().mean()),
         intervention_rms=float(torch.sqrt(torch.mean(intervention**2))),
         random_intervention_rms_median=float(np.median(controls)),
         random_intervention_rms_q95=float(np.quantile(controls, 0.95)),
+        scale_matched_random_rms_median=float(np.median(scale_matched_controls)),
+        scale_matched_random_rms_q95=float(np.quantile(scale_matched_controls, 0.95)),
+        orthogonal_complement_ablation_rms=float(orthogonal_effect),
         validity_tag="deliberately_off_manifold_diagnostic",
     )
+
+
+def uniform_edit_gradient(
+    output_from_layer_map: Callable[[torch.Tensor], torch.Tensor],
+    layer_map: torch.Tensor,
+) -> torch.Tensor:
+    """Gradient for adding one hidden-channel direction at every position."""
+
+    base = layer_map.detach().clone().requires_grad_(True)
+    output = output_from_layer_map(base)
+    # Uniform addition repeats a channel edit at every spatial position, so the
+    # chain rule sums (and preserves the sign of) all positionwise gradients.
+    return torch.autograd.grad(output.sum(), base)[0].sum(-1)
