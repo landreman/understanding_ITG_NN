@@ -10,6 +10,7 @@ import io
 import json
 import shutil
 import sys
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -26,6 +27,7 @@ from itg_nn.ensemble import load_ensemble
 from itg_nn.xai.artifacts import RunArtifacts, sha256_file
 from itg_nn.xai.physics_alignment import (
     CircularAlignment,
+    ScalarAssociation,
     circular_alignment,
     lag_selection_permutation_null,
     paired_native_difference,
@@ -43,6 +45,18 @@ MODES = ("signed", "positive_contribution")
 NATIVE_ESTIMAND = "native max(log Q, -2)"
 OBSERVED_VALIDITY = "observed-comparison"
 OFF_MANIFOLD_VALIDITY = "deliberately_off_manifold_diagnostic"
+
+
+@dataclass(frozen=True)
+class ZonalSummaryAssociations:
+    """Pooled and nonzero-only zonal associations plus silence diagnostics."""
+
+    pooled: ScalarAssociation
+    active: ScalarAssociation | None
+    zero_count: int
+    active_count: int
+    zero_fraction: float
+    active_bootstrap_stable: bool
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -277,6 +291,54 @@ def _lag_within_tolerance_recurrence(
     backward = (result.best_lag - result.bootstrap_best_lag) % 96
     distance = np.minimum(forward, backward)
     return float(np.mean(distance <= tolerance))
+
+
+def _zonal_summary_associations(
+    learned_summary: np.ndarray,
+    log_zonal: np.ndarray,
+    groups: np.ndarray,
+    *,
+    bootstrap_replicates: int,
+    seed: int,
+) -> ZonalSummaryAssociations:
+    """Compare zonal amplitude with all summaries and with nonzero ones only."""
+
+    values = np.asarray(learned_summary, dtype=np.float64)
+    zonal = np.asarray(log_zonal, dtype=np.float64)
+    group_values = np.asarray(groups)
+    pooled = scalar_rank_association(
+        values,
+        zonal,
+        group_values,
+        bootstrap_replicates=bootstrap_replicates,
+        seed=seed,
+    )
+    zero_summary = values == 0.0
+    active_summary = ~zero_summary
+    active_count = int(np.count_nonzero(active_summary))
+    if active_count == len(values):
+        active = pooled
+    elif active_count >= 2 and len(np.unique(group_values[active_summary])) >= 2:
+        active = scalar_rank_association(
+            values[active_summary],
+            zonal[active_summary],
+            group_values[active_summary],
+            bootstrap_replicates=bootstrap_replicates,
+            seed=seed + 500000,
+        )
+    else:
+        active = None
+    active_stable = active is not None and (
+        active.ci_lower > 0 or active.ci_upper < 0
+    )
+    return ZonalSummaryAssociations(
+        pooled=pooled,
+        active=active,
+        zero_count=int(np.count_nonzero(zero_summary)),
+        active_count=active_count,
+        zero_fraction=float(zero_summary.mean()),
+        active_bootstrap_stable=bool(active_stable),
+    )
 
 
 def _alignment_row(
@@ -717,31 +779,15 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
             subset_zonal = log_zonal[mask]
             subset_groups = groups[mask]
             association_seed = int(config["seed"]) + scalar_counter
-            result = scalar_rank_association(
+            associations = _zonal_summary_associations(
                 subset_values,
                 subset_zonal,
                 subset_groups,
                 bootstrap_replicates=bootstrap_replicates,
                 seed=association_seed,
             )
-            zero_summary = subset_values == 0.0
-            active_summary = ~zero_summary
-            active_count = int(np.count_nonzero(active_summary))
-            if active_count == len(subset_values):
-                active_result = result
-            elif (
-                active_count >= 2
-                and len(np.unique(subset_groups[active_summary])) >= 2
-            ):
-                active_result = scalar_rank_association(
-                    subset_values[active_summary],
-                    subset_zonal[active_summary],
-                    subset_groups[active_summary],
-                    bootstrap_replicates=bootstrap_replicates,
-                    seed=association_seed + 500000,
-                )
-            else:
-                active_result = None
+            result = associations.pooled
+            active_result = associations.active
             scalar_counter += 1
             zonal_rows.append(
                 {
@@ -753,11 +799,9 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
                     "spearman_ci95_lower": result.ci_lower,
                     "spearman_ci95_upper": result.ci_upper,
                     "bootstrap_stable": (result.ci_lower > 0 or result.ci_upper < 0),
-                    "learned_zero_summary_count": int(
-                        np.count_nonzero(zero_summary)
-                    ),
-                    "learned_active_summary_count": active_count,
-                    "learned_zero_summary_fraction": float(zero_summary.mean()),
+                    "learned_zero_summary_count": associations.zero_count,
+                    "learned_active_summary_count": associations.active_count,
+                    "learned_zero_summary_fraction": associations.zero_fraction,
                     "spearman_active_summary": (
                         active_result.spearman_rho if active_result is not None else None
                     ),
@@ -768,11 +812,7 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
                         active_result.ci_upper if active_result is not None else None
                     ),
                     "active_summary_bootstrap_stable": (
-                        active_result is not None
-                        and (
-                            active_result.ci_lower > 0
-                            or active_result.ci_upper < 0
-                        )
+                        associations.active_bootstrap_stable
                     ),
                     "zero_summary_definition": "exact_zero_after_summary",
                     "bootstrap_replicates": bootstrap_replicates,

@@ -20,6 +20,7 @@ from scripts.xai_s07_physics_alignment import (
     _alignment_row,
     _association_bootstrap_stable,
     _lag_within_tolerance_recurrence,
+    _zonal_summary_associations,
 )
 
 
@@ -358,6 +359,25 @@ def test_scalar_and_paired_results_use_whole_equilibria_and_native_units() -> No
     )
     np.testing.assert_allclose(moving.bootstrap_rho, expected_bootstrap, atol=1e-12)
     assert len(np.unique(moving.bootstrap_rho)) > 1
+
+    split_values = np.asarray([0.0, 0.0, 0.0, 0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0])
+    split_zonal = np.asarray([9.0, 8.0, 7.0, 6.0, 1.0, 5.0, 2.0, 6.0, 3.0, 4.0])
+    split_groups = np.asarray([f"split{index}" for index in range(10)])
+    split = _zonal_summary_associations(
+        split_values,
+        split_zonal,
+        split_groups,
+        bootstrap_replicates=80,
+        seed=27,
+    )
+    assert split.zero_count == 4
+    assert split.active_count == 6
+    assert split.zero_fraction == pytest.approx(0.4)
+    assert split.active is not None
+    assert split.pooled.spearman_rho != pytest.approx(split.active.spearman_rho)
+    assert split.active.spearman_rho == pytest.approx(0.37142857142857144)
+    assert split.active.ci_lower < 0 < split.active.ci_upper
+    assert split.active_bootstrap_stable is False
 
     fixed_native = np.asarray([-2.0, -1.0, 0.0, 1.0] * 5)
     varied_native = fixed_native - 0.5

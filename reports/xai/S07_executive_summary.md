@@ -103,7 +103,9 @@ fixed result supports an association conditional on constant drive, not a
 causal mechanism. It is also not candidate-specific: all nine selected
 densities reach absolute fixed-panel correlations of 0.310–0.564, and the
 largest is the unnamed, mostly silent `.437:u003` at -0.564 rather than the
-geodesic candidate.
+geodesic candidate. On active rows alone the nine-unit absolute range is
+0.150–0.712; all nine remain substantial and same-signed, and `.437:u003`
+remains largest.
 
 That pooled `.437:u003` result is itself mostly a silent-versus-active contrast.
 The unit is exactly zero on 605/760 varied unstable rows; on the 155 rows where

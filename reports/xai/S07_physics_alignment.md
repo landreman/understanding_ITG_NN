@@ -74,7 +74,7 @@ python scripts/xai_s07_physics_alignment.py \
   --config configs/xai/S07_physics_alignment.json
 ```
 
-Run `physics-alignment-top3-panel1000` took 339.39 seconds on CPU. The committed
+Run `physics-alignment-top3-panel1000` took 330.41 seconds on CPU. The committed
 [manifest](S07_artifacts/manifest.json) records the exact dataset, checkpoint,
 S04/S05 inputs, reused S06b attribution-map hash, package versions, command,
 row IDs, and output hashes.
@@ -141,7 +141,8 @@ substitute for the signed result. A learned profile that is constant along all
 correlation zero at every lag, while the tie-inclusive mask contains all 96
 positions. Each artifact row therefore records the constant-profile count and
 fraction, the association over nonconstant rows alone, and the mean learned and
-GX mask widths; the primary association remains the preregistered all-row mean.
+GX mask widths; the active-only value is evaluated at the same lag selected on
+all rows. The primary association remains the preregistered all-row mean.
 
 ### Zonal-flow comparison
 
@@ -280,7 +281,9 @@ selected densities, fixed-panel unstable correlations have absolute magnitude
 association is the unnamed and mostly silent `.437:u003` at -0.564, rather than
 the geodesic-curvature candidate. The zonal comparison therefore supports a
 panel-wide constant-drive geometry association, not a candidate-specific zonal
-mechanism.
+mechanism. After excluding exact-zero summaries, the fixed-panel absolute range
+widens to 0.150–0.712; all nine remain substantial and same-signed, and
+`.437:u003` remains largest.
 
 The pooled range partly reflects whether mostly silent units fire at all.
 `.437:u003`, the pooled varied-panel maximum above, is exactly zero on 605/760
@@ -430,8 +433,11 @@ never send the parent IDs directly to a reader pointed at the slice.
 - The same artifact test pins the dominant density's 17/760 constant rows and
   -0.368761 active-row association, and the mostly silent `.437:u003` density's
   605/760 constant rows, +0.167794 active-row association, and 80.847-position
-  mean learned-mask width. A separate analytic test pins mid-ranks for tied
-  values and the zero-correlation convention for a constant row.
+  mean learned-mask width. It also pins `.437:u003`'s zonal split at 605 zero
+  and 155 active summaries, with active-only rho +0.074261 and an interval that
+  crosses zero. A separate analytic test pins mid-ranks for tied values, the
+  zero-correlation convention for a constant row, and the pooled/active zonal
+  split on a hand-built fixture.
 
 ### Checkable from committed artifacts alone
 
