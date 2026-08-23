@@ -217,6 +217,33 @@ def test_s07_headline_spatial_results_pin_signed_and_positive_conclusions() -> N
     assert positive["overlap_orientation"] == "gx_profile_unflipped"
     assert signed["lag_search_null_resolved"] == "True"
 
+    original_signed = one(
+        source_family="s06_attribution",
+        member_id="2864601_0.437",
+        function="original_f",
+        method="ig_low_pass",
+        gradient_set="varied",
+        stratum="unstable",
+        mode="signed",
+    )
+    original_positive = one(
+        source_family="s06_attribution",
+        member_id="2864601_0.437",
+        function="original_f",
+        method="ig_low_pass",
+        gradient_set="varied",
+        stratum="unstable",
+        mode="positive_contribution",
+    )
+    assert float(original_signed["circular_spearman"]) == np.float64(
+        -0.013272392231391003
+    )
+    assert float(original_positive["circular_spearman"]) == np.float64(
+        0.2300460407141299
+    )
+    assert original_signed["circular_spearman"] != signed["circular_spearman"]
+    assert original_positive["circular_spearman"] != positive["circular_spearman"]
+
     unresolved = one(
         source_family="s06_attribution",
         member_id="2864601_0.371",

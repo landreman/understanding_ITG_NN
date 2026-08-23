@@ -301,11 +301,15 @@ the positive-only result describes network sensitivity to that constructed
 path, not a plasma mechanism. It would be misleading to call it simply “where
 the model looks.”
 
-The periodic-mask diagnostic is stronger (positive-only $r_s=0.318$–0.345),
-but it remains in the tables as a negative methodological result, not as feature
-evidence, because its S06b shift-symmetry check failed. Likewise, stable-row
-comparisons are retained but carry `feature_claims_permitted=False`: at the
-clipped-log floor, the model's native output cannot resolve changes below -2.
+The canonical periodic-mask diagnostic is stronger (positive-only
+$r_s=0.318$–0.345), while the original-$f_m$ range is **0.239–0.287**.
+Canonical minus original is +0.0587 for `.437`, +0.0793 for `.371`, and +0.0590
+for `.409`; all six rows exceed their own null q95 values (0.026–0.033) and
+recur within ±4 positions in 100% of resamples. This method nevertheless remains
+in the tables as a negative methodological result, not as feature evidence,
+because its S06b shift-symmetry check failed. Likewise, stable-row comparisons
+are retained but carry `feature_claims_permitted=False`: at the clipped-log
+floor, the model's native output cannot resolve changes below -2.
 
 ### 3. Zonal-flow observable
 
@@ -490,6 +494,10 @@ never send the parent IDs directly to a reader pointed at the slice.
 ### Checkable from committed artifacts alone
 
 - All headline numbers above are literal rows in the committed CSVs and summary.
+  The original-$f_m$ and canonical Integrated-Gradients rows, their direct
+  canonical-minus-original subtractions, and both functions' periodic-mask
+  rows are checkable in `spatial_alignment.csv`; no external map is needed to
+  verify those published reductions.
 - Every unstable-row permutation-null distribution is reduced to its committed
   q95 and maximum. The density nulls can be recomputed on the slice; the exact
   attribution null reductions are checkable from the committed artifact.
