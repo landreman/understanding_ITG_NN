@@ -1,0 +1,51 @@
+{
+  "bootstrap": {
+    "replicates": 500,
+    "unit": "equilibrium_files"
+  },
+  "canonical_function": "invariant_tilde_f",
+  "cohort": {
+    "panel_rows": 1000,
+    "stable_or_near_floor": 240,
+    "unique_equilibrium_files": 1000,
+    "unstable": 760
+  },
+  "concepts": [
+    "log_f_Q",
+    "f_stab",
+    "log_compression",
+    "bad_curvature",
+    "geodesic_curvature",
+    "parallel_scale",
+    "cross_channel_colocation",
+    "log_FSA_grad_x",
+    "local_Qz_concentration",
+    "log10_zonal_phi2"
+  ],
+  "counterexample_balance_failed_concepts": [
+    "log10_zonal_phi2"
+  ],
+  "counterexample_worst_max_abs_smd": 0.3520757464011924,
+  "deferred": [
+    "network dissection IoU/mutual-information/selectivity tables"
+  ],
+  "encoded_and_used_separate": true,
+  "encoded_generalizes_fraction": 0.9,
+  "estimand": "native max(log Q, -2)",
+  "intervention_beats_random_fraction": 0.6666666666666666,
+  "layers": 5,
+  "median_permuted_r2": -0.0020780937051435577,
+  "median_probe_r2": 0.7471185927044091,
+  "median_random_concept_r2": -0.0022791902498608962,
+  "members": [
+    "2864601_0.437",
+    "2864601_0.371",
+    "2864601_0.409"
+  ],
+  "mode": "production",
+  "run_id": "concept-probes-top3-panel1000",
+  "stable_counterexample_fraction": 0.9866666666666667,
+  "step": "S08",
+  "use_claim_permitted_fraction": 0.48,
+  "use_claim_rule": "encoded_r2>=0.1; gain_over_permutation>=0.1; counterexample_sign_agreement>=0.8; grouped_CI_excludes_0; intervention_ratio>1; matched_max_abs_SMD<=0.25"
+}
