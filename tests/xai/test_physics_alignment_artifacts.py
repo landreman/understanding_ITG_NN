@@ -147,6 +147,10 @@ def test_s07_headline_spatial_results_pin_signed_and_positive_conclusions() -> N
         if row["source_family"] == "s06_attribution"
         and row["method"] == "ig_low_pass"
     } == {"integrated_gradients_captum"}
+    assert {row["spatial_distinction"] for row in rows} == {
+        "learned prediction signal compared with held-out physical Q_avgs_vs_z; "
+        "association does not make the attribution a physical heat-flux profile"
+    }
 
     def one(**expected: str) -> dict[str, str]:
         matches = [

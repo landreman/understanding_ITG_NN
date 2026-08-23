@@ -124,6 +124,13 @@ The artifact suite also cross-checks every registered summary headline against
 its source CSV, so corrupting a summary block fails. Separate canonical- and
 original-model attribution pins make collapsing those model functions onto one
 another fail as well.
+Later seed-drift mutations moved the spatial, pooled-zonal, active-row-zonal,
+and paired bootstrap intervals without changing their point estimates. Exact
+artifact pins now make every such mutation fail, including insertions later in
+the running counter sequences. The zonal pooled stability verdict is pinned for
+one unresolved row and by its full-table 190/116 count; changing unresolved
+rows to resolved now fails. The artifact suite also pins the Integrated
+Gradients backend, GX quantity, and spatial-distinction metadata.
 
 ## Methods
 
@@ -439,6 +446,9 @@ shows both directions with equal space.
   symmetry check failed.
 - Zonal associations are stronger when drive is fixed, but the varied panel is
   drive-confounded; the contrast alone cannot establish drive dependence.
+- Paired spatial effects read both panels at the all-row selected lag. Thus
+  near-floor rows help select the offset even for the both-unstable effect; the
+  stratum-specific effect is not a separately selected-lag estimate.
 - Equal-prominence natural contradictions exist for both hypotheses.
 - Circular correlation, even with grouped uncertainty and correct lag, is
   association rather than identity or causality. $Q(z)$ is itself a GX
