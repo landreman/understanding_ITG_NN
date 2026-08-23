@@ -179,6 +179,20 @@ def test_s07_headline_spatial_results_pin_signed_and_positive_conclusions() -> N
         -0.3687605907617687
     )
 
+    later_density = one(
+        source_id="2864601_0.437:u008",
+        gradient_set="varied",
+        stratum="unstable",
+        mode="signed",
+    )
+    assert (
+        float(later_density["circular_spearman_ci95_lower"]),
+        float(later_density["circular_spearman_ci95_upper"]),
+    ) == (
+        np.float64(-0.2943914186610519),
+        np.float64(-0.24143675281600369),
+    )
+
     mostly_silent = one(
         source_id="2864601_0.437:u003",
         gradient_set="varied",
@@ -286,7 +300,13 @@ def test_s07_zonal_pairing_cases_and_symmetry_keep_negative_results() -> None:
     ]
     assert len(geodesic) == 1
     assert float(geodesic[0]["spearman_rho"]) == np.float64(-0.12162944609886839)
-    assert float(geodesic[0]["spearman_ci95_upper"]) < -0.06
+    assert (
+        float(geodesic[0]["spearman_ci95_lower"]),
+        float(geodesic[0]["spearman_ci95_upper"]),
+    ) == (
+        np.float64(-0.18339575629260024),
+        np.float64(-0.06012982420600932),
+    )
 
     mostly_silent_zonal = [
         row
@@ -347,6 +367,13 @@ def test_s07_zonal_pairing_cases_and_symmetry_keep_negative_results() -> None:
         stratum="both_unstable",
     )
     assert float(observed_effect["estimate"]) == np.float64(0.9570316134145961)
+    assert (
+        float(observed_effect["ci95_lower"]),
+        float(observed_effect["ci95_upper"]),
+    ) == (
+        np.float64(0.8264462663869981),
+        np.float64(1.0759141859154944),
+    )
     zonal_effect = paired_one(
         quantity="log10_zonal_phi2",
         stratum="both_unstable",
