@@ -1086,7 +1086,7 @@
     "s05_motifs": "reports/xai/S05_artifacts/unit_motifs.csv",
     "s06b_manifest": "reports/xai/S06b_artifacts/manifest.json",
     "s06b_map": "output/xai/S06b/scaled-attribution-top10-panel2000-rank10-panel512/attribution_maps.h5",
-    "script_sha256": "48234d7eef813d225bf66c290cc21458fc2d170dd33a5e89c6cf10b22fde33f3",
+    "script_sha256": "aee1cf9235bc202cab5f08834873c6b643ede23a47c9b68e186af74946c75e41",
     "seed": 20260822,
     "selected_units_per_member": 3,
     "selection_null_permutations": 200,
@@ -1104,10 +1104,10 @@
     "sha256": "9d8fa52f93f2782ad9948a38bf46943c0cd6df78cd08b94a006dad4e06c1c8ad"
   },
   "device": "cpu",
-  "git_commit": "0e061e3452d8cee256a1a28d781576037d463a25",
+  "git_commit": "f7dd3c7162cdc49b2741b080128895a1610c3ff4",
   "git_dirty": true,
   "git_tracked_dirty": true,
-  "git_tree": "aab3dbb373e43c840d6543edcd2002725712ffdb",
+  "git_tree": "933ba41e9121398b04a7fedba4bdec8d3cf1b08c",
   "gradient_set": "fixed_and_varied_separate",
   "member_ids": [
     "2864601_0.437",
@@ -1122,8 +1122,8 @@
     "paired_analysis.csv": "752dd17ac85813c078edf3f0bdb21adc461d6292bc3464f1a5d6d9fef493b012",
     "physics_alignment_atlas.png": "82de5b67c90b74a6666f733a5e2127c42ef03f893b7772935f6cb88622cb4300",
     "spatial_alignment.csv": "2b84012b7d86e83abfba042934e74499cbb977e81cea83d6b29d6a90c2064f22",
-    "summary.json": "a10292e040f56ed9093035576548d5a6060c224352bdf5dfb49e2925c4bdaef3",
-    "zonal_association.csv": "ce8ca1b251dd37be72c9ee073d8cb1c09b635799428986fc1d78593c9192ff76"
+    "summary.json": "d89b092dbd92b56526185299aadb19e9c42044d538bed2039661edc8d5ab519b",
+    "zonal_association.csv": "1538b8dfd940243cf24d52e4c51482ac34395fc2aee5e419a1b4b034ad013aa2"
   },
   "package_versions": {
     "captum": "0.9.0",
@@ -3139,5 +3139,5 @@
     100596
   ],
   "seed": 20260822,
-  "wall_time_seconds": 302.95692279099603
+  "wall_time_seconds": 339.3886462090013
 }

@@ -713,13 +713,35 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
         zonal = diagnostics[gradient_set]["zonal_phi2"]
         log_zonal = np.log10(np.maximum(zonal, np.finfo(np.float64).tiny))
         for stratum, mask in _strata(target.numpy(), threshold):
+            subset_values = values[mask]
+            subset_zonal = log_zonal[mask]
+            subset_groups = groups[mask]
+            association_seed = int(config["seed"]) + scalar_counter
             result = scalar_rank_association(
-                values[mask],
-                log_zonal[mask],
-                groups[mask],
+                subset_values,
+                subset_zonal,
+                subset_groups,
                 bootstrap_replicates=bootstrap_replicates,
-                seed=int(config["seed"]) + scalar_counter,
+                seed=association_seed,
             )
+            zero_summary = subset_values == 0.0
+            active_summary = ~zero_summary
+            active_count = int(np.count_nonzero(active_summary))
+            if active_count == len(subset_values):
+                active_result = result
+            elif (
+                active_count >= 2
+                and len(np.unique(subset_groups[active_summary])) >= 2
+            ):
+                active_result = scalar_rank_association(
+                    subset_values[active_summary],
+                    subset_zonal[active_summary],
+                    subset_groups[active_summary],
+                    bootstrap_replicates=bootstrap_replicates,
+                    seed=association_seed + 500000,
+                )
+            else:
+                active_result = None
             scalar_counter += 1
             zonal_rows.append(
                 {
@@ -731,6 +753,28 @@ def run(config: dict[str, Any], args: argparse.Namespace) -> Path:
                     "spearman_ci95_lower": result.ci_lower,
                     "spearman_ci95_upper": result.ci_upper,
                     "bootstrap_stable": (result.ci_lower > 0 or result.ci_upper < 0),
+                    "learned_zero_summary_count": int(
+                        np.count_nonzero(zero_summary)
+                    ),
+                    "learned_active_summary_count": active_count,
+                    "learned_zero_summary_fraction": float(zero_summary.mean()),
+                    "spearman_active_summary": (
+                        active_result.spearman_rho if active_result is not None else None
+                    ),
+                    "spearman_active_summary_ci95_lower": (
+                        active_result.ci_lower if active_result is not None else None
+                    ),
+                    "spearman_active_summary_ci95_upper": (
+                        active_result.ci_upper if active_result is not None else None
+                    ),
+                    "active_summary_bootstrap_stable": (
+                        active_result is not None
+                        and (
+                            active_result.ci_lower > 0
+                            or active_result.ci_upper < 0
+                        )
+                    ),
+                    "zero_summary_definition": "exact_zero_after_summary",
                     "bootstrap_replicates": bootstrap_replicates,
                     "bootstrap_unit": result.bootstrap_group,
                     "gx_quantity": "log10(zonal_phi2_amplitudes)",

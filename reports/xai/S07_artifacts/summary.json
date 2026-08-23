@@ -164,6 +164,7 @@
       "validity_tag": "observed-comparison"
     },
     "strongest_varied_unstable_zonal_association": {
+      "active_summary_bootstrap_stable": false,
       "association_not_causation": true,
       "bootstrap_replicates": 500,
       "bootstrap_stable": true,
@@ -172,6 +173,9 @@
       "function": "invariant_tilde_f",
       "gradient_set": "varied",
       "gx_quantity": "log10(zonal_phi2_amplitudes)",
+      "learned_active_summary_count": 155,
+      "learned_zero_summary_count": 605,
+      "learned_zero_summary_fraction": 0.7960526315789473,
       "member_id": "2864601_0.437",
       "method": "equivariant_density_rho",
       "plasma_claims_permitted": true,
@@ -180,12 +184,16 @@
       "source_feature_claims_permitted": true,
       "source_id": "2864601_0.437:u003",
       "source_signed": true,
+      "spearman_active_summary": 0.07426122264831943,
+      "spearman_active_summary_ci95_lower": -0.06860759699198943,
+      "spearman_active_summary_ci95_upper": 0.2267801678826823,
       "spearman_ci95_lower": -0.23886385359558449,
       "spearman_ci95_upper": -0.1157119713970405,
       "spearman_rho": -0.18170189485935812,
       "stratum": "unstable",
       "summary": "mean_z_density",
-      "validity_tag": "observed-comparison"
+      "validity_tag": "observed-comparison",
+      "zero_summary_definition": "exact_zero_after_summary"
     }
   },
   "interpretation_limit": "Q_avgs_vs_z is a held-out GX physical diagnostic. Correlation with a network density or attribution is association, not identity or causality.",

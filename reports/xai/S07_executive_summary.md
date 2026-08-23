@@ -105,6 +105,14 @@ densities reach absolute fixed-panel correlations of 0.310–0.564, and the
 largest is the unnamed, mostly silent `.437:u003` at -0.564 rather than the
 geodesic candidate.
 
+That pooled `.437:u003` result is itself mostly a silent-versus-active contrast.
+The unit is exactly zero on 605/760 varied unstable rows; on the 155 rows where
+it fires, its zonal association reverses from **-0.182** pooled to an unresolved
+**+0.074 [-0.069, +0.227]**. In the fixed panel it changes from **-0.564**
+pooled to **-0.712 [-0.776, -0.619]** over 228 active rows. The two named
+candidates move by at most 0.05, so the constant-drive association remains real
+but is still panel-wide rather than candidate-specific.
+
 ## What the fixed/varied pairs show
 
 For the same geometry, the fixed and varied simulations have substantially
@@ -148,7 +156,8 @@ not an independent replication of the two named candidates. Moreover:
 - the stronger attribution result appears only after negative evidence is
   removed;
 - stronger fixed-drive zonal associations are panel-wide rather than
-  candidate-specific, while the varied panel is drive-confounded; and
+  candidate-specific, while the varied panel is drive-confounded and its
+  strongest pooled unit is mostly a fired-versus-silent contrast; and
 - strong natural contradictions exist for both hypotheses.
 
 The appropriate conclusion is therefore narrower than “the network discovered

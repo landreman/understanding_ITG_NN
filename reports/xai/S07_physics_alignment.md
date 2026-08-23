@@ -74,7 +74,7 @@ python scripts/xai_s07_physics_alignment.py \
   --config configs/xai/S07_physics_alignment.json
 ```
 
-Run `physics-alignment-top3-panel1000` took 302.96 seconds on CPU. The committed
+Run `physics-alignment-top3-panel1000` took 339.39 seconds on CPU. The committed
 [manifest](S07_artifacts/manifest.json) records the exact dataset, checkpoint,
 S04/S05 inputs, reused S06b attribution-map hash, package versions, command,
 row IDs, and output hashes.
@@ -150,7 +150,10 @@ with `log10(zonal_phi2_amplitudes)`. This is an across-equilibrium association,
 not a claim that either learned signal causes zonal flows. Stable/near-floor and
 unstable simulations remain separate. Zonal `bootstrap_stable` is also a
 per-comparison 5% interval decision, not a family-wise guarantee across the
-table.
+table. Each row records how many learned summaries are exactly zero and gives a
+second association over nonzero (active) summaries alone. For density means,
+an exact zero is the same silent-profile condition disclosed in the spatial
+table; an empty active estimate is disambiguated by an active count of zero.
 
 ### Natural paired comparison
 
@@ -279,6 +282,16 @@ the geodesic-curvature candidate. The zonal comparison therefore supports a
 panel-wide constant-drive geometry association, not a candidate-specific zonal
 mechanism.
 
+The pooled range partly reflects whether mostly silent units fire at all.
+`.437:u003`, the pooled varied-panel maximum above, is exactly zero on 605/760
+unstable rows: its pooled -0.182 association becomes **+0.074 [-0.069,
++0.227]** on the 155 active rows, reversing sign and becoming unresolved. In
+the fixed panel it is zero on 749/977 rows and changes from -0.564 pooled to
+**-0.712 [-0.776, -0.619]** on 228 active rows. Thus the varied headline is
+mainly a silent-versus-active contrast, while the fixed active-row association
+remains strong. The two named S05 candidates change by no more than 0.05 when
+zero summaries are excluded.
+
 For deliberately off-manifold canonical low-pass Integrated Gradients, the signed cell sum has intervals
 crossing zero in every member (-0.026, -0.032, -0.054 point estimates). Absolute
 attribution mass is negatively associated in all three (-0.144, -0.159,
@@ -333,6 +346,9 @@ shows both directions with equal space.
 - Three of nine selected densities are silent on 42–82% of unstable rows, so
   their pooled magnitudes partly reflect the documented zero-correlation
   convention. The active-row range remains mixed, from -0.369 to +0.182.
+- The same silence affects zonal summaries: `.437:u003` is zero on 605/760
+  varied-unstable rows and reverses from -0.182 pooled to an unresolved +0.074
+  over its 155 active rows.
 - The positive-contribution result is stable but incomplete because it clips
   negative evidence. It supports a spatial resemblance, not the full signed
   prediction mechanism.
@@ -378,7 +394,7 @@ shows both directions with equal space.
 - [lag_curves.csv](S07_artifacts/lag_curves.csv): 20,736 rows preserving every
   circular-lag correlation.
 - [zonal_association.csv](S07_artifacts/zonal_association.csv): 306 grouped
-  scalar associations.
+  scalar associations, with zero-summary counts and active-row estimates.
 - [paired_analysis.csv](S07_artifacts/paired_analysis.csv): 138 physical,
   prediction, and learned-signal fixed/varied comparisons (46 quantities times
   all/either-near-floor/both-unstable strata).

@@ -192,6 +192,16 @@ def test_s07_headline_spatial_results_pin_signed_and_positive_conclusions() -> N
 
 def test_s07_zonal_pairing_cases_and_symmetry_keep_negative_results() -> None:
     zonal = _csv("zonal_association.csv")
+    assert all(
+        int(row["learned_zero_summary_count"])
+        + int(row["learned_active_summary_count"])
+        == int(row["sample_count"])
+        for row in zonal
+    )
+    assert all(
+        row["zero_summary_definition"] == "exact_zero_after_summary"
+        for row in zonal
+    )
     geodesic = [
         row
         for row in zonal
@@ -202,6 +212,24 @@ def test_s07_zonal_pairing_cases_and_symmetry_keep_negative_results() -> None:
     assert len(geodesic) == 1
     assert float(geodesic[0]["spearman_rho"]) == np.float64(-0.12162944609886839)
     assert float(geodesic[0]["spearman_ci95_upper"]) < -0.06
+
+    mostly_silent_zonal = [
+        row
+        for row in zonal
+        if row["source_id"] == "2864601_0.437:u003"
+        and row["gradient_set"] == "varied"
+        and row["stratum"] == "unstable"
+    ]
+    assert len(mostly_silent_zonal) == 1
+    silent_row = mostly_silent_zonal[0]
+    assert int(silent_row["learned_zero_summary_count"]) == 605
+    assert int(silent_row["learned_active_summary_count"]) == 155
+    assert float(silent_row["spearman_active_summary"]) == np.float64(
+        0.07426122264831943
+    )
+    assert float(silent_row["spearman_active_summary_ci95_lower"]) < 0
+    assert float(silent_row["spearman_active_summary_ci95_upper"]) > 0
+    assert silent_row["active_summary_bootstrap_stable"] == "False"
 
     paired = _csv("paired_analysis.csv")
     physical = [

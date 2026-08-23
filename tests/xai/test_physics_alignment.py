@@ -9,6 +9,7 @@ from itg_nn.xai.physics_alignment import (
     _average_ranks,
     _grouped_row_draws,
     _row_correlation,
+    _spearman,
     circular_alignment,
     lag_selection_permutation_null,
     paired_native_difference,
@@ -339,6 +340,24 @@ def test_scalar_and_paired_results_use_whole_equilibria_and_native_units() -> No
     )
     for actual, expected_draw in zip(grouped_draws, expected_draws, strict=True):
         np.testing.assert_array_equal(actual, expected_draw)
+
+    moving_left = np.asarray([0.0, 8.0, 2.0, -3.0, 4.0, 1.0])
+    moving_right = np.asarray([5.0, 0.0, 3.0, 7.0, -2.0, 4.0])
+    moving = scalar_rank_association(
+        moving_left,
+        moving_right,
+        sibling_groups,
+        bootstrap_replicates=4,
+        seed=123,
+    )
+    expected_bootstrap = np.asarray(
+        [
+            _spearman(moving_left[draw], moving_right[draw])
+            for draw in expected_draws
+        ]
+    )
+    np.testing.assert_allclose(moving.bootstrap_rho, expected_bootstrap, atol=1e-12)
+    assert len(np.unique(moving.bootstrap_rho)) > 1
 
     fixed_native = np.asarray([-2.0, -1.0, 0.0, 1.0] * 5)
     varied_native = fixed_native - 0.5
