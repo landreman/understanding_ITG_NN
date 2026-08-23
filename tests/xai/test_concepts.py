@@ -10,6 +10,7 @@ from itg_nn.xai.concepts import (
     grouped_nested_sparse_probe,
     invariant_layer_maps,
     matched_extremes,
+    orthogonal_complement_projection,
     representation_direction_use,
     uniform_edit_gradient,
 )
@@ -137,9 +138,31 @@ def test_directional_use_explains_native_output_and_beats_random_controls() -> N
         abs(use.mean_directional_derivative) * 0.2
     )
     assert use.orthogonal_complement_ablation_rms > 0
-    assert use.intervention_rms_stable_or_near_floor == pytest.approx(0.5)
-    assert use.intervention_rms_unstable == pytest.approx(0.5)
     assert use.validity_tag == "deliberately_off_manifold_diagnostic"
+
+
+def test_directional_use_keeps_mask_correlated_regimes_separate() -> None:
+    representation = torch.linspace(-1, 1, 12)[:, None]
+    stable = torch.arange(12) < 4
+    gain = torch.where(stable, 1.0, 3.0)
+
+    def native_output(values: torch.Tensor) -> torch.Tensor:
+        return gain * values[:, 0]
+
+    use = representation_direction_use(
+        native_output,
+        representation,
+        torch.ones(1),
+        random_directions=3,
+        intervention_scale=0.2,
+        seed=14,
+        feature_scale=torch.ones(1),
+        stable_mask=stable,
+    )
+    assert use.intervention_rms_stable_or_near_floor == pytest.approx(0.2)
+    assert use.intervention_rms_unstable == pytest.approx(0.6)
+    assert use.scale_matched_random_rms_median_stable_or_near_floor == pytest.approx(0.2)
+    assert use.scale_matched_random_rms_median_unstable == pytest.approx(0.6)
 
 
 def test_random_controls_receive_exactly_the_concept_step_size() -> None:
@@ -165,6 +188,39 @@ def test_random_controls_receive_exactly_the_concept_step_size() -> None:
     assert use.scale_matched_random_rms_median_unstable == pytest.approx(0.9)
 
 
+def test_scale_matched_control_uses_the_supplied_feature_scale() -> None:
+    representation = torch.zeros(6, 2)
+    feature_scale = torch.tensor([10.0, 0.1])
+
+    def native_output(values: torch.Tensor) -> torch.Tensor:
+        return 3.0 * values[:, 0]
+
+    use = representation_direction_use(
+        native_output,
+        representation,
+        torch.tensor([0.0, 1.0]),
+        random_directions=1,
+        intervention_scale=0.2,
+        seed=22,
+        feature_scale=feature_scale,
+    )
+    generator = torch.Generator().manual_seed(22)
+    torch.randn(2, generator=generator)  # isotropic control is drawn first
+    weighted = torch.randn(2, generator=generator) * feature_scale
+    weighted /= torch.linalg.vector_norm(weighted)
+    expected = 0.2 * 3.0 * abs(float(weighted[0]))
+    assert use.scale_matched_random_rms_median == pytest.approx(expected)
+
+
+def test_orthogonal_projection_preserves_center_and_removes_centered_coordinate() -> None:
+    representation = torch.tensor([[4.0, 1.0], [6.0, 2.0], [8.0, 4.0]])
+    direction = torch.tensor([1.0, 0.0])
+    projected = orthogonal_complement_projection(representation, direction)
+    torch.testing.assert_close(projected.mean(0), representation.mean(0))
+    centered_coordinate = (projected - projected.mean(0)) @ direction
+    torch.testing.assert_close(centered_coordinate, torch.zeros(3))
+
+
 def test_uniform_edit_gradient_matches_finite_hidden_map_intervention() -> None:
     torch.manual_seed(29)
     layer_map = torch.randn(12, 3, 8)
@@ -185,8 +241,8 @@ def test_uniform_edit_gradient_matches_finite_hidden_map_intervention() -> None:
 
 
 def test_benjamini_hochberg_controls_the_complete_cell_family() -> None:
-    adjusted = benjamini_hochberg(np.array([0.001, 0.01, 0.04, 0.8]))
-    np.testing.assert_allclose(adjusted, [0.004, 0.02, 0.05333333333333334, 0.8])
+    adjusted = benjamini_hochberg(np.array([0.01, 0.011, 0.5]))
+    np.testing.assert_allclose(adjusted, [0.0165, 0.0165, 0.5])
 
 
 def test_canonical_layer_representations_are_shift_invariant_and_continue_exactly() -> None:

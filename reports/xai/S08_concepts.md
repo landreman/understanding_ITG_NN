@@ -153,6 +153,9 @@ the stable/near-floor stratum, so `use_claim_permitted` is a pooled-cohort claim
 not a claim that the direction is used near the output floor. The artifact
 therefore publishes concept-effect RMS, both control RMS medians, and both
 ratios separately for the 25 stable/near-floor and 71 unstable derivative rows.
+Among the **83** fully permitted pooled claims, **14/83** fail the
+stable/near-floor intervention comparison and **3/83** fail the unstable
+comparison; those are the regime-specific limits on the headline claim.
 
 The orthogonal-complement projection ablation is much larger than the small
 $\pm0.2$ direction intervention by construction: median RMS **0.609** versus
@@ -270,6 +273,18 @@ reverted:
    production-script complete-gate test; and
 10. relaxing subset balance from 0.25 to 0.50 failed the same end-to-end gate
     fixture.
+11. ignoring the stable/unstable mask in the RMS calculation failed the
+    mask-correlated 3:1 regime fixture;
+12. using only the first CAV in the live Torch aggregation path failed the
+    Torch production-script test;
+13. dropping FDR from the final claim conjunction failed a row where FDR is the
+    deciding condition;
+14. removing the Benjamini-Hochberg monotone adjustment failed a deliberately
+    non-monotone p-value fixture;
+15. removing centering from the orthogonal projection failed its preserved-mean
+    and zero-coordinate identities; and
+16. ignoring feature scale in the matched random control failed a hand-computed
+    weighted-direction result.
 
 ## Deferred
 
@@ -289,7 +304,7 @@ MPLCONFIGDIR=/private/tmp/mpl-s08-prod XDG_CACHE_HOME=/private/tmp/cache-s08-pro
   .venv-xai/bin/python scripts/xai_s08_concepts.py \
   --output-dir output/xai/S08/concept-probes-top3-panel1000-review3
 MPLCONFIGDIR=/private/tmp/mpl-s08-resume XDG_CACHE_HOME=/private/tmp/cache-s08-resume \
-  .venv-xai/bin/python scripts/xai_s08_concepts.py --resume --no-publish \
+  .venv-xai/bin/python scripts/xai_s08_concepts.py --resume \
   --output-dir output/xai/S08/concept-probes-top3-panel1000-review3
 .venv-xai/bin/python -m pytest tests/xai/test_concepts.py \
   tests/xai/test_concepts_script.py tests/xai/test_concepts_artifacts.py -q

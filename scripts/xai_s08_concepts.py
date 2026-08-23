@@ -40,6 +40,7 @@ from itg_nn.xai.symmetry import CANONICAL_FUNCTION, InvariantMember
 NATIVE_ESTIMAND = "native max(log Q, -2)"
 OBSERVED = "observed-comparison"
 OFF_MANIFOLD = "deliberately_off_manifold_diagnostic"
+MATCH_BALANCE_THRESHOLD = 0.25
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -195,25 +196,17 @@ def _paired_counterexample_subsets(
     return result
 
 
-def _aggregate_cav_direction(directions: list[Any]) -> Any:
+def _aggregate_cav_direction(directions: list[torch.Tensor]) -> torch.Tensor:
     """Normalize each CAV, average all counterexample sets, and renormalize."""
 
     if not directions:
         raise ValueError("at least one counterexample direction is required")
-    if isinstance(directions[0], torch.Tensor):
-        normalized = [
-            value / torch.linalg.vector_norm(value).clamp_min(1e-12)
-            for value in directions
-        ]
-        aggregate = torch.stack(normalized).mean(0)
-        return aggregate / torch.linalg.vector_norm(aggregate).clamp_min(1e-12)
-    normalized_np = [
-        np.asarray(value, dtype=np.float64)
-        / max(float(np.linalg.norm(value)), 1e-12)
+    normalized = [
+        value / torch.linalg.vector_norm(value).clamp_min(1e-12)
         for value in directions
     ]
-    aggregate_np = np.mean(normalized_np, axis=0)
-    return aggregate_np / max(float(np.linalg.norm(aggregate_np)), 1e-12)
+    aggregate = torch.stack(normalized).mean(0)
+    return aggregate / torch.linalg.vector_norm(aggregate).clamp_min(1e-12)
 
 
 def _plot_matrix(path: Path, rows: list[dict[str, Any]], members: list[str], concepts: list[str]) -> None:
@@ -247,7 +240,7 @@ def _add_claim_gates(row: dict[str, Any]) -> dict[str, Any]:
     balance_pass = max(
         float(row.get("counterexample_max_abs_smd", 0.0)),
         float(row.get("counterexample_subset_max_abs_smd", 0.0)),
-    ) <= 0.25
+    ) <= MATCH_BALANCE_THRESHOLD
     row.update(
         {
             "encoded_generalizes_by_equilibrium": encoded_pass,
@@ -303,8 +296,8 @@ def _matching_balance(match_rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
                 "low_count": len(low),
                 **values,
                 "max_abs_smd": maximum,
-                "balance_threshold": 0.25,
-                "balance_pass": maximum <= 0.25,
+                "balance_threshold": MATCH_BALANCE_THRESHOLD,
+                "balance_pass": maximum <= MATCH_BALANCE_THRESHOLD,
                 "matching_method": "linear_nuisance_residual_extremes_then_within_class_nearest_neighbor",
                 "validity_tag": OBSERVED,
             }

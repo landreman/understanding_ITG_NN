@@ -6,6 +6,7 @@ from pathlib import Path
 
 import numpy as np
 import pytest
+import torch
 
 from itg_nn.xai.concepts import MatchedExtremes
 
@@ -35,9 +36,9 @@ def test_counterexample_subsets_keep_matched_pairs_together(s08_script) -> None:
 
 
 def test_aggregate_cav_uses_all_normalized_counterexample_directions(s08_script) -> None:
-    directions = [np.array([3.0, 0.0]), np.array([0.0, 4.0])]
+    directions = [torch.tensor([3.0, 0.0]), torch.tensor([0.0, 4.0])]
     aggregate = s08_script._aggregate_cav_direction(directions)
-    np.testing.assert_allclose(aggregate, np.array([1.0, 1.0]) / np.sqrt(2))
+    torch.testing.assert_close(aggregate, torch.tensor([1.0, 1.0]) / np.sqrt(2))
 
 
 def test_bootstrap_and_complete_gate_pin_production_statistics(s08_script) -> None:
@@ -67,6 +68,14 @@ def test_bootstrap_and_complete_gate_pin_production_statistics(s08_script) -> No
     # The stronger scale-matched control, not the isotropic ratio, gates use.
     assert gated[0]["direction_intervention_beats_random"] is False
     assert gated[0]["use_claim_permitted"] is False
+
+    fdr_failure = s08_script._finalize_claim_rows(
+        [{**base, "bootstrap_p_value": 0.8,
+          "intervention_to_scale_matched_random_ratio": 1.2}]
+    )[0]
+    assert fdr_failure["tcav_ci_excludes_zero"] is True
+    assert fdr_failure["tcav_fdr_q_le_0_05"] is False
+    assert fdr_failure["use_claim_permitted"] is False
 
     balanced_failure = s08_script._finalize_claim_rows(
         [{**base, "intervention_to_scale_matched_random_ratio": 1.2,

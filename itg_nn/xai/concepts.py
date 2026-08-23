@@ -353,9 +353,7 @@ def representation_direction_use(
                 base.detach() - intervention_scale * scale_matched
             )
             scale_matched_control_effects.append((scale_plus - scale_minus) / 2)
-        center = base.detach().mean(dim=0, keepdim=True)
-        coordinate = (base.detach() - center) @ direction
-        orthogonal = base.detach() - coordinate[:, None] * direction[None, :]
+        orthogonal = orthogonal_complement_projection(base.detach(), direction)
         orthogonal_output = output_from_representation(orthogonal)
         orthogonal_effect = torch.sqrt(torch.mean((orthogonal_output - output.detach()) ** 2))
         control_matrix = torch.stack(control_effects)
@@ -409,6 +407,18 @@ def representation_direction_use(
         ),
         validity_tag="deliberately_off_manifold_diagnostic",
     )
+
+
+def orthogonal_complement_projection(
+    representation: torch.Tensor, direction: torch.Tensor
+) -> torch.Tensor:
+    """Remove the centered coordinate along a normalized hidden direction."""
+
+    normalized = direction.to(representation).reshape(-1)
+    normalized /= torch.linalg.vector_norm(normalized).clamp_min(1e-12)
+    center = representation.mean(dim=0, keepdim=True)
+    coordinate = (representation - center) @ normalized
+    return representation - coordinate[:, None] * normalized[None, :]
 
 
 def uniform_edit_gradient(

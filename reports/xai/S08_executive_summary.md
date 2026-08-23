@@ -93,6 +93,8 @@ beats the scale-matched control in 116 of 150 stable/near-floor cells and 117 of
 150 unstable cells, but 19 pooled passes fail on the stable/near-floor rows.
 Accordingly, the 83-cell headline is an average-cohort statement, not evidence
 that every permitted direction matters near the clipped output floor.
+More directly, **14 of the 83 permitted pooled claims** fail the stable-row
+intervention comparison, and **3 of 83** fail the unstable-row comparison.
 
 Removing each concept direction—the orthogonal-complement projection
 diagnostic—changes the output more than the small directional edit in all 150
