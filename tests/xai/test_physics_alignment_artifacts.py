@@ -298,6 +298,40 @@ def test_s07_zonal_pairing_cases_and_symmetry_keep_negative_results() -> None:
         ("either_stable_or_near_floor", 251),
         ("both_unstable", 749),
     }
+
+    def paired_one(**expected: str) -> dict[str, str]:
+        matches = [
+            row
+            for row in paired
+            if all(row[key] == value for key, value in expected.items())
+        ]
+        assert len(matches) == 1
+        return matches[0]
+
+    observed_effect = paired_one(
+        quantity="observed_clipped_log_Q",
+        stratum="both_unstable",
+    )
+    assert float(observed_effect["estimate"]) == np.float64(0.9570316134145961)
+    member_effect = paired_one(
+        quantity="member_prediction",
+        member_id="2864601_0.437",
+        function="original_f",
+        stratum="all",
+    )
+    assert float(member_effect["estimate"]) == np.float64(1.5445257106721402)
+    attribution_effect = paired_one(
+        quantity="learned_Qz_spatial_spearman",
+        source_family="s06_attribution",
+        member_id="2864601_0.371",
+        function="invariant_tilde_f",
+        method="ig_low_pass",
+        mode="signed",
+        stratum="both_unstable",
+    )
+    assert float(attribution_effect["estimate"]) == np.float64(
+        0.026322870037569945
+    )
     attribution_pairs = [
         row for row in paired if row["source_family"] == "s06_attribution"
     ]

@@ -52,6 +52,7 @@ def test_circular_alignment_recovers_known_lag_overlap_and_null_control() -> Non
 
     assert result.best_lag == 7
     assert result.rank_correlation == pytest.approx(1.0, abs=1e-12)
+    assert result.rank_ci_lower <= result.rank_correlation <= result.rank_ci_upper
     assert result.per_sample_rank_correlation.mean() == pytest.approx(
         result.rank_correlation, abs=1e-12
     )
@@ -563,6 +564,8 @@ def test_scalar_and_paired_results_use_whole_equilibria_and_native_units() -> No
         [group_means[rng.integers(0, 3, size=3)].mean() for _ in range(12)]
     )
     np.testing.assert_allclose(grouped.bootstrap_difference, expected)
+    assert grouped.estimate == pytest.approx(4.0)
+    assert grouped.estimate != pytest.approx(np.median(grouped_difference))
     assert grouped.ci_lower == pytest.approx(
         np.quantile(grouped.bootstrap_difference, 0.025)
     )

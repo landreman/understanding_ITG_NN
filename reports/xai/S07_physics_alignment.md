@@ -110,6 +110,12 @@ cross-correlation curve from the rank curve, pins every returned per-row overlap
 on the mixed active/silent fixture, and requires the lag-selection null maximum
 to be the maximum of its stored permutation draws. Substituting the rank curve,
 returning chance overlap, or returning the mean null maximum now each fails.
+The paired-effect fixture now separately pins its nonconstant mean (4.0 rather
+than median 2.0), and the artifact suite pins the signs and exact estimates of
+an observed GX effect, a member-prediction effect, and a signed attribution
+alignment effect. Swapping fixed and varied or substituting the median now
+fails. The lag-7 fixture also requires its registered correlation to lie inside
+the fixed-selected-lag bootstrap interval.
 
 ## Methods
 
