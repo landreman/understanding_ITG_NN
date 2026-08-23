@@ -1,4 +1,103 @@
-# S07 executive summary — Does the network focus where GX transports heat?
+# Claude summary
+
+Steps 1–6 built up a picture of *where along the field line* the network's internals light up. Step 7 asked the obvious next question: **do those internal spatial patterns line up with the actual physics — specifically with GX's heat-flux profile $Q(z)$ and with zonal-flow amplitude?** If they did, you'd have a concrete, physically meaningful hypothesis about what the network learned. The answer was largely no, and the report says so plainly.
+
+---
+
+## What you need to know to read the results
+
+**The objects being compared.** Everything lives on the 96-point grid along the field line (the coordinate $z$). Three different kinds of profile get compared:
+
+1. **Activation density $\rho(z)$** (from S05) — for one internal unit of the network, how strongly it fires at each position $z$. This is just "the unit is active here," nothing more.
+2. **Attribution** (from S06b) — a per-position number saying how much each location *contributed to changing the prediction*, relative to some reference input. This is the stronger notion: not "the unit is on here" but "the model used this location to arrive at its answer."
+3. **GX $Q(z)$** — the actual simulated heat flux as a function of position. This is a physics diagnostic. **The network never saw it**, not as an input and not as a training target; it was trained only on the single flux-averaged number. So agreement with $Q(z)$ would be genuinely informative, not circular.
+
+Activation and attribution are *not* interchangeable, and the gap between them is the crux of this step.
+
+**Circular Spearman rank correlation.** "Spearman" means you compare *rank orderings* rather than raw values — you ask "are the positions that rank high in $\rho$ also the ones that rank high in $Q$?" This is robust to the fact that the two quantities have completely different units and scales. "Circular" means the field line is periodic, so the profile wraps around. Range is $-1$ to $+1$; $0$ means no ordering agreement.
+
+**Lag.** Because the grid is circular, you can slide one profile relative to the other by $k$ positions and recompute the correlation, for all 96 possible shifts. The reported "lag +22" means the best agreement occurs when the density profile is shifted 22 grid points relative to $Q(z)$. This matters physically: a lag of 0 would say "the unit fires exactly where the heat flows"; a lag of +22 says "the unit fires at a systematically displaced location," which is a much weaker and murkier statement.
+
+**Why picking the best lag is dangerous, and the permutation null.** If you scan 96 shifts and keep the biggest correlation, you will find *something* even in pure noise. So the step includes a **permutation null**: scramble which density goes with which $Q(z)$ (breaking any real association), redo the whole 96-lag search, record the maximum, and repeat 200 times. The 95th percentile of those maxima (`null_q95`) is the bar an honest result must clear. Numbers like 0.043 in the tables are that bar.
+
+**Bootstrap intervals.** "Resample to estimate uncertainty": draw the equilibria with replacement 500 times and recompute. The 95% interval is the spread. Crucially, resampling is done by **equilibrium**, not by flux tube — flux tubes from the same equilibrium are near-duplicates, and resampling them individually would make the data look like it contains more independent evidence than it does, shrinking the intervals artificially.
+
+**Two panels.** "Varied-gradient" = the drive $(a/L_T, a/L_n)$ differs across rows. "Fixed-gradient" = the same geometries re-simulated at a single fixed drive $(3, 0.9)$. The fixed panel isolates geometry effects because drive is held constant.
+
+**The floor.** The model predicts $\max(\log Q, -2)$. About a quarter of the varied rows sit at that $-2$ floor — the model is saying "stable, essentially no transport." Below the floor, the output physically cannot resolve differences, so those rows are analyzed separately throughout.
+
+---
+
+## What was found
+
+### 1. Activation densities do covary with $Q(z)$ — but with a displacement and the wrong sign
+
+The two units S05 had tentatively named — `u001` (the "bad-curvature / flux-compression" candidate, i.e. the region where magnetic curvature drives the instability) and `u008` (the geodesic-curvature / radial-drift candidate) — both show correlations well above their permutation nulls:
+
+| unit | correlation vs $Q(z)$ | 95% interval | lag |
+|---|---:|---:|---:|
+| `u001` | **−0.361** | [−0.388, −0.333] | +22 |
+| `u008` | **−0.268** | [−0.294, −0.241] | +44 |
+
+These are real associations, not lag-search artifacts. But read the signs. **Both are negative**: where these units fire strongly, the heat flux tends to be *low*. The report is scrupulous about this — the headline "1.63 times chance" overlap figure is only obtained *after flipping the sign of $Q(z)$*, so it measures overlap of high activation with **low** heat flux. The straightforward high-activation / high-heat-flux overlap is **0.542 times chance**, i.e. these units systematically *avoid* the high-transport regions.
+
+And the lags are +22 and +44 out of 96 — a quarter and nearly half a field-line period away. This is not "the unit watches where the heat is."
+
+### 2. The negative result that carries the step: attribution shows essentially nothing
+
+This is what the report calls "the central contradiction." When you ask not "is the unit on here" but "did the model *use* this location to make its prediction," the signed correlation with $Q(z)$ collapses to:
+
+**−0.021, −0.013, −0.012** across the three ensemble members.
+
+For scale, those are roughly one twentieth of the density correlations, and they sit right at or below the permutation null. One member's value is below the null threshold outright, one sits essentially exactly on it, and the third ("resolved") is still only 0.021 in magnitude. Additionally the selected lags disagree entirely across members (−36, +47, +48), and one of those lags is unstable — it only reappears in 31% of bootstrap resamples, failing the pre-registered 50% rule.
+
+So: the network's internals *contain* spatial patterns that covary with real physics structure, but the prediction is not being driven by the positions where GX actually transports heat.
+
+**The tempting escape route, and why it was refused.** If you keep only the *positive* contributions and throw away the negative ones, the correlations jump to **+0.266, +0.280, +0.262** — nice, consistent, lag ≈ 0, roughly 7× their null, and overlapping positive $Q(z)$ at ~2.4× chance. That's the number one would want to headline. The report declines to, for two reasons, and both are correct:
+
+- Discarding the negative contributions discards the evidence pointing the other way. The full signed picture is the mechanism; a one-sided view is a resemblance.
+- Every attribution number here is tagged **"deliberately off-manifold."** Attribution works by interpolating from a reference input — here a smoothed, low-pass version of the geometry. That reference is *not* asserted to be a valid plasma equilibrium. So the attribution describes how the network extrapolates away from a synthetic starting point. It is a statement about the network, not about the plasma. This is exactly the distinction your project rules insist on, and it's applied even to the flattering number.
+
+### 3. The zonal-flow observable: an effect that isn't candidate-specific
+
+`zonal_phi2_amplitudes` is the natural observable for the geodesic-curvature/zonal-flow hypothesis, so if `u008` were really encoding that, you'd expect a distinctive association. It does show one on the fixed-drive panel: **−0.513** [−0.564, −0.461], much stronger than its −0.122 on the varied panel.
+
+But the amplification is not specific to `u008`. **All nine** selected units land in the range 0.310–0.564 on the fixed panel versus 0.029–0.182 on the varied panel, and the *largest* association belongs to `u003` — an unnamed unit that is silent on 80% of rows. So this is a panel-wide effect of holding drive constant (with drive varying, drive-driven variance swamps a geometry-only association), not evidence for a zonal-flow mechanism in the named candidate.
+
+### 4. Replication failures
+
+Several checks that a genuine mechanism should have passed did not:
+
+- **No cross-member agreement.** Across the nine selected units, signed correlations run from −0.361 to +0.134 and lags from −47 to +48. There is no common sign, no common spatial offset. Different ensemble members, trained on the same problem, are not finding the same spatial story.
+- **Sign reversals between panels.** `u021` goes from −0.162 (varied) to +0.155 (fixed); `u027` goes +0.134 → −0.148. The *unit is unchanged*; only the GX field differs. Both reversals clear their own nulls, meaning these are confident contradictions rather than noise.
+- **Silent units inflate magnitudes.** Three of nine units are constant (silent) on 42–82% of rows. A constant profile has no spatial ordering, so by convention it contributes zero correlation — which drags pooled numbers toward zero and makes the "top-10% mask" balloon to 50–84 positions instead of 10. The report recomputes over active rows only and discloses both. It doesn't change the conclusion, but it changes what the per-unit numbers *mean*.
+- **Only two of nine units were ever actually named.** The other seven were unresolved or uncharacterized in S05. So this isn't even a clean replication test of the two S05 hypotheses.
+
+### 5. Contradicting cases given equal weight
+
+Twenty case-study equilibria, five supporting and five contradicting for each hypothesis. The report makes a point worth noting: the contradictions are not marginal leftovers. For `u001`, the supporting rows reach correlations of −0.95 to −0.93, but the strongest contradicting row is **+0.864** — comparably extreme in the opposite direction. One flux tube contradicts both hypotheses at once.
+
+---
+
+## The conclusions
+
+**S07 promoted no candidate to "physically supported."** That is the verdict, stated up front in the report.
+
+What survives is a modest, honest claim: two internal activation patterns covary with real GX structure, negatively and at a substantial spatial displacement. What does not survive is any inference that the network is using the physics you'd hope it uses. The gap between the activation result (−0.36) and the attribution result (−0.02) is the whole story — the network has spatially structured internals that correlate with physics, but the prediction pathway doesn't route through the locations where heat actually flows.
+
+Three limits bound even the surviving claim:
+
+- **Association, not causality.** $Q(z)$ is a diagnostic output of GX, not a lever. Nothing here shows which geometry cell *controls* flux. Establishing that would need new perturbative GX runs, which the report explicitly defers as outside the step's budget.
+- **The attribution evidence is about the network, not the plasma.** The off-manifold reference path means those numbers describe extrapolation behavior.
+- **The fixed-panel results are not independent replication.** The same geometry-derived densities are being reused; only the GX field and drive change.
+
+The step also deferred a census of all live units, on the reasonable grounds that widening the search *after* seeing these outcomes would multiply the chances of a spurious hit.
+
+**How I'd summarize it for a reader of the eventual paper:** Step 7 was the step designed to convert the internal maps into physics, and it returned a well-instrumented negative. The most interesting thing it produced is not the −0.361 headline but the contrast between activation and attribution — evidence that "a unit lights up in a physically meaningful pattern" and "the model uses that pattern to predict" are genuinely separable, and that in this network they come apart.
+
+-------------
+
+# Codex summary — Does the network focus where GX transports heat?
 
 ## The question
 
