@@ -337,6 +337,6 @@ the headline fractions from the CSVs and verify every manifest output hash.
 **Not checkable off the researcher's machine, and why.** No headline number
 depends on an off-panel row or a git-ignored scientific array. Exact bytewise
 reproduction of the external-data run requires the 678 MB source HDF5 and about
-47 CPU minutes. The review slice contains the same 1,000 panel rows and all
+36.72 CPU minutes. The review slice contains the same 1,000 panel rows and all
 required held-out diagnostics, so a full slice rerun is numerically equivalent;
 the pilot is the cheaper nearest proxy.

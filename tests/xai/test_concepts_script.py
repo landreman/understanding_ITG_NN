@@ -66,8 +66,12 @@ def test_published_use_fields_keep_stable_and_unstable_results_distinct(
 
     assert fields["mean_directional_derivative_stable_or_near_floor"] == 2.0
     assert fields["mean_directional_derivative_unstable"] == 12.0
+    assert fields["intervention_rms_stable_or_near_floor"] == 2.0
+    assert fields["intervention_rms_unstable"] == 6.0
     assert fields["intervention_to_random_ratio_stable_or_near_floor"] == 4.0
     assert fields["intervention_to_random_ratio_unstable"] == 3.0
+    assert fields["scale_matched_random_rms_median_stable_or_near_floor"] == 0.25
+    assert fields["scale_matched_random_rms_median_unstable"] == 3.0
     assert (
         fields["intervention_to_scale_matched_random_ratio_stable_or_near_floor"]
         == 8.0
