@@ -61,7 +61,7 @@ def _git_success(arguments: Sequence[str], cwd: Path) -> bool:
 
 
 def _package_versions() -> dict[str, str]:
-    names = ("itg-nn", "torch", "numpy", "h5py", "captum")
+    names = ("itg-nn", "torch", "numpy", "h5py", "captum", "scipy")
     versions: dict[str, str] = {}
     for name in names:
         try:
@@ -150,6 +150,7 @@ class RunArtifacts:
         repository: str | Path,
         command: Sequence[str] | None = None,
         published_dir: str | Path | None = None,
+        extra_manifest: Mapping[str, Any] | None = None,
     ) -> Path:
         """Record all registered provenance and hashes in ``manifest.json``.
 
@@ -188,6 +189,10 @@ class RunArtifacts:
             "seed": config.get("seed"),
             "wall_time_seconds": time.monotonic() - self._started,
         }
+        overlap = set(manifest) & set(extra_manifest or {})
+        if overlap:
+            raise ValueError(f"extra manifest fields overlap reserved keys: {sorted(overlap)}")
+        manifest.update(extra_manifest or {})
         path = self._output_path("manifest.json")
         _atomic_json(path, manifest)
         if published_dir is not None:
