@@ -14,7 +14,10 @@
   "support_components": 16,
   "bootstrap_replicates": 500,
   "crossfit_folds": 5,
+  "crossfit_repeats": 50,
   "crossfit_ridge_alpha": 1.0,
+  "equivariance_rows": 64,
+  "equivariance_shift": 17,
   "stable_threshold_log_Q": -1.9,
   "high_error_threshold_native": 0.5,
   "high_spread_threshold_native": 0.15,
@@ -56,6 +59,8 @@
     "support_reference_rows": 256,
     "support_components": 8,
     "bootstrap_replicates": 50,
+    "crossfit_repeats": 10,
+    "equivariance_rows": 16,
     "batch_size": 8
   }
 }

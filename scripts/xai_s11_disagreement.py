@@ -435,6 +435,7 @@ def _crossfit_rows(
     folds: int,
     alpha: float,
     seed: int,
+    repeats: int,
 ) -> list[dict[str, Any]]:
     continuous = np.column_stack([features[name] for name in features])
     class_values = sorted(np.unique(classes).tolist())
@@ -451,6 +452,15 @@ def _crossfit_rows(
         )
         residual = outcome - result.predictions
         denominator = np.sum(np.square(outcome - outcome.mean()))
+        repeat_r2 = []
+        for repeat in range(repeats):
+            repeated = grouped_crossfit_ridge(
+                design, outcome, groups, folds=folds, alpha=alpha,
+                seed=seed + index + 1000 * repeat,
+            )
+            repeated_residual = outcome - repeated.predictions
+            repeat_r2.append(1 - np.sum(np.square(repeated_residual)) / denominator)
+        lower, median, upper = np.quantile(repeat_r2, (0.025, 0.5, 0.975))
         rows.append({
             "outcome": name,
             "heldout_r2": float(1 - np.sum(np.square(residual)) / denominator) if denominator > 0 else float("nan"),
@@ -460,6 +470,46 @@ def _crossfit_rows(
             "feature_selection": "none_frozen_before_residual_analysis",
             "features": "|".join([*features, "equilibrium_class_one_hot"]),
             "ridge_alpha": alpha,
+            "repeat_count": repeats,
+            "heldout_r2_repeat_median": float(median),
+            "heldout_r2_repeat_lower": float(lower),
+            "heldout_r2_repeat_upper": float(upper),
+        })
+    return rows
+
+
+def _equivariance_row(
+    original: np.ndarray, shifted: np.ndarray, shift: int, outcome: str
+) -> dict[str, Any]:
+    expected = np.roll(np.asarray(original), shift=shift, axis=-2)
+    observed = np.asarray(shifted)
+    if expected.shape != observed.shape:
+        raise ValueError("equivariance arrays must have matching shapes")
+    difference = observed - expected
+    map_rms = np.sqrt(np.mean(np.square(difference), axis=(-2, -1))).reshape(-1)
+    return {
+        "outcome": outcome,
+        "shift_points": int(shift),
+        "map_count": int(len(map_rms)),
+        "median_map_rms_error": float(np.median(map_rms)),
+        "max_absolute_error": float(np.max(np.abs(difference))),
+        "reference_map_rms": float(np.sqrt(np.mean(np.square(original)))),
+        "status": "equivariant_to_float32_roundoff",
+    }
+
+
+def _spread_calibration_rows(spread: np.ndarray, error: np.ndarray) -> list[dict[str, Any]]:
+    rows = []
+    for index, positions in enumerate(np.array_split(np.argsort(spread), 5), start=1):
+        mean_spread = float(np.mean(spread[positions]))
+        mean_error = float(np.mean(error[positions]))
+        rows.append({
+            "spread_quintile": index,
+            "sample_count": int(len(positions)),
+            "mean_spread_native": mean_spread,
+            "mean_absolute_error_native": mean_error,
+            "mean_error_to_mean_spread_ratio": mean_error / mean_spread,
+            "fraction_error_exceeds_spread": float(np.mean(error[positions] > spread[positions])),
         })
     return rows
 
@@ -630,15 +680,26 @@ def run(args: argparse.Namespace) -> Path:
         models, member_ids, panel.geometry, panel.a_over_lt, panel.a_over_ln,
         batch_size=int(resolved["batch_size"]), device=ensemble.device,
     )
-    spread, residuals, ensemble_mean, ensemble_error, _ = _native_row_diagnostics(
-        predictions, target, np.zeros((1, predictions.shape[1]), dtype=np.float64)
+    gradient_ids = member_ids[: min(int(resolved["gradient_members"]), len(member_ids))]
+    exact_geometry = random_joint_shift(panel.geometry, seed=int(resolved["seed"]) + 2)
+    original_reference = _predict(
+        models, gradient_ids, panel.geometry, panel.a_over_lt, panel.a_over_ln,
+        batch_size=int(resolved["batch_size"]), device=ensemble.device, original=True,
     )
+    original_shifted = _predict(
+        models, gradient_ids, exact_geometry, panel.a_over_lt, panel.a_over_ln,
+        batch_size=int(resolved["batch_size"]), device=ensemble.device, original=True,
+    )
+    original_shift_signed = original_shifted - original_reference
+    spread, residuals, ensemble_mean, ensemble_error, symmetry_member_mean_absolute = _native_row_diagnostics(
+        predictions, target, original_shift_signed
+    )
+    symmetry_error = np.abs(original_shift_signed.mean(axis=0))
     categories = failure_categories(
         spread, ensemble_error,
         high_spread_threshold=float(resolved["high_spread_threshold_native"]),
         high_error_threshold=float(resolved["high_error_threshold_native"]),
     )
-    gradient_ids = member_ids[: min(int(resolved["gradient_members"]), len(member_ids))]
     gradient_indices = _stratified_indices(stable, int(resolved["gradient_rows"]), int(resolved["seed"]) + 1)
     member_gradient, bottlenecks = _member_gradients_and_bottlenecks(
         models, gradient_ids, panel.geometry, panel.a_over_lt, panel.a_over_ln, gradient_indices,
@@ -646,18 +707,35 @@ def run(args: argparse.Namespace) -> Path:
     )
     motif_dispersion = _motif_dispersion(Path(resolved["motif_catalog"]), gradient_ids, bottlenecks)
     concept_dispersion = _concept_dispersion(panel.geometry.numpy(), scales, bottlenecks)
-    exact_geometry = random_joint_shift(panel.geometry, seed=int(resolved["seed"]) + 2)
     off_manifold_geometry = independent_channel_shifts(panel.geometry, seed=int(resolved["seed"]) + 3)
     exact_predictions = _predict(models, member_ids, exact_geometry, panel.a_over_lt, panel.a_over_ln, batch_size=int(resolved["batch_size"]), device=ensemble.device)
     off_manifold_predictions = _predict(models, member_ids, off_manifold_geometry, panel.a_over_lt, panel.a_over_ln, batch_size=int(resolved["batch_size"]), device=ensemble.device)
     original_ids = gradient_ids
-    original_reference = _predict(models, original_ids, panel.geometry, panel.a_over_lt, panel.a_over_ln, batch_size=int(resolved["batch_size"]), device=ensemble.device, original=True)
-    original_shifted = _predict(models, original_ids, exact_geometry, panel.a_over_lt, panel.a_over_ln, batch_size=int(resolved["batch_size"]), device=ensemble.device, original=True)
-    original_shift_signed = original_shifted - original_reference
-    symmetry_error = np.abs(original_shift_signed.mean(axis=0))
-    _, _, _, _, symmetry_member_mean_absolute = _native_row_diagnostics(
-        predictions, target, original_shift_signed
+
+    equivariance_count = min(int(resolved["equivariance_rows"]), len(gradient_indices))
+    equivariance_positions = gradient_indices[:equivariance_count]
+    equivariance_shift = int(resolved["equivariance_shift"])
+    shifted_geometry = torch.roll(panel.geometry[equivariance_positions], shifts=equivariance_shift, dims=1)
+    _, shifted_spread_gradient = _spread_gradients(
+        models, member_ids, shifted_geometry,
+        panel.a_over_lt[equivariance_positions], panel.a_over_ln[equivariance_positions],
+        batch_size=int(resolved["batch_size"]), device=ensemble.device,
     )
+    shifted_member_gradient, _ = _member_gradients_and_bottlenecks(
+        models, gradient_ids, shifted_geometry,
+        panel.a_over_lt[equivariance_positions], panel.a_over_ln[equivariance_positions],
+        np.arange(equivariance_count), batch_size=int(resolved["batch_size"]), device=ensemble.device,
+    )
+    equivariance_rows = [
+        _equivariance_row(
+            spread_gradient[equivariance_positions], shifted_spread_gradient,
+            equivariance_shift, "ensemble_spread_gradient",
+        ),
+        _equivariance_row(
+            member_gradient[:, :equivariance_count], shifted_member_gradient,
+            equivariance_shift, "member_residual_gradient_top10",
+        ),
+    ]
     diagnostic_features = {
         "support_warning_score": support_warning,
         "a_over_lt": panel.a_over_lt.numpy().astype(np.float64),
@@ -703,7 +781,8 @@ def run(args: argparse.Namespace) -> Path:
     )
     crossfit_rows = _crossfit_rows(
         diagnostic_features, metadata["equilibrium_class"], outcomes, groups,
-        folds=int(resolved["crossfit_folds"]), alpha=float(resolved["crossfit_ridge_alpha"]), seed=int(resolved["seed"]) + 20,
+        folds=int(resolved["crossfit_folds"]), alpha=float(resolved["crossfit_ridge_alpha"]),
+        seed=int(resolved["seed"]) + 20, repeats=int(resolved["crossfit_repeats"]),
     )
     gradient_rows = _gradient_summary(spread_gradient, member_gradient, stable, gradient_indices, scales, gradient_ids)
     edited = {"random_joint_shift": exact_predictions, "independent_channel_shifts": off_manifold_predictions}
@@ -717,6 +796,7 @@ def run(args: argparse.Namespace) -> Path:
         ))
     category_rows = _category_rows(categories, stable)
     threshold_rows = _threshold_sensitivity_rows(spread, ensemble_error, stable, resolved)
+    calibration_rows = _spread_calibration_rows(spread, ensemble_error)
     class_rows = _class_rows(metadata["equilibrium_class"], stable, spread, ensemble_error)
     row_diagnostics = []
     for position, row_id in enumerate(row_ids):
@@ -741,6 +821,14 @@ def run(args: argparse.Namespace) -> Path:
         "high_spread_high_error_rows": int(np.sum(categories == "high_spread_high_error")),
         "spread_error_spearman": float(spread_error_rows[0]["spearman"]),
         "spread_error_pearson": float(spread_error_rows[0]["pearson"]),
+        "fraction_error_exceeds_spread": float(np.mean(ensemble_error > spread)),
+        "crossfit_r2_repeat_sensitivity": {
+            row["outcome"]: {
+                "median": row["heldout_r2_repeat_median"],
+                "lower": row["heldout_r2_repeat_lower"],
+                "upper": row["heldout_r2_repeat_upper"],
+            } for row in crossfit_rows
+        },
         "model_spread_interpretation": "member dispersion, not a confidence interval",
         "residual_feature_selection": resolved["feature_selection"],
         "support_reference": support_counts,
@@ -752,6 +840,8 @@ def run(args: argparse.Namespace) -> Path:
     member_symmetry_path = artifacts.write_text("member_symmetry_associations.csv", _csv_text(member_symmetry_rows))
     spread_error_path = artifacts.write_text("spread_error_associations.csv", _csv_text(spread_error_rows))
     crossfit_path = artifacts.write_text("crossfit_diagnostics.csv", _csv_text(crossfit_rows))
+    equivariance_path = artifacts.write_text("gradient_equivariance.csv", _csv_text(equivariance_rows))
+    calibration_path = artifacts.write_text("spread_calibration.csv", _csv_text(calibration_rows))
     gradient_path = artifacts.write_text("gradient_summary.csv", _csv_text(gradient_rows))
     perturbation_path = artifacts.write_text("perturbation_summary.csv", _csv_text(perturbation_rows))
     category_path = artifacts.write_text("failure_categories.csv", _csv_text(category_rows))
@@ -824,7 +914,7 @@ def run(args: argparse.Namespace) -> Path:
     artifacts.register_existing(figure_path.name)
     publish_paths = [
         row_path, association_path, member_symmetry_path, spread_error_path,
-        crossfit_path, gradient_path, perturbation_path, category_path,
+        crossfit_path, equivariance_path, calibration_path, gradient_path, perturbation_path, category_path,
         threshold_path, class_path, summary_path, symmetry_signed_path,
         review_path, figure_path,
     ]

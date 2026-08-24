@@ -78,6 +78,18 @@ def test_diagnostics_use_frozen_features_and_equilibrium_resampling():
     crossfit = _rows("crossfit_diagnostics.csv")
     assert {row["split_unit"] for row in crossfit} == {"equilibrium_files"}
     assert {row["feature_selection"] for row in crossfit} == {"none_frozen_before_residual_analysis"}
+    assert {int(row["repeat_count"]) for row in crossfit} == {50}
+    assert all(float(row["heldout_r2_repeat_lower"]) <= float(row["heldout_r2_repeat_median"]) <= float(row["heldout_r2_repeat_upper"]) for row in crossfit)
+
+    equivariance = _rows("gradient_equivariance.csv")
+    assert {row["outcome"] for row in equivariance} == {
+        "ensemble_spread_gradient", "member_residual_gradient_top10"
+    }
+    assert all(float(row["median_map_rms_error"]) < 1e-5 for row in equivariance)
+
+    calibration = _rows("spread_calibration.csv")
+    assert len(calibration) == 5
+    assert {int(row["spread_quintile"]) for row in calibration} == set(range(1, 6))
 
 
 def test_common_mode_counts_are_separate_by_output_regime():

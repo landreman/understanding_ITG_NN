@@ -50,6 +50,8 @@ def test_s11_config_freezes_native_thresholds_features_and_grouping():
         "aspect_over_rho",
     ]
     assert config["feature_selection"] == "none_frozen_before_residual_analysis"
+    assert config["crossfit_repeats"] == 50
+    assert config["equivariance_shift"] == 17
 
 
 def test_crossfit_table_accepts_a_single_equilibrium_class_pilot():
@@ -61,9 +63,12 @@ def test_crossfit_table_accepts_a_single_equilibrium_class_pilot():
         folds=4,
         alpha=1.0,
         seed=3,
+        repeats=5,
     )
     assert len(rows) == 1
     assert rows[0]["split_unit"] == "equilibrium_files"
+    assert rows[0]["repeat_count"] == 5
+    assert rows[0]["heldout_r2_repeat_lower"] <= rows[0]["heldout_r2_repeat_median"] <= rows[0]["heldout_r2_repeat_upper"]
 
 
 def test_runner_spread_gradient_uses_canonical_native_outputs():
@@ -134,6 +139,22 @@ def test_runner_keeps_spread_native_and_member_symmetry_before_cancellation():
     np.testing.assert_allclose(error, [0.5, 2.0])
     np.testing.assert_allclose(member_absolute, [1.0, 2.0])
     assert member_absolute[0] > abs(signed[:, 0].mean())
+
+
+def test_runner_equivariance_and_calibration_helpers_pin_null_and_miscalibration():
+    original = np.arange(2 * 4 * 2, dtype=float).reshape(2, 4, 2)
+    row = _module()._equivariance_row(original, np.roll(original, 1, axis=-2), 1, "toy")
+    assert row["median_map_rms_error"] == 0.0
+    assert row["max_absolute_error"] == 0.0
+    assert row["map_count"] == 2
+
+    calibration = _module()._spread_calibration_rows(
+        np.arange(1.0, 11.0), np.arange(1.0, 11.0) * 2.0
+    )
+    assert len(calibration) == 5
+    assert {row["sample_count"] for row in calibration} == {2}
+    assert all(row["mean_error_to_mean_spread_ratio"] == 2.0 for row in calibration)
+    assert all(row["fraction_error_exceeds_spread"] == 1.0 for row in calibration)
 
 
 def test_runner_perturbation_summary_keeps_exact_symmetry_null():
