@@ -10,6 +10,7 @@ from itg_nn.xai.disagreement import (
     grouped_crossfit_ridge,
     grouped_fold_ids,
     member_residuals,
+    paired_outcome_association_rows,
     perturbation_effect_rows,
     robust_scaled_channel_gradient,
     spread_input_gradient,
@@ -106,13 +107,37 @@ def test_grouped_folds_never_split_sibling_tubes_and_crossfit_is_deterministic()
 
 
 def test_grouped_bootstrap_uses_one_multiplicity_per_equilibrium_and_is_deterministic():
-    feature = np.asarray([0.0, 0.0, 1.0, 1.0, 2.0, 2.0])
-    outcome = feature.copy()
-    groups = np.asarray(["a", "a", "b", "b", "c", "c"])
+    feature = np.asarray([0.0, 0.4, 1.0, 1.8, 2.0, 3.2, 4.0, 5.0])
+    outcome = np.asarray([0.2, 1.0, 0.7, 2.4, 2.8, 2.2, 5.2, 3.9])
+    groups = np.asarray(["a", "a", "b", "b", "c", "c", "d", "d"])
     first = grouped_bootstrap_spearman(feature, outcome, groups, replicates=25, seed=7)
     second = grouped_bootstrap_spearman(feature, outcome, groups, replicates=25, seed=7)
     np.testing.assert_allclose(first, second, equal_nan=True)
-    assert np.nanmin(first) == pytest.approx(1.0)
+    np.testing.assert_allclose(
+        first[:5],
+        [0.6, 0.7804878048780488, 0.9024390243902439,
+         0.7804878048780488, 0.9024390243902439],
+    )
+
+
+def test_spread_error_association_reports_rank_and_linear_grouped_ranges_by_regime():
+    spread = np.asarray([0.1, 0.2, 0.15, 0.4, 0.3, 0.7, 0.6, 0.8])
+    error = np.asarray([0.05, 0.3, 0.1, 0.5, 0.2, 0.9, 0.4, 1.0])
+    groups = np.asarray(["a", "a", "b", "b", "c", "c", "d", "d"])
+    rows = paired_outcome_association_rows(
+        spread,
+        error,
+        groups,
+        {"all": np.ones(8, dtype=bool), "stable": np.arange(8) < 4, "unstable": np.arange(8) >= 4},
+        left_name="ensemble_spread",
+        right_name="ensemble_absolute_error",
+        replicates=30,
+        seed=9,
+    )
+    assert len(rows) == 3
+    assert {row["resampling_unit"] for row in rows} == {"equilibrium_files"}
+    assert all(row["spearman_interval_lower"] <= row["spearman"] <= row["spearman_interval_upper"] for row in rows)
+    assert all(row["pearson_interval_lower"] <= row["pearson"] <= row["pearson_interval_upper"] for row in rows)
 
 
 def test_diagnostic_table_reports_every_frozen_feature_without_confidence_language():

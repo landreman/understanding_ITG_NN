@@ -171,6 +171,71 @@ def grouped_bootstrap_spearman(
     return correlations
 
 
+def paired_outcome_association_rows(
+    left: np.ndarray,
+    right: np.ndarray,
+    groups: Sequence[str],
+    regimes: Mapping[str, np.ndarray],
+    *,
+    left_name: str,
+    right_name: str,
+    replicates: int,
+    seed: int,
+) -> list[dict[str, object]]:
+    """Relate two outcomes with rank and linear association by output regime."""
+
+    x = np.asarray(left, dtype=np.float64)
+    y = np.asarray(right, dtype=np.float64)
+    group_values = np.asarray(groups).astype(str)
+    if x.ndim != 1 or y.shape != x.shape or group_values.shape != x.shape:
+        raise ValueError("left, right, and groups must be matching one-dimensional arrays")
+    if replicates < 2:
+        raise ValueError("at least two bootstrap replicates are required")
+    rows: list[dict[str, object]] = []
+    for regime_index, (regime, mask_value) in enumerate(regimes.items()):
+        mask = np.asarray(mask_value, dtype=bool)
+        if mask.shape != x.shape or mask.sum() < 2:
+            raise ValueError("every regime must select at least two aligned rows")
+        selected_x, selected_y = x[mask], y[mask]
+        selected_groups = group_values[mask]
+        unique = np.unique(selected_groups)
+        positions = [np.flatnonzero(selected_groups == group) for group in unique]
+        rng = np.random.default_rng(seed + regime_index)
+        spearman_draws = np.empty(replicates, dtype=np.float64)
+        pearson_draws = np.empty(replicates, dtype=np.float64)
+        for replicate in range(replicates):
+            drawn = rng.integers(0, len(unique), size=len(unique))
+            selected = np.concatenate([positions[index] for index in drawn])
+            if np.ptp(selected_x[selected]) == 0 or np.ptp(selected_y[selected]) == 0:
+                spearman_draws[replicate] = np.nan
+                pearson_draws[replicate] = np.nan
+            else:
+                spearman_draws[replicate] = spearman_correlation(
+                    selected_x[selected], selected_y[selected]
+                )
+                pearson_draws[replicate] = np.corrcoef(
+                    selected_x[selected], selected_y[selected]
+                )[0, 1]
+        row: dict[str, object] = {
+            "left_outcome": left_name,
+            "right_outcome": right_name,
+            "regime": str(regime),
+            "sample_count": int(mask.sum()),
+            "spearman": spearman_correlation(selected_x, selected_y),
+            "pearson": float(np.corrcoef(selected_x, selected_y)[0, 1]),
+            "resampling_unit": "equilibrium_files",
+            "interval_kind": "grouped_resample_sensitivity_interval",
+        }
+        for name, draws in (("spearman", spearman_draws), ("pearson", pearson_draws)):
+            finite = draws[np.isfinite(draws)]
+            lower, upper = np.quantile(finite, (0.025, 0.975))
+            row[f"{name}_interval_lower"] = float(lower)
+            row[f"{name}_interval_upper"] = float(upper)
+            row[f"{name}_finite_resamples"] = int(len(finite))
+        rows.append(row)
+    return rows
+
+
 def diagnostic_association_rows(
     features: Mapping[str, np.ndarray],
     outcomes: Mapping[str, np.ndarray],

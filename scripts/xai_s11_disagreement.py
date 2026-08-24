@@ -30,6 +30,7 @@ from itg_nn.xai.disagreement import (
     failure_categories,
     grouped_crossfit_ridge,
     member_residuals,
+    paired_outcome_association_rows,
     perturbation_effect_rows,
     robust_scaled_channel_gradient,
     spread_input_gradient,
@@ -466,6 +467,44 @@ def _category_rows(categories: np.ndarray, stable: np.ndarray) -> list[dict[str,
     return rows
 
 
+def _threshold_sensitivity_rows(
+    spread: np.ndarray,
+    error: np.ndarray,
+    stable: np.ndarray,
+    config: Mapping[str, Any],
+) -> list[dict[str, Any]]:
+    rows = []
+    for spread_factor in config["threshold_sensitivity_factors"]:
+        for error_factor in config["threshold_sensitivity_factors"]:
+            spread_threshold = float(config["high_spread_threshold_native"]) * float(spread_factor)
+            error_threshold = float(config["high_error_threshold_native"]) * float(error_factor)
+            categories = failure_categories(
+                spread,
+                error,
+                high_spread_threshold=spread_threshold,
+                high_error_threshold=error_threshold,
+            )
+            for regime, mask in (
+                ("all", np.ones(len(stable), dtype=bool)),
+                ("stable_or_near_floor", stable),
+                ("unstable", ~stable),
+            ):
+                rows.append({
+                    "spread_threshold_native": spread_threshold,
+                    "error_threshold_native": error_threshold,
+                    "regime": regime,
+                    "sample_count": int(mask.sum()),
+                    "common_mode_failure_count": int(np.sum(mask & (categories == "common_mode_failure"))),
+                    "common_mode_failure_fraction": float(np.mean(categories[mask] == "common_mode_failure")),
+                    "threshold_status": (
+                        "registered_primary"
+                        if spread_factor == 1.0 and error_factor == 1.0
+                        else "post_review_sensitivity"
+                    ),
+                })
+    return rows
+
+
 def _class_rows(
     classes: np.ndarray, stable: np.ndarray, spread: np.ndarray, error: np.ndarray
 ) -> list[dict[str, Any]]:
@@ -603,7 +642,9 @@ def run(args: argparse.Namespace) -> Path:
     original_ids = gradient_ids
     original_reference = _predict(models, original_ids, panel.geometry, panel.a_over_lt, panel.a_over_ln, batch_size=int(resolved["batch_size"]), device=ensemble.device, original=True)
     original_shifted = _predict(models, original_ids, exact_geometry, panel.a_over_lt, panel.a_over_ln, batch_size=int(resolved["batch_size"]), device=ensemble.device, original=True)
-    symmetry_error = np.abs(original_shifted.mean(axis=0) - original_reference.mean(axis=0))
+    original_shift_signed = original_shifted - original_reference
+    symmetry_error = np.abs(original_shift_signed.mean(axis=0))
+    symmetry_member_mean_absolute = np.abs(original_shift_signed).mean(axis=0)
     diagnostic_features = {
         "support_warning_score": support_warning,
         "a_over_lt": panel.a_over_lt.numpy().astype(np.float64),
@@ -629,6 +670,24 @@ def run(args: argparse.Namespace) -> Path:
         diagnostic_features, outcomes, groups, regimes,
         replicates=int(resolved["bootstrap_replicates"]), seed=int(resolved["seed"]) + 10,
     )
+    member_symmetry_rows = diagnostic_association_rows(
+        {"member_mean_absolute_shift_error_top10": symmetry_member_mean_absolute},
+        outcomes,
+        groups,
+        regimes,
+        replicates=int(resolved["bootstrap_replicates"]),
+        seed=int(resolved["seed"]) + 15,
+    )
+    spread_error_rows = paired_outcome_association_rows(
+        spread,
+        ensemble_error,
+        groups,
+        regimes,
+        left_name="ensemble_spread",
+        right_name="ensemble_absolute_error",
+        replicates=int(resolved["bootstrap_replicates"]),
+        seed=int(resolved["seed"]) + 17,
+    )
     crossfit_rows = _crossfit_rows(
         diagnostic_features, metadata["equilibrium_class"], outcomes, groups,
         folds=int(resolved["crossfit_folds"]), alpha=float(resolved["crossfit_ridge_alpha"]), seed=int(resolved["seed"]) + 20,
@@ -644,6 +703,7 @@ def run(args: argparse.Namespace) -> Path:
             perturbation=name, validity=validity[name],
         ))
     category_rows = _category_rows(categories, stable)
+    threshold_rows = _threshold_sensitivity_rows(spread, ensemble_error, stable, resolved)
     class_rows = _class_rows(metadata["equilibrium_class"], stable, spread, ensemble_error)
     row_diagnostics = []
     for position, row_id in enumerate(row_ids):
@@ -654,6 +714,7 @@ def run(args: argparse.Namespace) -> Path:
             "target_native": target[position], "ensemble_mean_native": ensemble_mean[position],
             "ensemble_spread_native": spread[position], "ensemble_absolute_error_native": ensemble_error[position],
             "failure_category": categories[position],
+            "member_mean_absolute_shift_error_top10": symmetry_member_mean_absolute[position],
             **{name: values[position] for name, values in diagnostic_features.items()},
         })
     summary = {
@@ -665,6 +726,8 @@ def run(args: argparse.Namespace) -> Path:
         "common_mode_failure_rows": int(np.sum(categories == "common_mode_failure")),
         "common_mode_failure_fraction": float(np.mean(categories == "common_mode_failure")),
         "high_spread_high_error_rows": int(np.sum(categories == "high_spread_high_error")),
+        "spread_error_spearman": float(spread_error_rows[0]["spearman"]),
+        "spread_error_pearson": float(spread_error_rows[0]["pearson"]),
         "model_spread_interpretation": "member dispersion, not a confidence interval",
         "residual_feature_selection": resolved["feature_selection"],
         "support_reference": support_counts,
@@ -673,10 +736,13 @@ def run(args: argparse.Namespace) -> Path:
     }
     row_path = artifacts.write_text("row_diagnostics.csv", _csv_text(row_diagnostics))
     association_path = artifacts.write_text("diagnostic_associations.csv", _csv_text(association_rows))
+    member_symmetry_path = artifacts.write_text("member_symmetry_associations.csv", _csv_text(member_symmetry_rows))
+    spread_error_path = artifacts.write_text("spread_error_associations.csv", _csv_text(spread_error_rows))
     crossfit_path = artifacts.write_text("crossfit_diagnostics.csv", _csv_text(crossfit_rows))
     gradient_path = artifacts.write_text("gradient_summary.csv", _csv_text(gradient_rows))
     perturbation_path = artifacts.write_text("perturbation_summary.csv", _csv_text(perturbation_rows))
     category_path = artifacts.write_text("failure_categories.csv", _csv_text(category_rows))
+    threshold_path = artifacts.write_text("failure_threshold_sensitivity.csv", _csv_text(threshold_rows))
     class_path = artifacts.write_text("equilibrium_class_diagnostics.csv", _csv_text(class_rows))
     summary_path = artifacts.write_json("summary.json", summary)
     full_h5 = artifacts.write_hdf5(
@@ -688,6 +754,7 @@ def run(args: argparse.Namespace) -> Path:
             "member_residual_native": residuals.astype(np.float32),
             "ensemble_spread_gradient": spread_gradient.astype(np.float32),
             "member_residual_gradient": member_gradient.astype(np.float32),
+            "original_shift_signed_native": original_shift_signed.astype(np.float32),
             "perturbed_prediction_native": np.stack([edited[name] for name in edited]).astype(np.float32),
             "perturbation": np.asarray([name.encode() for name in edited]),
         },
@@ -696,11 +763,28 @@ def run(args: argparse.Namespace) -> Path:
             "prediction_native": ("member", "sample"), "member_residual_native": ("member", "sample"),
             "ensemble_spread_gradient": ("sample", "z", "channel"),
             "member_residual_gradient": ("gradient_member", "gradient_sample", "z", "channel"),
+            "original_shift_signed_native": ("gradient_member", "sample"),
             "perturbed_prediction_native": ("perturbation", "member", "sample"), "perturbation": ("perturbation",),
         },
         attributes={"estimand": NATIVE_ESTIMAND, "canonical_function": CANONICAL_FUNCTION, "signs_retained": True}, compression="gzip",
     )
     signed_path = artifacts.write_text("signed_perturbation_effects.csv", _csv_text(signed_effect_rows))
+    symmetry_signed_rows = []
+    for member_index, member_id in enumerate(original_ids):
+        for sample_index, row_id in enumerate(row_ids):
+            symmetry_signed_rows.append({
+                "member_id": member_id,
+                "row_id": int(row_id),
+                "function": "original_f",
+                "perturbation": "random_joint_shift",
+                "validity": ValidityTag.EXACT_SYMMETRY.value,
+                "signed_change_native": float(original_shift_signed[member_index, sample_index]),
+                "absolute_change_native": float(abs(original_shift_signed[member_index, sample_index])),
+                "estimand": NATIVE_ESTIMAND,
+            })
+    symmetry_signed_path = artifacts.write_text(
+        "signed_member_symmetry_changes.csv", _csv_text(symmetry_signed_rows)
+    )
     review_indices = gradient_indices[: int(resolved["review_rows"])]
     member_gradient_lookup = {int(position): index for index, position in enumerate(gradient_indices)}
     review_gradient_positions = np.asarray([member_gradient_lookup[int(position)] for position in review_indices])
@@ -713,19 +797,23 @@ def run(args: argparse.Namespace) -> Path:
             "prediction_native": predictions[:, review_indices].astype(np.float32),
             "ensemble_spread_gradient": spread_gradient[review_indices].astype(np.float32),
             "member_residual_gradient": member_gradient[:, review_gradient_positions].astype(np.float32),
+            "original_shift_signed_native": original_shift_signed[:, review_indices].astype(np.float32),
         },
         axes={
             "member_id": ("member",), "gradient_member_id": ("gradient_member",), "row_id": ("sample",),
             "prediction_native": ("member", "sample"), "ensemble_spread_gradient": ("sample", "z", "channel"),
             "member_residual_gradient": ("gradient_member", "sample", "z", "channel"),
+            "original_shift_signed_native": ("gradient_member", "sample"),
         }, attributes={"estimand": NATIVE_ESTIMAND, "canonical_function": CANONICAL_FUNCTION, "signs_retained": True}, compression="gzip",
     )
     figure_path = output_dir / "failure_atlas.png"
     _plot_failure_atlas(figure_path, spread, ensemble_error, categories, category_rows, resolved)
     artifacts.register_existing(figure_path.name)
     publish_paths = [
-        row_path, association_path, crossfit_path, gradient_path, perturbation_path,
-        category_path, class_path, summary_path, review_path, figure_path,
+        row_path, association_path, member_symmetry_path, spread_error_path,
+        crossfit_path, gradient_path, perturbation_path, category_path,
+        threshold_path, class_path, summary_path, symmetry_signed_path,
+        review_path, figure_path,
     ]
     published_dir = None if args.no_publish else Path(resolved["published_dir"])
     if published_dir is not None:

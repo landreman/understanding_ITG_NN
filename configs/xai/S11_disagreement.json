@@ -18,6 +18,7 @@
   "stable_threshold_log_Q": -1.9,
   "high_error_threshold_native": 0.5,
   "high_spread_threshold_native": 0.15,
+  "threshold_sensitivity_factors": [0.8, 1.0, 1.2],
   "canonical_function": "invariant_tilde_f",
   "estimand": "native max(log Q, -2)",
   "resampling_unit": "equilibrium_files",
