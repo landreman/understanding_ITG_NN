@@ -54,6 +54,24 @@ def test_consensus_never_places_two_units_from_one_member_in_a_motif():
         assert len(member_ids) == len(set(member_ids))
 
 
+def test_catalog_reads_the_distinct_motif_threshold_from_config():
+    units = ("m0:u000", "m1:u000", "m2:u000")
+    edges = [
+        {"left": units[0], "right": units[1], "recurrence": 1.0, "causal_similarity": 0.9},
+        {"left": units[1], "right": units[2], "recurrence": 1.0, "causal_similarity": 0.6},
+    ]
+    resolved = {
+        "minimum_match_recurrence": 0.7,
+        "minimum_regime_causal_similarity": 0.5,
+        "minimum_motif_regime_causal_similarity": 0.7,
+    }
+    strict = MODULE._catalog_motifs(units, edges, resolved)
+    assert strict[0]["member_count"] == 2
+    resolved["minimum_motif_regime_causal_similarity"] = 0.5
+    loose = MODULE._catalog_motifs(units, edges, resolved)
+    assert loose[0]["member_count"] == 3
+
+
 def test_acceptance_summary_refuses_missing_lower_rank_comparison():
     summary = {
         "stable_rows": 20,
@@ -110,6 +128,29 @@ def test_regime_causal_gate_does_not_promote_serialized_false():
     assert rows[0]["causal_regime_gate"] is True
     assert rows[0]["pre_regime_consensus_gate"] is False
     assert rows[0]["consensus_gate"] is False
+
+
+def test_member_attribution_applies_registered_channel_scales():
+    import numpy as np
+    import torch
+
+    class MeanInvariant:
+        def invariant(self, geometry, a_lt, a_ln):
+            del a_lt, a_ln
+            return geometry.mean(dim=1)
+
+    geometry = torch.arange(4 * 6 * 2, dtype=torch.float32).reshape(4, 6, 2)
+    attribution = MODULE._member_attribution(
+        MeanInvariant(),
+        geometry,
+        torch.zeros(4),
+        torch.zeros(4),
+        scales=np.asarray([1.0, 1000.0]),
+        batch_size=2,
+        device=torch.device("cpu"),
+    )
+    assert attribution.shape == (4, 2)
+    assert np.allclose(attribution[:, 1], 1000.0 * attribution[:, 0])
 
 
 def test_resume_rejects_changed_or_corrupted_output(tmp_path):

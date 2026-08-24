@@ -72,6 +72,19 @@ def test_flux_residualization_rejects_label_only_correspondence():
     residual_right = residualize_against_covariates(right, flux[:, None])
     assert np.corrcoef(left[:, 0], right[:, 0])[0, 1] > 0.99
     assert abs(np.corrcoef(residual_left[:, 0], residual_right[:, 0])[0, 1]) < 0.25
+    score, pieces = functional_similarity(
+        left,
+        right,
+        covariates=flux[:, None],
+        left_auxiliary=np.ones((1, 1)),
+        right_auxiliary=np.ones((1, 1)),
+        left_effects=np.ones((1, 1)),
+        right_effects=np.ones((1, 1)),
+        component_weights=(0.0, 1.0, 0.0, 0.0),
+    )
+    assert pieces["activation_raw"][0, 0] > 0.99
+    assert pieces["activation_residual"][0, 0] < 0.25
+    assert score[0, 0] == pieces["activation_residual"][0, 0]
 
 
 def test_grouped_bootstrap_recurs_by_equilibrium_and_is_deterministic():

@@ -142,8 +142,10 @@ def _annotate_motifs(
     """Attach only independently supported S05 names to consensus motifs."""
 
     supported: dict[str, str] = {}
+    screened: set[str] = set()
     with s05_unit_motifs.open(newline="", encoding="utf-8") as handle:
         for row in csv.DictReader(handle):
+            screened.add(row["unit_id"])
             if row["motif_status"] == "supported_named_motif":
                 supported[row["unit_id"]] = row["claimed_concept"]
     for row in motif_rows:
@@ -153,11 +155,29 @@ def _annotate_motifs(
             "functional_signature_and_off_manifold_mean_ablation_agree_"
             "in_both_output_regimes"
         )
+        row["s05_screened_unit_count"] = sum(unit in screened for unit in units)
         row["s05_supported_unit_count"] = sum(unit in supported for unit in units)
         row["s05_supported_concepts"] = "|".join(concepts) if concepts else "none"
         row["interpretive_label"] = (
             "|".join(concepts) if concepts else "unresolved_by_S05_vocabulary"
         )
+
+
+def _catalog_motifs(
+    unit_ids: Sequence[str],
+    edges: Sequence[dict[str, Any]],
+    resolved: dict[str, Any],
+) -> list[dict[str, Any]]:
+    """Build the registered catalog through its named config thresholds."""
+
+    return _consensus_components(
+        unit_ids,
+        edges,
+        minimum_recurrence=float(resolved["minimum_match_recurrence"]),
+        minimum_causal_similarity=float(
+            resolved["minimum_motif_regime_causal_similarity"]
+        ),
+    )
 
 
 def _validate_summary(summary: dict[str, Any]) -> None:
@@ -209,6 +229,16 @@ def _apply_regime_causal_gate(
         )
         row["causal_effect_similarity_stable_or_near_floor"] = stable_similarity
         row["causal_effect_similarity_unstable"] = unstable_similarity
+        # Match the archived float32 member-signature representation so this
+        # published magnitude column is reproducible from member_signatures.h5.
+        left_values = np.asarray(effects[left_member][:, left_unit], dtype=np.float32)
+        right_values = np.asarray(effects[right_member][:, right_unit], dtype=np.float32)
+        left_rms = float(np.sqrt(np.mean(np.square(left_values))))
+        right_rms = float(np.sqrt(np.mean(np.square(right_values))))
+        smaller_rms = min(left_rms, right_rms)
+        row["causal_effect_rms_magnitude_ratio"] = (
+            max(left_rms, right_rms) / smaller_rms if smaller_rms > 1e-12 else float("inf")
+        )
         row["causal_regime_gate"] = bool(
             stable_similarity >= minimum_similarity
             and unstable_similarity >= minimum_similarity
@@ -272,7 +302,10 @@ def _validate_resume_manifest(
     dataset: Path,
     checkpoint: Path,
 ) -> None:
-    if manifest.get("config") != resolved:
+    reproduction_config = manifest.get("postprocessing", {}).get(
+        "reproduction_config", manifest.get("config")
+    )
+    if reproduction_config != resolved:
         raise RuntimeError("resume config or S10 source hashes differ from the completed run")
     if manifest.get("dataset", {}).get("sha256") != sha256_file(dataset):
         raise RuntimeError("resume dataset fingerprint differs from the completed run")
@@ -621,14 +654,7 @@ def run(args: argparse.Namespace) -> Path:
         minimum_recurrence=float(resolved["minimum_match_recurrence"]),
         minimum_causal_similarity=float(resolved["minimum_causal_similarity"]),
     )
-    motifs = _consensus_components(
-        unit_ids,
-        accepted_edges,
-        minimum_recurrence=float(resolved["minimum_match_recurrence"]),
-        minimum_causal_similarity=float(
-            resolved["minimum_motif_regime_causal_similarity"]
-        ),
-    )
+    motifs = _catalog_motifs(unit_ids, accepted_edges, resolved)
     motif_rows = [
         {"motif_id": f"motif_{index:03d}", **motif, "unit_ids": "|".join(motif["unit_ids"]),
          "definition": "functional_signature_and_off_manifold_mean_ablation_agree"}
@@ -637,6 +663,30 @@ def run(args: argparse.Namespace) -> Path:
     _annotate_motifs(
         motif_rows, s05_unit_motifs=Path(resolved["s05_unit_motifs"])
     )
+    motif_sensitivity_rows = []
+    for threshold in resolved["motif_regime_causal_similarity_sweep"]:
+        sensitivity_motifs = _consensus_components(
+            unit_ids,
+            accepted_edges,
+            minimum_recurrence=float(resolved["minimum_match_recurrence"]),
+            minimum_causal_similarity=float(threshold),
+        )
+        eligible = sum(
+            float(edge["recurrence"]) >= float(resolved["minimum_match_recurrence"])
+            and float(edge["causal_similarity"]) >= float(threshold)
+            for edge in accepted_edges
+        )
+        motif_sensitivity_rows.append({
+            "minimum_regime_causal_similarity": float(threshold),
+            "eligible_edges": eligible,
+            "catalog_edges_after_one_unit_per_member": sum(
+                int(motif["edge_count"]) for motif in sensitivity_motifs
+            ),
+            "motif_count": len(sensitivity_motifs),
+            "motif_member_counts": "|".join(
+                str(motif["member_count"]) for motif in sensitivity_motifs
+            ),
+        })
 
     cka_rows: list[dict[str, Any]] = []
     cka_names = [f"canonical_atrous_layer_{index}" for index in range(1, 6)] + ["invariant_bottleneck"]
@@ -717,6 +767,10 @@ def run(args: argparse.Namespace) -> Path:
         cohort_rows.append(cohort_row)
 
     final_rows = [row for row in unit_match_rows if row["consensus_gate"]]
+    final_effect_ratios = np.asarray(
+        [row["causal_effect_rms_magnitude_ratio"] for row in final_rows],
+        dtype=np.float64,
+    )
     medoid = int(np.argmin(distance.mean(axis=1)))
     rank_correlation, rank_p_value = spearmanr(
         np.arange(1, len(member_ids) + 1), distance[medoid]
@@ -787,6 +841,15 @@ def run(args: argparse.Namespace) -> Path:
         "final_edge_unstable_causal_similarity_median": float(np.median([
             row["causal_effect_similarity_unstable"] for row in final_rows
         ])),
+        "final_edge_causal_effect_rms_ratio_median": float(
+            np.median(final_effect_ratios)
+        ),
+        "final_edge_causal_effect_rms_ratio_p90": float(
+            np.quantile(final_effect_ratios, 0.9)
+        ),
+        "final_edge_causal_effect_rms_ratio_maximum": float(
+            np.max(final_effect_ratios)
+        ),
         "maximum_motif_member_count": max(
             (row["member_count"] for row in motif_rows), default=0
         ),
@@ -813,6 +876,9 @@ def run(args: argparse.Namespace) -> Path:
 
     artifacts.write_text("unit_matches.csv", _csv_text(unit_match_rows))
     artifacts.write_text("motif_catalog.csv", _csv_text(motif_rows))
+    artifacts.write_text(
+        "motif_threshold_sensitivity.csv", _csv_text(motif_sensitivity_rows)
+    )
     artifacts.write_text("cka.csv", _csv_text(cka_rows))
     artifacts.write_text("member_clusters.csv", _csv_text(member_rows))
     artifacts.write_text("member_distances.csv", _csv_text(distance_rows))
@@ -874,11 +940,40 @@ def run(args: argparse.Namespace) -> Path:
         row_ids=row_ids, gradient_set="varied frozen S01 interpretation panel only",
         device=ensemble.device, repository=Path.cwd(), command=sys.argv,
         published_dir=published,
+        extra_manifest={
+            "postprocessing": {
+                "command": (
+                    "regime-specific causal audit from manifest-hashed "
+                    "member_signatures.h5"
+                ),
+                "committed_runner_reproduction": (
+                    "audit, derived summary fields, cohort CKA columns, and S05 "
+                    "motif annotations are folded into scripts/xai_s10_cross_model.py"
+                ),
+                "minimum_cosine_similarity_each_regime": float(
+                    resolved["minimum_regime_causal_similarity"]
+                ),
+                "motif_threshold_provenance": (
+                    "0.70 code literal present in first S10 commit before the "
+                    "regime audit; promoted to a named config key after review"
+                ),
+                "reason": (
+                    "preliminary four-summary causal gate admitted opposing "
+                    "within-regime effects"
+                ),
+                "source_artifact": "member_signatures.h5",
+                "reproduction_config": resolved,
+                "reproduction_source_hashes": resolved["source_hashes"],
+                "stable_rows": int(stable.sum()),
+                "unstable_rows": int((~stable).sum()),
+            }
+        },
     )
     if published is not None:
         published.mkdir(parents=True, exist_ok=True)
         for name in (
             "unit_matches.csv", "motif_catalog.csv", "cka.csv", "member_clusters.csv",
+            "motif_threshold_sensitivity.csv",
             "member_distances.csv", "cohort_comparison.csv", "architecture.csv", "summary.json",
             "cross_model_cka.png", "member_dendrogram.png",
         ):

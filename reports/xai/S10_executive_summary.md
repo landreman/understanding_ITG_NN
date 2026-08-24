@@ -34,9 +34,11 @@ That replacement is a diagnostic edit inside a network. It is not a physically
 realizable change to a stellarator equilibrium, so it explains the networks and
 does not by itself establish plasma causality.
 
-The matching was repeated while resampling whole equilibria. This estimates how
-often a match would recur if the panel contained a different sample of
-equilibria. Units were allowed to remain unmatched; the calculation did not force
+The matching was repeated while resampling whole equilibria. Because this panel
+contains exactly one tube per equilibrium, that is numerically the same as row
+resampling here, while preserving the correct rule for future multi-tube cohorts.
+It estimates how often a match would recur if the panel contained a different
+sample of equilibria. Units were allowed to remain unmatched; the calculation did not force
 every internal number into a shared story.
 
 ## Main result: shared motifs exist, but far fewer than a simple comparison suggests
@@ -56,14 +58,26 @@ nine. The correction rejected 334 preliminary edges and is scientifically
 important: averaging across regimes would have produced 33 apparently shared
 motifs instead of eight.
 
+The motif count depends on the explicit 0.70 catalog threshold: using
+0.50/0.60/0.70/0.80 gives 14/12/8/4 motifs. The 0.70 value was present in the
+first S10 code before the regime audit and matches the earlier pooled-effect
+gate, but eight should still be read as a thresholded catalog count rather than
+a unique natural number.
+
+The surviving pairs agree in both direction and useful scale. The larger of the
+two root-mean-square prediction effects is typically **1.33 times** the smaller;
+90% of pairs are within **2.17 times**, and the maximum ratio is **4.05**. Thus
+the cosine direction test is backed by an explicit magnitude comparison.
+
 Only one of the eight motifs contains a unit that S05 had given a supported
 physical name. It includes the leading network's unit associated with a
 parallel-window average of the paper's $f_Q$ integrand, and corresponding units
 occur in six other networks. But those six units have not independently earned
 that name. It is a promising anchor, not a seven-network identification. The
-anchoring unit also belongs to the narrowest network and a clustering outlier,
-so it is not representative of the ensemble. The other seven motifs remain
-unresolved by the current concept vocabulary.
+anchoring unit also belongs to the narrowest network and is an outlier under the
+average-linkage description, so it is not representative of the ensemble. S05 screened units from only the
+first four motifs; motifs 005–008 contain no unit S05 examined. “Unresolved” for
+those four therefore means not yet screened, not a demonstrated vocabulary gap.
 
 ## The networks look similar in broad outline
 
@@ -87,9 +101,11 @@ budget and is recorded as deferred.
 
 ## Validation rank is not the organizing principle
 
-Ninety-five of the 100 networks fall into one main cluster when predictions,
-scaled input sensitivities, bottleneck interventions, and concept profiles are
-combined. Five are outliers. Distance from the most central member has only a
+Average linkage places 95 of the 100 networks in one main cluster when
+predictions, scaled input sensitivities, bottleneck interventions, and concept
+profiles are combined. Other standard linkage choices produce 82/12/5/1
+clusters with different member identities, so the cut does not establish five
+robust outliers. Distance from the most central member has only a
 weak relationship with stored validation rank (rank correlation 0.118, with
 $p=0.243$). Networks ranked 51–100 are no less similar at the bottleneck than
 the top ten: their median within-cohort CKA is 0.816, compared with 0.796 for the
@@ -98,7 +114,9 @@ top ten.
 The four narrow networks, with at most 11 bottleneck units, are more unusual in
 the combined evidence. Their median distance to wide networks is 3.153, compared
 with 1.177 between two wide networks, and three of the four sit outside the main
-cluster. Yet their bottleneck CKA with wide networks is almost unchanged
+cluster under average linkage. Because that membership changes with linkage,
+the narrow-member conclusion rests on the continuous 3.153 versus 1.177
+distance comparison. Their bottleneck CKA with wide networks is almost unchanged
 (0.813 versus 0.814 between wide networks). The narrow networks do not simply
 lose the common representational scaffold; they differ in how they use it.
 
@@ -114,7 +132,7 @@ All 100 networks share training data and an architecture family. The recurrence
 of a motif can therefore reflect shared training bias as well as a genuinely
 necessary internal feature; S10 does not measure that shared-training floor.
 
-The seven unnamed motifs are also useful. They say that the networks repeatedly
-compute something similar that the current physical vocabulary has not captured.
-That is a concrete target for later disagreement analysis and interpretable
-distillation, not a reason to attach a post-hoc name.
+The seven unnamed motifs are also useful. For motifs 002–004, S05 screened at
+least one unit without finding a supported name; motifs 005–008 have not yet
+been screened by S05. Both are concrete targets for later disagreement analysis
+and interpretable distillation, not reasons to attach a post-hoc name.

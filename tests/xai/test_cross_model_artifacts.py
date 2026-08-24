@@ -62,6 +62,7 @@ def test_s10_consensus_is_one_to_one_and_agrees_in_both_regimes():
         assert float(row["activation_flux_residual_similarity"]) >= 0.5
         assert float(row["causal_effect_similarity_stable_or_near_floor"]) >= 0.5
         assert float(row["causal_effect_similarity_unstable"]) >= 0.5
+        assert 1.0 <= float(row["causal_effect_rms_magnitude_ratio"]) <= 4.1
         assert row["causal_effect_validity"] == "deliberately_off_manifold_diagnostic"
 
     for motif in _rows("motif_catalog.csv"):
@@ -70,6 +71,9 @@ def test_s10_consensus_is_one_to_one_and_agrees_in_both_regimes():
         assert len(member_ids) == len(set(member_ids)) == int(motif["member_count"])
         assert float(motif["minimum_recurrence"]) >= 0.7
         assert float(motif["minimum_causal_similarity"]) >= 0.7
+        assert int(motif["s05_screened_unit_count"]) >= int(
+            motif["s05_supported_unit_count"]
+        )
 
 
 def test_s10_cka_covers_every_pair_and_layer():
@@ -90,11 +94,20 @@ def test_s10_cka_covers_every_pair_and_layer():
         assert all(0.0 <= float(row["cka"]) <= 1.0 for row in subset)
 
 
+def test_motif_threshold_sensitivity_pins_the_binding_gate():
+    rows = _rows("motif_threshold_sensitivity.csv")
+    assert [float(row["minimum_regime_causal_similarity"]) for row in rows] == [
+        0.5, 0.6, 0.7, 0.8
+    ]
+    assert [int(row["motif_count"]) for row in rows] == [14, 12, 8, 4]
+
+
 def test_s10_manifest_hashes_every_committed_headline_artifact():
     manifest = json.loads((ARTIFACTS / "manifest.json").read_text(encoding="utf-8"))
     for name in (
         "unit_matches.csv",
         "motif_catalog.csv",
+        "motif_threshold_sensitivity.csv",
         "cka.csv",
         "member_clusters.csv",
         "member_distances.csv",
@@ -106,3 +119,10 @@ def test_s10_manifest_hashes_every_committed_headline_artifact():
     ):
         assert _sha256(ARTIFACTS / name) == manifest["output_hashes"][name]
     assert manifest["postprocessing"]["source_artifact"] == "member_signatures.h5"
+    assert manifest["source_hashes"]["runner"] == (
+        "fae7242276544d55179377441e4a67dafbf9f4df5eb9b9d2e9243b524afb8dfc"
+    )
+    reproduction = manifest["postprocessing"]["reproduction_source_hashes"]
+    assert reproduction["runner"] == _sha256(ROOT / "scripts" / "xai_s10_cross_model.py")
+    assert reproduction["config"] == _sha256(ROOT / "configs" / "xai" / "S10_cross_model.json")
+    assert manifest["postprocessing"]["reproduction_config"]["source_hashes"] == reproduction

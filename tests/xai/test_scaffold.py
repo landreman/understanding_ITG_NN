@@ -212,6 +212,7 @@ def test_artifact_manifest_records_required_provenance(tmp_path) -> None:
         repository=tmp_path,
         command=("xai-smoke",),
         published_dir=tmp_path / "published",
+        extra_manifest={"postprocessing": {"method": "registered-audit"}},
     )
     manifest = json.loads(manifest_path.read_text())
     assert manifest["dataset"]["sha256"]
@@ -223,6 +224,7 @@ def test_artifact_manifest_records_required_provenance(tmp_path) -> None:
     }
     assert manifest["member_ids"] == ["member-1"]
     assert manifest["row_ids"] == [7, 8, 9]
+    assert manifest["postprocessing"] == {"method": "registered-audit"}
     # The run directory is git-ignored, so the reviewer only ever sees the
     # published copy. It must be byte-identical, not a summary of the manifest.
     published = tmp_path / "published" / "manifest.json"

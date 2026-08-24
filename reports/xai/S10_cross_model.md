@@ -24,9 +24,11 @@ seven-member `motif_001` contains the top member's `u001`, which S05 associated
 with the 25-point circular mean of the paper's $f_Q$ integrand. Because only one
 of the seven matched units has that supported name, this is a **tentative anchor**,
 not evidence that all seven units measure the $f_Q$ integrand. That anchor is
-also the narrowest member and one of the five clustering outliers, so it is not
-a typical ensemble member. The other seven
-motifs remain `unresolved_by_S05_vocabulary` in the
+also the narrowest member and an average-linkage outlier, so it is not a typical
+ensemble member under the registered description. S05 screened two units in each of motifs 001–003,
+one in motif 004, and **none** in motifs 005–008. Thus the first four unresolved
+labels mean “screened without a supported name,” while the last four mean “not
+yet screened,” not evidence that the vocabulary failed. These counts are columns in the
 [motif catalog](S10_artifacts/motif_catalog.csv).
 
 Representations are broadly similar across all 100 members. Median linear CKA
@@ -40,9 +42,11 @@ bottleneck change is 0.117. No permutation or chance baseline was registered,
 so the raw decline with depth is descriptive and does not establish that the
 networks become more individual in deeper layers.
 
-Validation rank does not organize the cross-model results strongly. A fixed
-four-cluster cut of the multi-evidence dendrogram places **95/100** members in one
-core cluster and five in three small outlier clusters. Distance from the medoid
+Validation rank does not organize the cross-model results strongly. Average
+linkage at a fixed four-cluster cut places **95/100** members in one core cluster,
+but complete and Ward linkage instead produce 82/12/5/1 clusters with different
+member identities. The cut is therefore descriptive and member-level outlier
+claims are not carried forward. Distance from the medoid
 member has Spearman rank correlation **0.118** with stored-validation rank
 ($p=0.243$). Bottleneck CKA medians are 0.796 within the top 10, 0.814 within ranks
 11–50, and 0.816 within ranks 51–100; lower-ranked members are not less
@@ -51,8 +55,7 @@ distance at stored-validation rank 74.
 
 The four narrow-bottleneck members ($C\le11$) are mixed evidence. Their median
 multi-evidence distance to wide members is **3.153**, versus **1.177** between two
-wide members, and three of the four sit outside the 95-member core cluster.
-Contradictorily, narrow-wide bottleneck CKA is **0.813**, nearly identical to the
+wide members. Contradictorily, narrow-wide bottleneck CKA is **0.813**, nearly identical to the
 wide-wide median **0.814**. Narrow members therefore differ in the combined
 prediction/gradient/causal/concept signatures, not in a simple loss of shared
 bottleneck representation geometry.
@@ -88,6 +91,12 @@ After automated review, the audit, S05 motif annotations, cohort CKA columns,
 and every derived `summary.json` field were folded into the committed runner;
 the small summary and manifest artifacts were regenerated from the retained
 tables. The registered runner now reproduces the published schemas directly.
+The manifest keeps the registered 60-minute run's original runner/config hashes
+(`fae724...` / `2c5fb4...`) at top level. Current post-review code and config are
+recorded separately as `postprocessing.reproduction_source_hashes` and
+`reproduction_config`; they reproduce the retained arrays and tables but did not
+incur the historical wall time. This separation prevents later code from being
+misrepresented as the code that executed the registered run.
 The production environment used SciPy 1.13.1 for average-linkage clustering.
 Its compatibility smoke test imported SciPy and completed the real 100-member
 linkage, four-cluster cut, square-distance conversion, and dendrogram calls in
@@ -120,11 +129,20 @@ additionally requires recurrence at least
 least 0.70, and signed per-row ablation cosine at least 0.50 separately in both
 output regimes.
 
+Because this frozen panel has exactly one tube per equilibrium, grouped and
+ordinary row bootstrap draws are arithmetically identical here. Grouping remains
+the required implementation contract and matters for any cohort with sibling
+tubes, but it does not widen uncertainty on this particular panel.
+
 The matched unit's mean replacement is a
 `deliberately_off_manifold_diagnostic`: changing a hidden unit diagnoses the
 network, not a realizable equilibrium or a causal plasma intervention. Among the
 163 final edges, median flux-residual similarity is **0.892**, median recurrence
 is **1.00**, and median stable/unstable causal similarity is **0.708/0.755**.
+Direction agreement is not enough for comparable effect size: the ratio of the
+larger to smaller all-panel root-mean-square signed effect has median **1.33**,
+90th percentile **2.17**, and maximum **4.05** across those edges. The exact
+ratio is published on every match row.
 
 Consensus motifs are connected components of the **74** final edges that also
 meet a stricter, config-driven per-regime causal cosine of at least 0.70. This
@@ -132,6 +150,14 @@ motif-membership threshold is distinct from the 0.50 final-edge threshold.
 Pairwise assignments can form inconsistent cycles, so edges are considered in
 descending recurrence-times-causal score; the one-unit-per-member constraint
 rejects four unions, leaving 70 catalog edges.
+
+The binding 0.70 motif threshold was already a code literal in the first S10
+commit, before the regime audit, and matches the registered pooled-causal gate;
+it was not fitted to obtain eight motifs. The catalog is nevertheless sensitive
+to it: thresholds 0.50/0.60/0.70/0.80 give **14/12/8/4 motifs**. The committed
+[threshold sweep](S10_artifacts/motif_threshold_sensitivity.csv) also publishes
+eligible edges, post-constraint edges, and member counts. Eight is therefore a
+thresholded catalog description, not a threshold-invariant natural count.
 
 ### Cross-model CKA
 
@@ -160,11 +186,11 @@ Member distance equally combines four robustly standardized blocks:
 
 Average-linkage hierarchical clustering produces the
 [dendrogram](S10_artifacts/member_dendrogram.png); the four-cluster cut was fixed
-in the config and is descriptive. Architecture and width are compared after
-clustering, not used to construct the distance. The five members outside the
-95-member core are stored-validation ranks 1, 58, 59, 86, and 96. Three of the
-four narrow members are among them; two wide lower-ranked members are also
-outliers, so narrow width is not a complete explanation.
+in the config and is descriptive. Complete and Ward linkage both give
+82/12/5/1 rather than average linkage's 95/3/1/1 and change the member identities,
+so no individual network is classified as a robust outlier. Architecture and
+width are compared after clustering, not used to construct the distance. The
+narrow-member conclusion rests on the linkage-free continuous distances.
 
 ## Stable/near-floor versus unstable rows
 
@@ -190,8 +216,10 @@ regimes rather than claiming separate causal behavior.
   distance matrix and full dendrogram are primary; the four labels are a compact
   description.
 - No multiple-testing correction is attached to individual exploratory CKA or
-  match rows. Consensus is controlled by preregistered effect-size, recurrence,
-  flux-residual, and regime gates rather than pairwise $p$-values.
+  match rows. Consensus is controlled by recorded effect-size, recurrence,
+  flux-residual, and regime gates rather than pairwise $p$-values. The 0.50
+  per-regime gate was selected post hoc during the same-panel audit, as disclosed
+  above; it was not preregistered.
 
 ## Failed checks, corrections, and negative results
 
@@ -221,10 +249,10 @@ regimes rather than claiming separate causal behavior.
   therefore has an unmeasured shared-training floor and is not evidence of
   independent discovery.
 - The 0.50 final-edge gate was introduced by an audit on the same 1,000 rows,
-  not an independent holdout. The motif catalog is unchanged when this edge
-  threshold is swept from 0.00 through 0.70 because the separate 0.70
-  motif-membership threshold binds; this supports catalog stability but does
-  not independently validate either cutoff.
+  not an independent holdout. Sweeping that nonbinding edge gate does not move
+  the catalog because the separate 0.70 motif threshold binds. Sweeping the
+  binding motif threshold does move it: 14/12/8/4 motifs at
+  0.50/0.60/0.70/0.80. Neither cutoff has independent holdout validation.
 
 ## Mutation testing
 
@@ -243,6 +271,13 @@ Automated review supplied a fourth mutation: deleting the one-unit-per-member
 union constraint initially survived. A new cyclic toy graph with two units from
 one member now turns that mutation red; the constraint removes four real unions
 in the registered catalog.
+
+A second review found two more surviving production-wiring mutations. Replacing
+the residualized activation component inside `functional_similarity` by the raw
+correlation, and deleting the S01 robust channel scales inside
+`_member_attribution`, both initially stayed green. The label-only null now runs
+through the full similarity function, and an analytic gradient toy now requires
+the registered 1:1000 channel scaling; both mutations turn red.
 
 ## Reproduction
 
@@ -265,7 +300,7 @@ The CLI supports `--config`, `--members`, `--rows`, `--device`, `--seed`,
 | PLAN criterion | Verdict | Number or artifact |
 | --- | --- | --- |
 | “correspondences survive equilibrium bootstrap and are not driven only by flux labels” | **Pass with strict attrition exposed.** | 163/582 matched pairs pass recurrence $\ge0.70$, flux-residual similarity $\ge0.50$, and both causal-regime gates; final median recurrence 1.00 and flux-residual similarity 0.892. [Unit matches](S10_artifacts/unit_matches.csv). |
-| “matched motifs have comparable causal effects” | **Pass after correction.** | All 163 final edges have signed mean-replacement cosine $\ge0.50$ separately on 240 stable/near-floor and 760 unstable rows; medians 0.708/0.755. This correction rejected 334 preliminary edges. [Motif catalog](S10_artifacts/motif_catalog.csv). |
+| “matched motifs have comparable causal effects” | **Pass after correction.** | All 163 final edges have signed mean-replacement cosine $\ge0.50$ separately on 240 stable/near-floor and 760 unstable rows; medians are 0.708/0.755. The larger/smaller root-mean-square effect ratio is 1.33 median, 2.17 at the 90th percentile, and 4.05 maximum. [Unit matches](S10_artifacts/unit_matches.csv) and [motif catalog](S10_artifacts/motif_catalog.csv). |
 | “lower-ranked cohorts provide a registered comparison” | **Pass.** | All 10/40/50 registered members are present. Bottleneck CKA medians are 0.796/0.814/0.816 within top/middle/lower cohorts; rank-versus-medoid distance $\rho=0.118$, $p=0.243$. [Cohort comparison](S10_artifacts/cohort_comparison.csv) and [member clusters](S10_artifacts/member_clusters.csv). |
 
 ## Reviewer reproduction
@@ -280,7 +315,7 @@ nearest proxy is the top-three/96-row pilot, which checks axes, native units,
 assignment, grouped recurrence, unmatched controls, both regime gates, and CKA.
 
 **Checkable from committed artifacts alone.** The 582 matches, 163 final edges,
-74 motif-eligible edges, eight motifs, 29,700 CKA rows, 100 cluster rows, all
+74 motif-eligible edges, the 14/12/8/4 threshold sweep, eight motifs, 29,700 CKA rows, 100 cluster rows, all
 cohort counts, figures, and
 headline medians are committed under [S10 artifacts](S10_artifacts/).
 `test_cross_model_artifacts.py` recomputes counts and gates, enforces one unit per
