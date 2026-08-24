@@ -99,8 +99,8 @@ def test_regime_causal_gate_rejects_stable_opposition():
         "consensus_gate": True,
     }]
     effects = (
-        np.asarray([[1.0], [2.0], [1.0], [2.0]]),
-        np.asarray([[-1.0], [-2.0], [1.0], [2.0]]),
+        np.asarray([[1.0], [1.0], [1.0], [1.0]]),
+        np.asarray([[-3.0], [-3.0], [1.0], [1.0]]),
     )
     MODULE._apply_regime_causal_gate(
         rows, effects=effects, stable=stable, member_ids=("m0", "m1"),
@@ -108,6 +108,9 @@ def test_regime_causal_gate_rejects_stable_opposition():
     )
     assert rows[0]["causal_effect_similarity_stable_or_near_floor"] == pytest.approx(-1.0)
     assert rows[0]["causal_effect_similarity_unstable"] == pytest.approx(1.0)
+    assert rows[0]["causal_effect_rms_magnitude_ratio_stable_or_near_floor"] == pytest.approx(3.0)
+    assert rows[0]["causal_effect_rms_magnitude_ratio_unstable"] == pytest.approx(1.0)
+    assert rows[0]["causal_effect_rms_magnitude_ratio"] == pytest.approx(5.0 ** 0.5)
     assert rows[0]["pre_regime_consensus_gate"] is True
     assert rows[0]["consensus_gate"] is False
 
