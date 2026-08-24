@@ -20,8 +20,9 @@ rows with all-member spread below 0.15 but ensemble absolute error at least 0.5
 native units. Two are stable/near-floor rows and six are unstable. The other
 categories contain 240 high-spread/low-error rows, 76 high-spread/high-error
 rows, and 676 unanimous-success rows. These are diagnostic bins at fixed native-
-unit cutoffs, not estimated confidence classes. Across a predeclared ±20%
-threshold grid, the common-mode count ranges from **2 to 34**; the primary
+unit cutoffs, not estimated confidence classes. Across the registered
+post-review ±20% sensitivity grid, the common-mode count ranges from **2 to
+34**; the primary
 8-row count is therefore threshold-dependent, while the existence of shared
 failures is not.
 
