@@ -21,8 +21,6 @@ mpl.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
-from scipy.cluster.hierarchy import dendrogram, fcluster, linkage
-from scipy.spatial.distance import squareform
 
 from itg_nn.data import load_hdf5_rows
 from itg_nn.ensemble import load_ensemble
@@ -612,6 +610,14 @@ def run(args: argparse.Namespace) -> Path:
         np.asarray(predictions), np.asarray(attribution_profiles),
         np.asarray(causal_profiles), np.asarray(concept_profiles),
     ))
+    try:
+        from scipy.cluster.hierarchy import dendrogram, fcluster, linkage
+        from scipy.spatial.distance import squareform
+    except ModuleNotFoundError as error:
+        raise RuntimeError(
+            "S10 member clustering requires the project XAI dependencies; "
+            "run bash scripts/setup_xai_env.sh"
+        ) from error
     condensed = squareform(distance, checks=False)
     hierarchy = linkage(condensed, method="average") if len(member_ids) > 1 else np.zeros((0, 4))
     cluster_count = min(int(resolved["member_clusters"]), len(member_ids))

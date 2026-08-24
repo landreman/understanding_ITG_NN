@@ -53,7 +53,7 @@
     "source_hashes": {
       "config": "2c5fb4468e7afbec170e3a4a91eb9421aeb8e97cbe935938725f176fbd61db80",
       "library": "942149016a4356194a4bf255f373a41cc8a90c7f465db69c898b5505c12b1a63",
-      "runner": "fae7242276544d55179377441e4a67dafbf9f4df5eb9b9d2e9243b524afb8dfc"
+      "runner": "f4d8cd2c1aae6866b9e6b07b16e9381da9714e4d09bd524f0fc166278604b544"
     },
     "stable_threshold_log_Q": -1.9,
     "step": "S10",
@@ -191,6 +191,7 @@
     "h5py": "3.11.0",
     "itg-nn": "0.1.0",
     "numpy": "1.26.4",
+    "scipy": "1.13.1",
     "torch": "2.4.1"
   },
   "postprocessing": {
@@ -1211,7 +1212,7 @@
   "source_hashes": {
     "config": "2c5fb4468e7afbec170e3a4a91eb9421aeb8e97cbe935938725f176fbd61db80",
     "library": "942149016a4356194a4bf255f373a41cc8a90c7f465db69c898b5505c12b1a63",
-    "runner": "fae7242276544d55179377441e4a67dafbf9f4df5eb9b9d2e9243b524afb8dfc"
+    "runner": "f4d8cd2c1aae6866b9e6b07b16e9381da9714e4d09bd524f0fc166278604b544"
   },
   "wall_time_seconds": 3601.9557241250295
 }

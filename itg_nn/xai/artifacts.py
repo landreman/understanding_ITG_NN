@@ -61,7 +61,7 @@ def _git_success(arguments: Sequence[str], cwd: Path) -> bool:
 
 
 def _package_versions() -> dict[str, str]:
-    names = ("itg-nn", "torch", "numpy", "h5py", "captum")
+    names = ("itg-nn", "torch", "numpy", "h5py", "captum", "scipy")
     versions: dict[str, str] = {}
     for name in names:
         try:

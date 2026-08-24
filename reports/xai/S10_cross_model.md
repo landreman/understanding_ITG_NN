@@ -76,6 +76,13 @@ checkpoint SHA-256
 CPU execution, seed 20260823, all 100 member IDs, all 1,000 parent row IDs, and
 **3,601.96 s (60.03 min)** measured wall time. The manifest also records the
 post-run regime audit and updated hashes of the three affected small artifacts.
+The production environment used SciPy 1.13.1 for average-linkage clustering.
+Its compatibility smoke test imported SciPy and completed the real 100-member
+linkage, four-cluster cut, square-distance conversion, and dendrogram calls in
+this registered run. SciPy 1.13.1 is consequently pinned in both the `xai`
+extra and `requirements/xai.lock`; the command-line module imports it only when
+the production clustering path is reached, so core inference and baseline CI
+remain independent of optional XAI packages.
 
 ## Methods
 
