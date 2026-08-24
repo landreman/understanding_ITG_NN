@@ -91,10 +91,10 @@
     "sha256": "9d8fa52f93f2782ad9948a38bf46943c0cd6df78cd08b94a006dad4e06c1c8ad"
   },
   "device": "cpu",
-  "git_commit": "95ab558aaa28b4b388f0901647c6d440deec0c62",
+  "git_commit": "3e80554e3e121ecaa9bff732cd5b261b716b219c",
   "git_dirty": true,
-  "git_tracked_dirty": true,
-  "git_tree": "758c095ec4d3ded5bde980fa0958e028d00bd319",
+  "git_tracked_dirty": false,
+  "git_tree": "595cc53c7038606c684de7b5ee774b3cd2654c2d",
   "gradient_member_ids": [
     "2864601_0.437",
     "2864601_0.371",
@@ -1398,5 +1398,5 @@
     100596
   ],
   "seed": 20260824,
-  "wall_time_seconds": 179.14267966700027
+  "wall_time_seconds": 170.87188633299957
 }

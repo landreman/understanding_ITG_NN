@@ -103,12 +103,12 @@ feature is reported, with no selection on these residuals.
 
 The registered run is `disagreement-all100-panel1000`. Its committed
 [manifest](S11_artifacts/manifest.json) records CPU execution, seed 20260824,
-all 100 member IDs, all 1,000 parent row IDs, and **179.14 s (2.99 min)** wall
+all 100 member IDs, all 1,000 parent row IDs, and **170.87 s (2.85 min)** wall
 time. The dataset SHA-256 is
 `9d8fa52f93f2782ad9948a38bf46943c0cd6df78cd08b94a006dad4e06c1c8ad`;
 the checkpoint SHA-256 is
 `d5e092348514a5ee85b68bcdcf51dbb32eaa344beea1daa28f5aaeba9e86eefb`.
-The production rerun began from commit `95ab558`; its manifest
+The provenance-clean production rerun began from commit `3e80554`; its manifest
 records the exact source hashes and worktree state at launch.
 `git_tracked_dirty` is false. The broader `git_dirty` flag is true only because
 the worktree contains the researcher's pre-existing ignored/untracked `output/`,
@@ -262,7 +262,8 @@ regime values are in
   the required environment and rerunning unchanged passed all 276 tests. After
   the final provenance-clean rerun, two consecutive collection attempts hit the
   same PyTorch import abort; a direct `.venv-xai` import succeeded and the
-  unchanged retry passed all **277 tests**.
+  unchanged retry passed all 277 tests. The final registered uncertainty and
+  equivariance update passed all **278 tests** without a retry.
 - S03 support warning is null for both spread and error.
 - S10 matched-motif activation dispersion is near null when pooled, but has a
   small positive association with both outcomes among unstable rows; the table
@@ -367,7 +368,7 @@ gradients with axes `(member, sample)`, `(sample, z, channel)`, and
 category/regime counts, threshold grid, direct spread/error table, member-level
 symmetry table and signed changes, 84 frozen feature/outcome/regime associations,
 two held-out ridge results, 252 gradient summaries, 606 perturbation summaries,
-class table, atlas, row-level diagnostics, exact hashes, member/row IDs, and 2.99-minute
+class table, atlas, row-level diagnostics, exact hashes, member/row IDs, and 2.85-minute
 wall time are committed under [S11 artifacts](S11_artifacts/). Artifact tests
 recompute counts, schemas, validity tags, exact-shift null behavior, axes, and
 hashes without the external dataset.
