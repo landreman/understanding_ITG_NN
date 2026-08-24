@@ -187,6 +187,40 @@ def test_outlier_trimmed_cka_removes_the_high_joint_norm_row():
     assert trimmed != pytest.approx(MODULE.linear_cka(left, right))
 
 
+def test_regime_mask_assigns_floor_and_threshold_rows_to_stable():
+    import numpy as np
+
+    target = np.asarray([-2.0, -1.9, -1.8])
+    assert MODULE._regime_mask(target, -1.9).tolist() == [True, True, False]
+
+
+def test_panel_covariates_include_native_target_and_both_drives():
+    import numpy as np
+
+    target = np.asarray([-2.0, 0.5])
+    a_lt = np.asarray([1.0, 2.0])
+    a_ln = np.asarray([3.0, 4.0])
+    covariates = MODULE._panel_covariates(target, a_lt, a_ln)
+    assert np.allclose(covariates, [[-2.0, 1.0, 3.0], [0.5, 2.0, 4.0]])
+
+
+def test_concept_profile_keeps_peak_absolute_and_signed_mean_blocks():
+    import numpy as np
+
+    selectivity = np.asarray([[-3.0, 2.0, 1.0], [1.0, -4.0, 3.0]])
+    assert MODULE._concept_profile(selectivity) == pytest.approx([3, 4, 3, -1, -1, 2])
+
+
+def test_probe_representation_flattens_and_standardizes_each_column():
+    import numpy as np
+
+    values = np.asarray([[[4.0, 1.0]], [[4.0, 2.0]], [[4.0, 3.0]]])
+    probe = MODULE._probe_representation(values)
+    assert probe.shape == (3, 1)
+    assert probe.mean(axis=0) == pytest.approx([0.0])
+    assert probe.std(axis=0) == pytest.approx([1.0])
+
+
 def test_acceptance_summary_refuses_missing_lower_rank_comparison():
     summary = {
         "stable_rows": 20,

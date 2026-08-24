@@ -256,7 +256,10 @@ def _apply_regime_causal_gate(
             right_rms = float(np.sqrt(np.mean(np.square(right_values[mask]))))
             smaller_rms = min(left_rms, right_rms)
             if smaller_rms <= 1e-12:
-                raise ValueError("matched causal effect has near-zero RMS in a regime")
+                raise ValueError(
+                    "matched causal effect has near-zero RMS in a regime for "
+                    f"{row['left_unit_id']} and {row['right_unit_id']}"
+                )
             return max(left_rms, right_rms) / smaller_rms
 
         row["causal_effect_rms_magnitude_ratio"] = rms_ratio(
@@ -388,6 +391,34 @@ def _standardize(values: np.ndarray) -> np.ndarray:
     return centered[:, keep] / scale[keep] if np.any(keep) else np.zeros((len(values), 1))
 
 
+def _probe_representation(values: np.ndarray) -> np.ndarray:
+    """Flatten and feature-standardize one representation on the shared probe."""
+
+    return _standardize(np.asarray(values).reshape(len(values), -1))
+
+
+def _regime_mask(target: np.ndarray, stable_threshold: float) -> np.ndarray:
+    """Assign the native floor and threshold rows to the stable regime."""
+
+    return np.asarray(target) <= stable_threshold
+
+
+def _panel_covariates(
+    target: np.ndarray, a_over_lt: np.ndarray, a_over_ln: np.ndarray
+) -> np.ndarray:
+    """Flux and both drives that the matching control must remove."""
+
+    return np.column_stack((target, a_over_lt, a_over_ln))
+
+
+def _concept_profile(selectivity: np.ndarray) -> np.ndarray:
+    """Retain peak absolute and signed mean selectivity for each concept."""
+
+    return np.concatenate(
+        (np.max(np.abs(selectivity), axis=0), np.mean(selectivity, axis=0))
+    )
+
+
 def _outlier_trimmed_cka(left: np.ndarray, right: np.ndarray) -> tuple[float, int]:
     """Recompute CKA after dropping the 5% largest joint representation norms."""
 
@@ -501,7 +532,7 @@ def run(args: argparse.Namespace) -> Path:
     if panel.actual_log_heat_flux is None:
         raise RuntimeError("native varied-gradient targets were not loaded")
     target = panel.actual_log_heat_flux.numpy().astype(np.float64)
-    stable = target <= float(resolved["stable_threshold_log_Q"])
+    stable = _regime_mask(target, float(resolved["stable_threshold_log_Q"]))
     if not stable.any() or stable.all():
         raise RuntimeError("both output regimes are required")
     with h5py.File(dataset, "r") as handle:
@@ -562,7 +593,7 @@ def run(args: argparse.Namespace) -> Path:
         effect = mean_replacement_effects(bottleneck, head)
         effect_signature = _effect_signature(effect, stable)
         selectivity = _correlation(bottleneck, concept_values)
-        profile = np.concatenate((np.max(np.abs(selectivity), axis=0), np.mean(selectivity, axis=0)))
+        profile = _concept_profile(selectivity)
         if density_chunks:
             density = np.concatenate(density_chunks).astype(np.float64)
             aux = np.column_stack((selectivity, _density_signature(density)))
@@ -573,8 +604,12 @@ def run(args: argparse.Namespace) -> Path:
         with torch.inference_mode():
             maps = invariant_layer_maps(member, cka_geometry)
         for layer, values in enumerate(maps):
-            layer_representations[layer].append(_standardize(values.cpu().numpy().reshape(len(cka_indices), -1)))
-        layer_representations[5].append(_standardize(bottleneck[cka_indices]))
+            layer_representations[layer].append(
+                _probe_representation(values.cpu().numpy())
+            )
+        layer_representations[5].append(
+            _probe_representation(bottleneck[cka_indices])
+        )
         gradients = _member_attribution(
             member,
             panel.geometry[attribution_indices], panel.a_over_lt[attribution_indices], panel.a_over_ln[attribution_indices],
@@ -610,7 +645,9 @@ def run(args: argparse.Namespace) -> Path:
     unit_match_rows: list[dict[str, Any]] = []
     accepted_edges: list[dict[str, Any]] = []
     top_count = min(int(resolved["top_members"]), len(member_ids))
-    covariates = np.column_stack((target, panel.a_over_lt.numpy(), panel.a_over_ln.numpy()))
+    covariates = _panel_covariates(
+        target, panel.a_over_lt.numpy(), panel.a_over_ln.numpy()
+    )
     for left in range(top_count):
         for right in range(left + 1, top_count):
             assert auxiliary[left] is not None and auxiliary[right] is not None

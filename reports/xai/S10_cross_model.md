@@ -98,12 +98,14 @@ recorded separately as `postprocessing.reproduction_source_hashes` and
 incur the historical wall time. This separation prevents later code from being
 misrepresented as the code that executed the registered run.
 The manifest also states that its committed `output_hashes` describe the
-post-review reproduction artifacts, updated at `2026-08-24T05:29:29Z`, while
+post-review reproduction artifacts, updated at `2026-08-24T05:55:28Z`, while
 the 3,601.96 s wall time applies only to the original all-100 member-signature
 and CKA execution before table enrichment. It is intentionally a disclosed
 historical-plus-reproduction record, not the output of one command invocation.
-The runner now emits all three disclosure fields itself, so a future full run
-cannot silently drop them.
+The runner now emits all three disclosure keys itself, so a future full run
+cannot silently drop the disclosure fields. The committed values remain
+hand-maintained because this manifest is a historical-plus-reproduction hybrid;
+a new full run would emit values describing that single new invocation.
 The production environment used SciPy 1.13.1 for average-linkage clustering.
 Its compatibility smoke test imported SciPy and completed the real 100-member
 linkage, four-cluster cut, square-distance conversion, and dendrogram calls in
@@ -315,6 +317,13 @@ ordering, five-quantile member profiles, and removal of constant columns during
 standardization. Each corresponding mutation turns its named test red. A zero
 RMS in either output regime now raises rather than serializing non-standard
 `Infinity` into `summary.json`.
+
+A sixth review found the final untested layer: how `run()` connected those
+helpers. Four extracted wiring toys now require the native flux target plus both
+drives in the residualization covariates, per-column probe standardization, the
+`<= -1.9` stable/near-floor convention, and peak-absolute plus signed-mean
+concept profiles. Dropping or reversing any of those connections turns its
+named test red.
 
 The manifest source-identity assertions live in a separately named tripwire
 test. They force provenance to be refreshed after any runner edit, but are not
