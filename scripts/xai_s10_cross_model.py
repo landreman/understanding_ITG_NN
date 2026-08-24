@@ -428,6 +428,34 @@ def _attribution_profile(gradients: np.ndarray, stable: np.ndarray) -> np.ndarra
     )
 
 
+def _regime_edge_similarity(row: dict[str, Any]) -> float:
+    """Weight motif edges by the weaker output regime, never the better one."""
+
+    return min(
+        float(row["causal_effect_similarity_stable_or_near_floor"]),
+        float(row["causal_effect_similarity_unstable"]),
+    )
+
+
+def _member_evidence_blocks(
+    predictions: Sequence[np.ndarray],
+    attribution_profiles: Sequence[np.ndarray],
+    causal_profiles: Sequence[np.ndarray],
+    concept_profiles: Sequence[np.ndarray],
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """The four registered evidence families used for member comparison."""
+
+    return tuple(
+        np.asarray(values)
+        for values in (
+            predictions,
+            attribution_profiles,
+            causal_profiles,
+            concept_profiles,
+        )
+    )
+
+
 def _outlier_trimmed_cka(left: np.ndarray, right: np.ndarray) -> tuple[float, int]:
     """Recompute CKA after dropping the 5% largest joint representation norms."""
 
@@ -707,10 +735,7 @@ def run(args: argparse.Namespace) -> Path:
         {
             "left": row["left_unit_id"], "right": row["right_unit_id"],
             "recurrence": row["equilibrium_bootstrap_recurrence"],
-            "causal_similarity": min(
-                row["causal_effect_similarity_stable_or_near_floor"],
-                row["causal_effect_similarity_unstable"],
-            ),
+            "causal_similarity": _regime_edge_similarity(row),
         }
         for row in unit_match_rows if row["consensus_gate"]
     ]
@@ -787,10 +812,11 @@ def run(args: argparse.Namespace) -> Path:
                 })
         print(f"S10 CKA layer {layer + 1}/6", flush=True)
 
-    distance = member_distance_matrix((
-        np.asarray(predictions), np.asarray(attribution_profiles),
-        np.asarray(causal_profiles), np.asarray(concept_profiles),
-    ))
+    distance = member_distance_matrix(
+        _member_evidence_blocks(
+            predictions, attribution_profiles, causal_profiles, concept_profiles
+        )
+    )
     try:
         from scipy.cluster.hierarchy import dendrogram, fcluster, linkage
         from scipy.spatial.distance import squareform

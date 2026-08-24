@@ -98,7 +98,7 @@ recorded separately as `postprocessing.reproduction_source_hashes` and
 incur the historical wall time. This separation prevents later code from being
 misrepresented as the code that executed the registered run.
 The manifest also states that its committed `output_hashes` describe the
-post-review reproduction artifacts, updated at `2026-08-24T06:21:19Z`, while
+post-review reproduction artifacts, updated at `2026-08-24T07:52:43Z`, while
 the 3,601.96 s wall time applies only to the original all-100 member-signature
 and CKA execution before table enrichment. It is intentionally a disclosed
 historical-plus-reproduction record, not the output of one command invocation.
@@ -184,6 +184,9 @@ sensitivity interval, not a precise 95% confidence interval: median interval
 width grows from 0.030 in layer 1 to 0.165 at the bottleneck, and the maximum
 bottleneck width is 0.320. The exact point estimates use all 64 probe rows.
 Removing the 5% highest joint-norm rows per pair supplies the outlier check.
+Because the registered probe has one tube per equilibrium, equilibrium-grouped
+CKA resampling is distributionally a row bootstrap here; the grouping remains
+explicit so the helper is safe on future multi-tube cohorts.
 
 ### Member clustering
 
@@ -344,6 +347,12 @@ toy pins the absolute normalization. A 2×2 score matrix where greedy matching
 collides now requires the globally optimal, distinct right-unit assignment.
 Deleting column-count normalization or replacing the Hungarian assignment with
 row-wise nearest neighbors turns the corresponding test red.
+
+A tenth review found the two final post-loop assemblies. The motif edge helper
+now requires the weaker of the stable and unstable similarities, and the member
+evidence helper requires predictions, input attributions, causal signatures,
+and concept profiles exactly once each. Replacing `min` by `max`, or dropping or
+duplicating a family, turns the corresponding named test red.
 
 The manifest source-identity assertions live in a separately named tripwire
 test. They force provenance to be refreshed after any runner edit, but are not

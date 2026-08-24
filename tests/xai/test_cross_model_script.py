@@ -221,6 +221,24 @@ def test_attribution_profile_keeps_signed_absolute_and_regime_blocks():
     )
 
 
+def test_regime_edge_similarity_uses_the_weaker_output_regime():
+    row = {
+        "causal_effect_similarity_stable_or_near_floor": 0.95,
+        "causal_effect_similarity_unstable": 0.40,
+    }
+    assert MODULE._regime_edge_similarity(row) == pytest.approx(0.40)
+
+
+def test_member_evidence_blocks_keep_all_four_registered_families():
+    import numpy as np
+
+    families = tuple(np.full((3, 1), value) for value in (1, 2, 3, 4))
+    blocks = MODULE._member_evidence_blocks(*families)
+    assert len(blocks) == 4
+    assert [len(block) for block in blocks] == [3, 3, 3, 3]
+    assert [float(block[0, 0]) for block in blocks] == [1, 2, 3, 4]
+
+
 def test_probe_representation_flattens_and_standardizes_each_column():
     import numpy as np
 
