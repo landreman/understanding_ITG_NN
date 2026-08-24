@@ -123,15 +123,17 @@ def test_runner_gradient_summary_applies_scale_and_keeps_regimes_separate():
 
 def test_runner_keeps_spread_native_and_member_symmetry_before_cancellation():
     predictions = np.asarray([[0.0, 2.0], [2.0, 4.0]])
+    target = np.asarray([0.5, 5.0])
     signed = np.asarray([[1.0, -3.0], [-1.0, 1.0]])
-    spread = _module().ensemble_spread(predictions)
-    member_absolute = np.abs(signed).mean(axis=0)
+    spread, residuals, mean, error, member_absolute = _module()._native_row_diagnostics(
+        predictions, target, signed
+    )
     np.testing.assert_allclose(spread, [1.0, 1.0])
+    np.testing.assert_allclose(residuals, [[-0.5, -3.0], [1.5, -1.0]])
+    np.testing.assert_allclose(mean, [1.0, 3.0])
+    np.testing.assert_allclose(error, [0.5, 2.0])
     np.testing.assert_allclose(member_absolute, [1.0, 2.0])
     assert member_absolute[0] > abs(signed[:, 0].mean())
-    source = SCRIPT.read_text(encoding="utf-8")
-    assert "spread = ensemble_spread(predictions)" in source
-    assert "symmetry_member_mean_absolute = np.abs(original_shift_signed).mean(axis=0)" in source
 
 
 def test_runner_perturbation_summary_keeps_exact_symmetry_null():

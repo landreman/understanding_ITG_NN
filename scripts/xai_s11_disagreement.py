@@ -414,6 +414,18 @@ def _perturbation_summary(
     return rows
 
 
+def _native_row_diagnostics(
+    predictions: np.ndarray, target: np.ndarray, original_shift_signed: np.ndarray
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """Compute native ensemble diagnostics without cancelling member shift magnitudes."""
+    spread = ensemble_spread(predictions)
+    residuals = member_residuals(predictions, target)
+    ensemble_mean = predictions.mean(axis=0)
+    ensemble_error = np.abs(ensemble_mean - target)
+    member_symmetry = np.abs(original_shift_signed).mean(axis=0)
+    return spread, residuals, ensemble_mean, ensemble_error, member_symmetry
+
+
 def _crossfit_rows(
     features: Mapping[str, np.ndarray],
     classes: np.ndarray,
@@ -618,10 +630,9 @@ def run(args: argparse.Namespace) -> Path:
         models, member_ids, panel.geometry, panel.a_over_lt, panel.a_over_ln,
         batch_size=int(resolved["batch_size"]), device=ensemble.device,
     )
-    spread = ensemble_spread(predictions)
-    residuals = member_residuals(predictions, target)
-    ensemble_mean = predictions.mean(axis=0)
-    ensemble_error = np.abs(ensemble_mean - target)
+    spread, residuals, ensemble_mean, ensemble_error, _ = _native_row_diagnostics(
+        predictions, target, np.zeros((1, predictions.shape[1]), dtype=np.float64)
+    )
     categories = failure_categories(
         spread, ensemble_error,
         high_spread_threshold=float(resolved["high_spread_threshold_native"]),
@@ -644,7 +655,9 @@ def run(args: argparse.Namespace) -> Path:
     original_shifted = _predict(models, original_ids, exact_geometry, panel.a_over_lt, panel.a_over_ln, batch_size=int(resolved["batch_size"]), device=ensemble.device, original=True)
     original_shift_signed = original_shifted - original_reference
     symmetry_error = np.abs(original_shift_signed.mean(axis=0))
-    symmetry_member_mean_absolute = np.abs(original_shift_signed).mean(axis=0)
+    _, _, _, _, symmetry_member_mean_absolute = _native_row_diagnostics(
+        predictions, target, original_shift_signed
+    )
     diagnostic_features = {
         "support_warning_score": support_warning,
         "a_over_lt": panel.a_over_lt.numpy().astype(np.float64),
