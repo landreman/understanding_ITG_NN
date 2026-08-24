@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 
 import h5py
+import numpy as np
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -135,3 +136,7 @@ def test_member_symmetry_and_spread_error_diagnostics_are_published():
     assert len({row["member_id"] for row in signed}) == 10
     assert {row["function"] for row in signed} == {"original_f"}
     assert {row["validity"] for row in signed} == {"exact_symmetry"}
+    changes = np.asarray([float(row["signed_change_native"]) for row in signed])
+    absolute = np.asarray([float(row["absolute_change_native"]) for row in signed])
+    assert changes.min() < 0 < changes.max()
+    np.testing.assert_allclose(absolute, np.abs(changes))

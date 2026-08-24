@@ -138,6 +138,11 @@ def test_spread_error_association_reports_rank_and_linear_grouped_ranges_by_regi
     assert {row["resampling_unit"] for row in rows} == {"equilibrium_files"}
     assert all(row["spearman_interval_lower"] <= row["spearman"] <= row["spearman_interval_upper"] for row in rows)
     assert all(row["pearson_interval_lower"] <= row["pearson"] <= row["pearson_interval_upper"] for row in rows)
+    np.testing.assert_allclose(
+        [rows[0]["spearman_interval_lower"], rows[0]["spearman_interval_upper"],
+         rows[0]["pearson_interval_lower"], rows[0]["pearson_interval_upper"]],
+        [0.8, 1.0, 0.8753582466450451, 0.9708723126837387],
+    )
 
 
 def test_diagnostic_table_reports_every_frozen_feature_without_confidence_language():

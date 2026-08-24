@@ -121,6 +121,19 @@ def test_runner_gradient_summary_applies_scale_and_keeps_regimes_separate():
     assert selected["unstable"]["mean_absolute_robust_scaled_gradient"] == 6.0
 
 
+def test_runner_keeps_spread_native_and_member_symmetry_before_cancellation():
+    predictions = np.asarray([[0.0, 2.0], [2.0, 4.0]])
+    signed = np.asarray([[1.0, -3.0], [-1.0, 1.0]])
+    spread = _module().ensemble_spread(predictions)
+    member_absolute = np.abs(signed).mean(axis=0)
+    np.testing.assert_allclose(spread, [1.0, 1.0])
+    np.testing.assert_allclose(member_absolute, [1.0, 2.0])
+    assert member_absolute[0] > abs(signed[:, 0].mean())
+    source = SCRIPT.read_text(encoding="utf-8")
+    assert "spread = ensemble_spread(predictions)" in source
+    assert "symmetry_member_mean_absolute = np.abs(original_shift_signed).mean(axis=0)" in source
+
+
 def test_runner_perturbation_summary_keeps_exact_symmetry_null():
     reference = np.asarray([[1.0, 2.0], [3.0, 4.0]])
     rows = _module()._perturbation_summary(
@@ -132,6 +145,19 @@ def test_runner_perturbation_summary_keeps_exact_symmetry_null():
     )
     assert all(row["rms_change_native"] == 0.0 for row in rows)
     assert {row["validity"] for row in rows} == {"exact_symmetry"}
+    edited = reference + np.asarray([[1.0, -1.0], [2.0, -2.0]])
+    changed = _module()._perturbation_summary(
+        reference,
+        {"known": edited},
+        {"known": _module().ValidityTag.OFF_MANIFOLD},
+        np.asarray([True, False]),
+        ("m0", "m1"),
+    )
+    member_all = [row for row in changed if row["outcome"] == "member_native_prediction" and row["regime"] == "all"]
+    assert [row["signed_mean_change_native"] for row in member_all] == [0.0, 0.0]
+    np.testing.assert_allclose([row["rms_change_native"] for row in member_all], [1.0, 2.0])
+    stable_m0 = next(row for row in changed if row["member_id"] == "m0" and row["regime"] == "stable_or_near_floor")
+    assert stable_m0["signed_mean_change_native"] == 1.0
 
 
 def test_runner_motif_and_concept_dispersion_helpers_are_finite(tmp_path):

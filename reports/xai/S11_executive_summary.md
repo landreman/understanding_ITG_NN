@@ -33,6 +33,8 @@ variation in disagreement, but only **9.7%** of the variation in actual error.
 “Held out” means whole
 equilibria were kept away from model fitting and used only for evaluation, which
 prevents near-duplicate tubes from making the score look better than it is.
+On this panel each equilibrium contributes exactly one flux tube, so grouping is
+a safeguard for the method rather than a numerical correction to these scores.
 
 The practical lesson is asymmetric:
 
