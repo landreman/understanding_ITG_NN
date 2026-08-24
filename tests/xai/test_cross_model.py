@@ -13,7 +13,12 @@ from itg_nn.xai.cross_model import (
     member_distance_matrix,
     residualize_against_covariates,
 )
-from itg_nn.xai.cross_model import _group_bootstrap_row_weights
+from itg_nn.xai.cross_model import (
+    _column_correlation,
+    _group_bootstrap_row_weights,
+    _row_cosine,
+    _weighted_column_correlation,
+)
 
 
 def _cyclic_toy(seed: int = 4):
@@ -144,6 +149,36 @@ def test_group_bootstrap_gives_sibling_tubes_identical_multiplicity():
     assert weights[0] == weights[1]
     assert weights[3] == weights[4] == weights[5]
     assert weights.sum() > 0
+
+
+def test_weighted_column_correlation_uses_bootstrap_multiplicities():
+    left = np.asarray([[-1.0], [-1.0], [1.0], [1.0]])
+    right = np.asarray([[-1.0], [1.0], [-1.0], [1.0]])
+    equal = _weighted_column_correlation(left, right, np.ones(4))[0, 0]
+    lopsided = _weighted_column_correlation(
+        left, right, np.asarray([10.0, 1.0, 1.0, 1.0])
+    )[0, 0]
+    assert equal == 0.0
+    assert np.isclose(lopsided, 9.0 / 22.0)
+
+
+def test_column_correlation_is_invariant_to_per_unit_offsets():
+    left = np.asarray([[0.0, 2.0], [1.0, -1.0], [3.0, 4.0], [6.0, 0.0]])
+    right = np.asarray([[1.0, -2.0], [0.0, 3.0], [5.0, 1.0], [2.0, 7.0]])
+    expected = _column_correlation(left, right)
+    shifted = _column_correlation(left + np.asarray([100.0, -30.0]), right)
+    assert np.allclose(shifted, expected)
+
+
+def test_row_cosine_is_invariant_to_positive_signature_scales():
+    left = np.asarray([[1.0, 2.0, -1.0], [2.0, -1.0, 3.0]])
+    right = np.asarray([[3.0, 0.0, 1.0], [-2.0, 4.0, 1.0]])
+    expected = _row_cosine(left, right)
+    rescaled = _row_cosine(
+        left * np.asarray([[1000.0], [0.01]]),
+        right * np.asarray([[7.0], [50.0]]),
+    )
+    assert np.allclose(rescaled, expected)
 
 
 def test_native_signed_ablation_is_not_exponentiated_and_keeps_regimes():

@@ -360,6 +360,14 @@ unchanged. A paired CKA helper must emit both the untrimmed point and the
 independently trimmed result, which differ on a high-norm-row toy. Deleting
 centering or copying the point into the trimmed field turns its named test red.
 
+A twelfth review reached the three remaining shared-library similarity
+primitives. A lopsided-weight toy now requires weighted correlation to change
+from 0 to 9/22; offsetting either activation column must leave ordinary
+correlation unchanged; and independently scaling each unit signature must leave
+row-wise cosine similarity unchanged. Replacing bootstrap multiplicities by
+ones, deleting correlation centering, or deleting cosine normalization turns
+the corresponding named test red.
+
 The manifest source-identity assertions live in a separately named tripwire
 test. They force provenance to be refreshed after any runner edit, but are not
 counted as evidence that a scientific mutation is caught; the mutation results
