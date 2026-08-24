@@ -10,10 +10,19 @@ whole-equilibrium resample interval 0.730–0.794) and Pearson correlation
 rows (**0.829**) than unstable rows (**0.575**). Median all-100-member population
 standard deviation was **0.1049 native units**, while median absolute error of
 the ensemble mean was **0.0942**. Separately, a five-fold equilibrium-held-out
-ridge model using every diagnostic frozen in the S11 config explained **42.5%**
-of spread variation but only **9.68%** of absolute-error variation. Thus spread
+ridge model using every diagnostic frozen in the S11 config gave registered-split
+held-out (R^2) values of 0.425 for spread and 0.0968 for error. Across 50
+grouped fold assignments, the medians and 95% split-sensitivity ranges were
+**0.413 [0.385, 0.428]** and **0.0948 [0.0558, 0.113]**, respectively; the ranges
+do not overlap. Thus spread
 contains useful error-ranking information, while neither spread nor the frozen
 diagnostics provide a calibrated error bar.
+
+Direct calibration diagnostics show why the numerical spread is not an error
+bar. Absolute error exceeds spread on **44.9%** of rows. From the lowest to
+highest spread quintile, mean absolute error divided by mean spread is **0.657,
+1.157, 1.421, 1.539, and 1.537**: above the lowest quintile, spread increasingly
+understates the typical error.
 
 The fixed pre-run thresholds identify **8/1,000 (0.8%) common-mode failures**:
 rows with all-member spread below 0.15 but ensemble absolute error at least 0.5
@@ -94,12 +103,12 @@ feature is reported, with no selection on these residuals.
 
 The registered run is `disagreement-all100-panel1000`. Its committed
 [manifest](S11_artifacts/manifest.json) records CPU execution, seed 20260824,
-all 100 member IDs, all 1,000 parent row IDs, and **2,895.00 s (48.25 min)** wall
+all 100 member IDs, all 1,000 parent row IDs, and **179.14 s (2.99 min)** wall
 time. The dataset SHA-256 is
 `9d8fa52f93f2782ad9948a38bf46943c0cd6df78cd08b94a006dad4e06c1c8ad`;
 the checkpoint SHA-256 is
 `d5e092348514a5ee85b68bcdcf51dbb32eaa344beea1daa28f5aaeba9e86eefb`.
-The provenance-clean production rerun began from commit `0073f9b`; its manifest
+The production rerun began from commit `95ab558`; its manifest
 records the exact source hashes and worktree state at launch.
 `git_tracked_dirty` is false. The broader `git_dirty` flag is true only because
 the worktree contains the researcher's pre-existing ignored/untracked `output/`,
@@ -132,6 +141,13 @@ member-residual signed means agree across all ten members on channels 0
 and 6 (10/10 positive), but split on channels 3 (6/10 positive) and 5 (5/10
 positive). This is evidence of opposing local strategies, not yet the task-4
 cancellation test deferred below.
+
+For a fixed 17-point joint shift on 64 registered rows, the canonical spread-
+gradient explanation has median per-map equivariance RMS error **7.17e-9**
+(maximum pointwise error 1.59e-6) against reference-map RMS 0.00483. The top-10
+member-residual gradients have median error **2.78e-9** (maximum 2.38e-7)
+against RMS 0.0601. Both prediction invariance and explanation equivariance are
+therefore at float32 roundoff.
 
 ### Supported perturbations
 
@@ -183,8 +199,10 @@ The multivariable diagnostic is a five-fold ridge regression (a linear model
 whose coefficients are shrunk to reduce instability), with feature scaling
 learned inside each training fold and whole equilibria held out. It uses every
 frozen feature plus equilibrium-class indicators and fixed penalty 1.0. Its
-held-out results are spread \(R^2=0.425\), MAE 0.0559 native units; absolute-
-error \(R^2=0.0968\), MAE 0.156. No model or feature was chosen using these
+registered-split results are spread \(R^2=0.425\), MAE 0.0559 native units;
+absolute-error \(R^2=0.0968\), MAE 0.156. Over 50 grouped fold assignments,
+spread has median \(R^2=0.413\) (0.385–0.428) and error 0.0948 (0.0558–0.113).
+The gap survives every split. No model or feature was chosen using these
 held-out residuals.
 
 ## Output-regime and class differences
@@ -249,8 +267,8 @@ regime values are in
 - S10 matched-motif activation dispersion is near null when pooled, but has a
   small positive association with both outcomes among unstable rows; the table
   covers eight motifs in the top 10 members and is not multiplicity-adjusted.
-- The frozen multivariable diagnostics explain only 9.68% of held-out absolute-
-  error variation.
+- The frozen multivariable diagnostics explain a median 9.48% of held-out
+  absolute-error variation across splits (5.58–11.3%).
 - `Q_stds` reverses association sign between output regimes.
 - Common-mode failures exist despite low all-member spread.
 
@@ -272,6 +290,14 @@ canonical native function failed all four prediction values in the canonical-
 path fixture; bypassing robust channel scaling at the runner call site failed
 the stable-regime scaled-gradient assertion (1.0 instead of 2.0).
 
+Later review-driven guards were also demonstrated red and reverted: exponentiating
+native member predictions before computing spread; replacing
+`mean(abs(member shift))` with `abs(mean(member shift))`; flipping the signed
+perturbation difference; resampling rows instead of whole equilibria in the
+paired spread/error interval; dropping the member-level signed-change column;
+and breaking the exact shifted-map equivariance relation. Each changes a
+published estimand or its uncertainty rather than merely formatting output.
+
 ## Acceptance criteria
 
 | PLAN criterion | Verdict | Number or artifact |
@@ -291,6 +317,14 @@ The primary 8-row count is accompanied by the [±20% threshold grid](S11_artifac
   faithful strategies.** Signed member gradients expose candidate disagreement
   on channels 3 and 5, but faithfulness-conditioned cancellation needs a
   separately tested analysis. No cancellation conclusion is made here.
+- **Contribution-valued attribution comparison.** S11 reports robust-scaled
+  dimensionless local sensitivities, but not an integrated-gradient-style
+  attribution whose contributions sum to a prediction change. Cross-family
+  agreement is not claimed.
+- **Original-versus-canonical position-resolved comparison.** S11 uses the
+  original function only for the registered residual-symmetry diagnostic and
+  does not publish the full position-resolved (f_m-\tilde f_m) map comparison.
+  That contract item remains deferred rather than silently treated as complete.
 
 Nothing from the MVD was dropped.
 
@@ -319,6 +353,10 @@ direct spread/error Pearson and Spearman associations, `Q_stds`, scalar
 covariates, both original-function symmetry summaries and their 10,000 signed
 member changes, motif/concept dispersion, grouped associations, cross-fit
 results, threshold sensitivity, and both perturbations.
+The all-100 spread-gradient map and all 21 channel/regime summaries are also
+recomputable directly on the 1,000 slice rows in about two minutes; shift the
+input and gradient map together by 17 points to reproduce
+`gradient_equivariance.csv`.
 The exact 16 committed parent IDs in
 `selected_review_diagnostics.h5` provide the practical gradient proxy: compare
 all-100 predictions and spread gradients plus top-10 signed member-residual
@@ -329,7 +367,7 @@ gradients with axes `(member, sample)`, `(sample, z, channel)`, and
 category/regime counts, threshold grid, direct spread/error table, member-level
 symmetry table and signed changes, 84 frozen feature/outcome/regime associations,
 two held-out ridge results, 252 gradient summaries, 606 perturbation summaries,
-class table, atlas, row-level diagnostics, exact hashes, member/row IDs, and 48.25-minute
+class table, atlas, row-level diagnostics, exact hashes, member/row IDs, and 2.99-minute
 wall time are committed under [S11 artifacts](S11_artifacts/). Artifact tests
 recompute counts, schemas, validity tags, exact-shift null behavior, axes, and
 hashes without the external dataset.
@@ -342,6 +380,6 @@ spread and error; agreement would show the null is not peculiar to the
 unavailable support cohort, but cannot reproduce the registered digits. The
 full signed `member_level_diagnostics.h5` and 200,000 signed perturbation rows
 are git-ignored; the 16-row HDF5 proxy checks their axes, signs, native units,
-and direct-autograd wiring but not every archived byte. Recomputing the full
-all-100/1,000-row gradient took 48.25 CPU minutes and is too expensive for an
-ordinary automated review.
+and direct-autograd wiring but not every archived byte. The manifest wall time
+is for the whole production workflow, not the gradient alone; the gradient and
+channel headline belong to the recomputable list above.

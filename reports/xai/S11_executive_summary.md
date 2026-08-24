@@ -28,8 +28,10 @@ On the frozen 1,000-equilibrium panel, median ensemble spread was **0.105 native
 units** and median absolute prediction error was **0.094**. Their rank
 correlation is **0.761** overall: rows with more disagreement usually have more
 error. It is **0.829** on stable/near-floor rows but only **0.575** on unstable
-rows. A separate held-out linear diagnostic explained **42.5%** of the row-to-row
-variation in disagreement, but only **9.7%** of the variation in actual error.
+rows. Across 50 ways of dividing whole equilibria into training and evaluation
+groups, a separate held-out linear diagnostic explained a median **41.3%**
+(38.5–42.8%) of disagreement variation, but only **9.5%** (5.6–11.3%) of actual-
+error variation. The ranges never overlap.
 “Held out” means whole
 equilibria were kept away from model fitting and used only for evaluation, which
 prevents near-duplicate tubes from making the score look better than it is.
@@ -45,6 +47,11 @@ The practical lesson is asymmetric:
 
 So spread is useful for ranking cases for attention, but its numerical value
 should not be read as an error bar.
+
+The scale mismatch is direct: absolute error is larger than spread on **44.9%**
+of rows. Across five equal-sized groups from lowest to highest spread, typical
+error divided by typical spread rises from **0.66** to **1.16, 1.42, 1.54, and
+1.54**. Except in the lowest group, spread understates typical error.
 
 ## Shared failures exist
 
@@ -85,6 +92,9 @@ This is a warning flag, not a causal explanation. It may identify geometries
 that are simply harder for the trained architecture. As a control, shifting the
 canonical model changes its ensemble spread by only **2.1e-8 native units**,
 effectively numerical zero.
+The explanation maps themselves also shift correctly: under a 17-point shift,
+both the spread-gradient and member-residual-gradient maps agree with their
+shifted originals to numerical roundoff.
 
 The variation of the GX simulation in time, recorded as `Q_stds`, gives a mixed
 result. For stable or near-floor cases, more simulation variability goes with

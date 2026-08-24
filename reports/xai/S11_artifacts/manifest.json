@@ -16,6 +16,7 @@
     "checkpoint": "models/cyclic_ensemble_pre2.pt",
     "cohorts": "reports/xai/S01_artifacts/cohorts.json",
     "crossfit_folds": 5,
+    "crossfit_repeats": 50,
     "crossfit_ridge_alpha": 1.0,
     "dataset": "/Users/mattland/20260523-01-files_for_Kosmos_interpreting_neural_networks/20250102-01_GX_stellarator_dataset.h5",
     "device": "cpu",
@@ -36,6 +37,8 @@
       "rho",
       "aspect_over_rho"
     ],
+    "equivariance_rows": 64,
+    "equivariance_shift": 17,
     "estimand": "native max(log Q, -2)",
     "feature_selection": "none_frozen_before_residual_analysis",
     "gradient_members": 10,
@@ -49,6 +52,8 @@
     "pilot": {
       "batch_size": 8,
       "bootstrap_replicates": 50,
+      "crossfit_repeats": 10,
+      "equivariance_rows": 16,
       "gradient_members": 3,
       "gradient_rows": 64,
       "members": 3,
@@ -64,9 +69,9 @@
     "run_id": "disagreement-all100-panel1000",
     "seed": 20260824,
     "source_hashes": {
-      "config": "5663bb04c05475a087a4f0850de2843706be2142099220fb8414de7b7db1cf65",
+      "config": "089cb95ffe82f09d71aeaf681f827af8df5f6fb5185640efb2023947cc8e8dba",
       "library": "431b60d6fd0180e99bfaea49a348db08f6f6c2f31ba25a34a92ee01ef1319e58",
-      "runner": "f704fc7be3d04cbc55a83d3436ac76832b0c8152843c79796f2e4d561a97475b"
+      "runner": "82c7b2b024006c4c7ddc60516e583819a78e00d61c4308831fd6b3c0f44ba0d6"
     },
     "stable_threshold_log_Q": -1.9,
     "step": "S11",
@@ -86,10 +91,10 @@
     "sha256": "9d8fa52f93f2782ad9948a38bf46943c0cd6df78cd08b94a006dad4e06c1c8ad"
   },
   "device": "cpu",
-  "git_commit": "0073f9bd9ffe8507605c08d444e755d7044c79a4",
+  "git_commit": "95ab558aaa28b4b388f0901647c6d440deec0c62",
   "git_dirty": true,
-  "git_tracked_dirty": false,
-  "git_tree": "9d8ec7ee412a84e3c8497543896af91300fae8a2",
+  "git_tracked_dirty": true,
+  "git_tree": "758c095ec4d3ded5bde980fa0958e028d00bd319",
   "gradient_member_ids": [
     "2864601_0.437",
     "2864601_0.371",
@@ -340,12 +345,13 @@
     "2864601_0.379"
   ],
   "output_hashes": {
-    "crossfit_diagnostics.csv": "ba6c03ec5caaa9fb96d3e8070e879bc83415e0ebbeacfc1dfcb18735ea2befa2",
+    "crossfit_diagnostics.csv": "1199a9407a588b775d6b4e588b7a83cba66c0cccfc0d811ea6d80023e1139ca9",
     "diagnostic_associations.csv": "b3e16d4e86551260a22265183057562655fdf0e9d4bd3e501c24db1b43f37f50",
     "equilibrium_class_diagnostics.csv": "70ea048a44784f6576555a31ad8daf88a18a548fa7535878e9f54153f3343ed1",
     "failure_atlas.png": "210a5117d5d8a018e3f1cec93859c54b761577d04802708adc53a9dce51d63cf",
     "failure_categories.csv": "c618bc537192a0a82b5b5778e062c7ae42684f9b8f80f5046161f70b12345be0",
     "failure_threshold_sensitivity.csv": "f3cf5aa319a0964dcf20ed690af83e7c895b6c3b752a1756a1b2fb544a9f92e8",
+    "gradient_equivariance.csv": "69d0e28cff112268de715cd123b2968f68eab0ed368762274b0671d6e1fd3038",
     "gradient_summary.csv": "00c1e5f9412b3991d6c150857b2b631b27d56d06701bf17478358b2b6be2f6ce",
     "member_level_diagnostics.h5": "a7852dd6a3c19a45a02b533265b277e5c5e632afc40b209cc2b1b562b42a6a07",
     "member_symmetry_associations.csv": "d2714300ff6505473713d5d039c36d8c43d7a1f7996b316dd2cffb637b55dc07",
@@ -354,8 +360,9 @@
     "selected_review_diagnostics.h5": "24f57193998b0672014310afa3605cf8ca097abd41afea475a9660673c3441e0",
     "signed_member_symmetry_changes.csv": "ffd2e3206570c1f669eeb74b41a46fc1e890c4d02b3714f6e57f645954f283b2",
     "signed_perturbation_effects.csv": "5264a258fcacb71671856de005bea52ddce742ffd3094331913b7be7fe6c0633",
+    "spread_calibration.csv": "a54e2d668f3c252435645fc6c88123be543f7805b9093ee3ab24e7783e2104e6",
     "spread_error_associations.csv": "40aba2a90ad2433b5586b4aa7d5ccf0283105f64aa452e6fa1db1e9880b50a8b",
-    "summary.json": "8d06f87697b6de7cff3e1f4b0b9e072c806c1e856105dfbfb0b4a3303b907728"
+    "summary.json": "84aa0693b979df6c7f0663803c7b8057e449048122e199bfe803db6f1827ab42"
   },
   "package_versions": {
     "captum": "0.9.0",
@@ -1391,5 +1398,5 @@
     100596
   ],
   "seed": 20260824,
-  "wall_time_seconds": 2895.0024492910015
+  "wall_time_seconds": 179.14267966700027
 }
