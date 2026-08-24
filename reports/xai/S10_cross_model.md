@@ -331,6 +331,13 @@ signed-unstable, absolute-stable, and absolute-unstable channel means in that
 order. Pooling regimes, deleting magnitude blocks, or copying signed values
 into the magnitude blocks turns the same named test red.
 
+An eighth review reached the two shared-library paths on which S10 depends.
+A two-block 1000× scale toy now requires `member_distance_matrix` to be
+invariant to each evidence block's natural scale. A grouped label-only toy now
+requires bootstrap recurrence below 0.1 after weighted flux residualization;
+skipping that residualization produces recurrence 1.0. Both mutations turn
+their named library tests red.
+
 The manifest source-identity assertions live in a separately named tripwire
 test. They force provenance to be refreshed after any runner edit, but are not
 counted as evidence that a scientific mutation is caught; the mutation results

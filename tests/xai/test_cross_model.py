@@ -108,6 +108,28 @@ def test_grouped_bootstrap_recurs_by_equilibrium_and_is_deterministic():
     assert np.all(first[:, 2] < 0.1)
 
 
+def test_grouped_bootstrap_residualization_rejects_label_only_recurrence():
+    rng = np.random.default_rng(71)
+    flux = rng.normal(size=120)
+    left = flux[:, None] + 0.05 * rng.normal(size=(120, 1))
+    right = flux[:, None] + 0.05 * rng.normal(size=(120, 1))
+    recurrence = grouped_bootstrap_match_recurrence(
+        left,
+        right,
+        groups=np.repeat(np.arange(40), 3),
+        covariates=flux[:, None],
+        left_auxiliary=np.ones((1, 1)),
+        right_auxiliary=np.ones((1, 1)),
+        left_effects=np.ones((1, 1)),
+        right_effects=np.ones((1, 1)),
+        component_weights=(0.0, 1.0, 0.0, 0.0),
+        minimum_similarity=0.7,
+        replicates=60,
+        seed=17,
+    )
+    assert recurrence[0, 0] < 0.1
+
+
 def test_group_bootstrap_gives_sibling_tubes_identical_multiplicity():
     groups = np.asarray(["eq0", "eq0", "eq1", "eq2", "eq2", "eq2"])
     weights = _group_bootstrap_row_weights(groups, np.random.default_rng(5))
@@ -141,6 +163,14 @@ def test_member_distance_uses_each_registered_evidence_block():
     assert np.allclose(distance, distance.T)
     assert np.allclose(np.diag(distance), 0.0)
     assert distance[0, 1] < distance[0, 2]
+
+
+def test_member_distance_is_invariant_to_each_block_natural_scale():
+    small = np.asarray([[0.0], [1.0], [2.0]])
+    large = 1000.0 * small[:, ::-1]
+    registered = member_distance_matrix((small, large))
+    rescaled = member_distance_matrix((small, 0.001 * large))
+    assert np.allclose(registered, rescaled)
 
 
 def test_grouped_cka_bootstrap_keeps_rotated_pair_and_null_separate():
