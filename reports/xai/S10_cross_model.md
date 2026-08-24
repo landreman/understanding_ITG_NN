@@ -338,6 +338,13 @@ requires bootstrap recurrence below 0.1 after weighted flux residualization;
 skipping that residualization produces recurrence 1.0. Both mutations turn
 their named library tests red.
 
+A ninth review found the final two unpinned shared-library lines. A duplicated
+200-column block must leave the distance unchanged and a closed-form two-block
+toy pins the absolute normalization. A 2×2 score matrix where greedy matching
+collides now requires the globally optimal, distinct right-unit assignment.
+Deleting column-count normalization or replacing the Hungarian assignment with
+row-wise nearest neighbors turns the corresponding test red.
+
 The manifest source-identity assertions live in a separately named tripwire
 test. They force provenance to be refreshed after any runner edit, but are not
 counted as evidence that a scientific mutation is caught; the mutation results

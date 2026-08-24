@@ -63,6 +63,14 @@ def test_cyclic_toy_matching_recovers_permutation_and_leaves_null_unmatched():
     assert pieces["activation_residual"][1, 0] > 0.99
 
 
+def test_match_units_uses_one_to_one_optimal_assignment():
+    score = np.asarray([[0.95, 0.90], [0.94, 0.10]])
+    matches = match_units(score, minimum_similarity=0.65)
+    pairs = {(left, right) for left, right, _ in matches}
+    assert pairs == {(0, 1), (1, 0)}
+    assert len({right for _, right in pairs}) == len(pairs)
+
+
 def test_flux_residualization_rejects_label_only_correspondence():
     rng = np.random.default_rng(7)
     flux = rng.normal(size=120)
@@ -171,6 +179,16 @@ def test_member_distance_is_invariant_to_each_block_natural_scale():
     registered = member_distance_matrix((small, large))
     rescaled = member_distance_matrix((small, 0.001 * large))
     assert np.allclose(registered, rescaled)
+
+
+def test_member_distance_is_invariant_to_block_width_and_has_registered_scale():
+    values = np.asarray([[0.0], [1.0], [2.0]])
+    duplicated = np.repeat(values, 200, axis=1)
+    narrow = member_distance_matrix((values, values))
+    wide = member_distance_matrix((values, duplicated))
+    expected = np.asarray([[0.0, 1.0, 2.0], [1.0, 0.0, 1.0], [2.0, 1.0, 0.0]])
+    assert np.allclose(narrow, expected)
+    assert np.allclose(wide, expected)
 
 
 def test_grouped_cka_bootstrap_keeps_rotated_pair_and_null_separate():
