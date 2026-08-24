@@ -115,6 +115,78 @@ def test_motif_eligible_count_reads_the_stricter_motif_threshold():
     assert MODULE._count_motif_eligible_edges(rows, resolved) == 1
 
 
+def test_effect_signature_keeps_the_two_output_regimes_separate():
+    import numpy as np
+
+    effects = np.asarray([[2.0], [2.0], [1.0], [-1.0]])
+    stable = np.asarray([True, True, False, False])
+    signature = MODULE._effect_signature(effects, stable)
+    assert signature[0] == pytest.approx([2.0, 0.0, 2.0, 1.0])
+
+
+def test_stratified_indices_are_unique_sorted_and_regime_balanced():
+    import numpy as np
+
+    stable = np.asarray([True] * 4 + [False] * 6)
+    chosen = MODULE._stratified_indices(stable, count=5, seed=4)
+    assert chosen.tolist() == sorted(set(chosen.tolist()))
+    assert len(chosen) == 5
+    assert int(stable[chosen].sum()) == 2
+
+
+def test_channel_scales_follow_explicit_channel_indices(tmp_path):
+    table = tmp_path / "scales.csv"
+    table.write_text(
+        "channel,iqr\n"
+        "6,7\n0,1\n4,5\n2,3\n5,6\n1,2\n3,4\n",
+        encoding="utf-8",
+    )
+    assert MODULE._channel_scales(table).tolist() == pytest.approx([1, 2, 3, 4, 5, 6, 7])
+
+
+def test_fixed_member_profile_retains_registered_quantiles():
+    import numpy as np
+
+    values = np.asarray([[0, 10], [1, 20], [2, 30], [3, 40], [4, 50]], dtype=float)
+    assert MODULE._fixed_member_profile(values) == pytest.approx(
+        [0, 1, 2, 3, 4, 10, 20, 30, 40, 50]
+    )
+
+
+def test_standardize_removes_constant_columns_and_scales_the_rest():
+    import numpy as np
+
+    values = np.asarray([[4.0, 1.0], [4.0, 2.0], [4.0, 3.0]])
+    standardized = MODULE._standardize(values)
+    assert standardized.shape == (3, 1)
+    assert standardized.mean() == pytest.approx(0.0)
+    assert standardized.std() == pytest.approx(1.0)
+
+
+def test_density_signature_spectrum_ignores_density_offsets():
+    import numpy as np
+
+    phase = np.linspace(0, 2 * np.pi, 96, endpoint=False)
+    density = np.stack((2.0 + np.sin(phase), 3.0 + np.cos(2 * phase)), axis=0)
+    density = np.stack((density, 1.5 * density), axis=0)
+    shifted = density + np.asarray([5.0, 11.0])[None, :, None]
+    original = MODULE._density_signature(density)
+    offset = MODULE._density_signature(shifted)
+    assert original[:, :6] == pytest.approx(offset[:, :6])
+    assert np.any(original[:, :6] > 0)
+
+
+def test_outlier_trimmed_cka_removes_the_high_joint_norm_row():
+    import numpy as np
+
+    left = np.column_stack((np.arange(20.0), np.arange(20.0) ** 2))
+    right = left.copy()
+    right[-1] = np.asarray([-1000.0, 1000.0])
+    trimmed, retained = MODULE._outlier_trimmed_cka(left, right)
+    assert retained == 19
+    assert trimmed != pytest.approx(MODULE.linear_cka(left, right))
+
+
 def test_acceptance_summary_refuses_missing_lower_rank_comparison():
     summary = {
         "stable_rows": 20,
@@ -174,6 +246,26 @@ def test_regime_causal_gate_does_not_promote_serialized_false():
     assert rows[0]["causal_regime_gate"] is True
     assert rows[0]["pre_regime_consensus_gate"] is False
     assert rows[0]["consensus_gate"] is False
+
+
+def test_regime_causal_gate_rejects_zero_rms_in_either_regime():
+    import numpy as np
+
+    rows = [{
+        "left_member_id": "m0", "right_member_id": "m1",
+        "left_unit_id": "m0:u000", "right_unit_id": "m1:u000",
+        "consensus_gate": True,
+    }]
+    effects = (
+        np.asarray([[0.0], [0.0], [1.0], [1.0]]),
+        np.asarray([[1.0], [1.0], [1.0], [1.0]]),
+    )
+    with pytest.raises(ValueError, match="near-zero RMS"):
+        MODULE._apply_regime_causal_gate(
+            rows, effects=effects,
+            stable=np.asarray([True, True, False, False]),
+            member_ids=("m0", "m1"), minimum_similarity=0.5,
+        )
 
 
 def test_member_attribution_applies_registered_channel_scales():

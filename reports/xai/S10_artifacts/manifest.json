@@ -255,7 +255,7 @@
       "source_hashes": {
         "config": "6d17f7be74fb94c3d6af59d5c86be3a0521ad420f6f702481d2a54e7c6030698",
         "library": "942149016a4356194a4bf255f373a41cc8a90c7f465db69c898b5505c12b1a63",
-        "runner": "ea313ac284956cd3d33d48ab6cc182ba151406b4316affd83746b2fba8a26aaa"
+        "runner": "383c77ac99ea6a333218cbb71ca0322ad8b8b4aa13cea758f8d2007dff8e8078"
       },
       "stable_threshold_log_Q": -1.9,
       "step": "S10",
@@ -264,9 +264,9 @@
     "reproduction_source_hashes": {
       "config": "6d17f7be74fb94c3d6af59d5c86be3a0521ad420f6f702481d2a54e7c6030698",
       "library": "942149016a4356194a4bf255f373a41cc8a90c7f465db69c898b5505c12b1a63",
-      "runner": "ea313ac284956cd3d33d48ab6cc182ba151406b4316affd83746b2fba8a26aaa"
+      "runner": "383c77ac99ea6a333218cbb71ca0322ad8b8b4aa13cea758f8d2007dff8e8078"
     },
-    "reproduction_artifacts_updated_at_utc": "2026-08-24T04:00:39Z",
+    "reproduction_artifacts_updated_at_utc": "2026-08-24T05:29:29Z",
     "registered_wall_time_scope": "original all-100 member-signature and CKA execution before post-review table enrichment",
     "source_artifact": "member_signatures.h5",
     "stable_rows": 240,

@@ -37,7 +37,7 @@ activation spaces even when their widths differ) falls from **0.948** in the fir
 canonical spatial layer to **0.814** at the invariant bottleneck. The intervening
 medians are 0.922, 0.894, 0.847, and 0.865. This supports shared representation
 geometry, not identical mechanisms. Removing the 5% highest joint-norm probe rows
-changes the median pair score by only **0.0064–0.0220**, although the largest
+changes the typical pair score by a median of **0.0064–0.0220**, although the largest
 bottleneck change is 0.117. No permutation or chance baseline was registered,
 so the raw decline with depth is descriptive and does not establish that the
 networks become more individual in deeper layers.
@@ -98,10 +98,12 @@ recorded separately as `postprocessing.reproduction_source_hashes` and
 incur the historical wall time. This separation prevents later code from being
 misrepresented as the code that executed the registered run.
 The manifest also states that its committed `output_hashes` describe the
-post-review reproduction artifacts, updated at `2026-08-24T04:00:39Z`, while
+post-review reproduction artifacts, updated at `2026-08-24T05:29:29Z`, while
 the 3,601.96 s wall time applies only to the original all-100 member-signature
 and CKA execution before table enrichment. It is intentionally a disclosed
 historical-plus-reproduction record, not the output of one command invocation.
+The runner now emits all three disclosure fields itself, so a future full run
+cannot silently drop them.
 The production environment used SciPy 1.13.1 for average-linkage clustering.
 Its compatibility smoke test imported SciPy and completed the real 100-member
 linkage, four-cluster cut, square-distance conversion, and dendrogram calls in
@@ -190,6 +192,12 @@ Member distance equally combines four robustly standardized blocks:
   output regime;
 - signed/RMS mean-replacement causal profiles, separately by regime; and
 - bottleneck concept-selectivity profiles.
+
+The across-member robust standardization is what makes the seven gradient
+channels comparable in the distance. The S01 IQR scale is retained for the
+archived `scaled_signed_input_gradient` values; a per-channel constant cancels
+inside that later standardization, so the distance does not depend on the S01
+factors themselves.
 
 Average-linkage hierarchical clustering produces the
 [dendrogram](S10_artifacts/member_dendrogram.png); the four-cluster cut was fixed
@@ -299,6 +307,14 @@ units; it catches a wrong unit separator and treating every screened unit as
 supported. A separate threshold toy catches counting motif-eligible edges with
 the 0.50 edge gate instead of the registered 0.70 motif gate. All three
 mutations now turn their named science controls red.
+
+A fifth review found the remaining seven untested runner helpers. Direct toys
+now pin the stable/unstable effect signature, 5% joint-norm CKA trimming,
+regime-stratified row selection, density-spectrum centering, channel-index
+ordering, five-quantile member profiles, and removal of constant columns during
+standardization. Each corresponding mutation turns its named test red. A zero
+RMS in either output regime now raises rather than serializing non-standard
+`Infinity` into `summary.json`.
 
 The manifest source-identity assertions live in a separately named tripwire
 test. They force provenance to be refreshed after any runner edit, but are not

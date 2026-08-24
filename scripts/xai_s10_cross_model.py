@@ -11,6 +11,7 @@ import json
 import shutil
 import sys
 from collections.abc import Sequence
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -254,10 +255,9 @@ def _apply_regime_causal_gate(
             left_rms = float(np.sqrt(np.mean(np.square(left_values[mask]))))
             right_rms = float(np.sqrt(np.mean(np.square(right_values[mask]))))
             smaller_rms = min(left_rms, right_rms)
-            return (
-                max(left_rms, right_rms) / smaller_rms
-                if smaller_rms > 1e-12 else float("inf")
-            )
+            if smaller_rms <= 1e-12:
+                raise ValueError("matched causal effect has near-zero RMS in a regime")
+            return max(left_rms, right_rms) / smaller_rms
 
         row["causal_effect_rms_magnitude_ratio"] = rms_ratio(
             np.ones(len(stable), dtype=bool)
@@ -386,6 +386,14 @@ def _standardize(values: np.ndarray) -> np.ndarray:
     scale = centered.std(0)
     keep = scale > 1e-10
     return centered[:, keep] / scale[keep] if np.any(keep) else np.zeros((len(values), 1))
+
+
+def _outlier_trimmed_cka(left: np.ndarray, right: np.ndarray) -> tuple[float, int]:
+    """Recompute CKA after dropping the 5% largest joint representation norms."""
+
+    joint_norm = np.linalg.norm(left, axis=1) + np.linalg.norm(right, axis=1)
+    keep = joint_norm <= np.quantile(joint_norm, 0.95)
+    return linear_cka(left[keep], right[keep]), int(np.count_nonzero(keep))
 
 
 def _density_signature(density: np.ndarray) -> np.ndarray:
@@ -723,9 +731,9 @@ def run(args: argparse.Namespace) -> Path:
         for left in range(len(member_ids)):
             for right in range(left + 1, len(member_ids)):
                 # Pairwise 5% high-norm removal checks outlier sensitivity.
-                joint_norm = np.linalg.norm(representations[left], axis=1) + np.linalg.norm(representations[right], axis=1)
-                keep = joint_norm <= np.quantile(joint_norm, 0.95)
-                trimmed = linear_cka(representations[left][keep], representations[right][keep])
+                trimmed, _ = _outlier_trimmed_cka(
+                    representations[left], representations[right]
+                )
                 cka_rows.append({
                     "layer_index": layer, "layer_name": cka_names[layer],
                     "representation_kind": "flattened_spatial_activation" if layer < 5 else "position_mean_bottleneck",
@@ -984,6 +992,10 @@ def run(args: argparse.Namespace) -> Path:
         published_dir=published,
         extra_manifest={
             "postprocessing": {
+                "committed_output_hashes_provenance": (
+                    "output_hashes describe artifacts produced by this runner "
+                    "invocation"
+                ),
                 "command": (
                     "regime-specific causal audit from manifest-hashed "
                     "member_signatures.h5"
@@ -1006,6 +1018,13 @@ def run(args: argparse.Namespace) -> Path:
                 "source_artifact": "member_signatures.h5",
                 "reproduction_config": resolved,
                 "reproduction_source_hashes": resolved["source_hashes"],
+                "reproduction_artifacts_updated_at_utc": datetime.now(
+                    timezone.utc
+                ).isoformat(),
+                "registered_wall_time_scope": (
+                    "this runner invocation, including all-100 member-signature "
+                    "and CKA execution"
+                ),
                 "stable_rows": int(stable.sum()),
                 "unstable_rows": int((~stable).sum()),
             }
