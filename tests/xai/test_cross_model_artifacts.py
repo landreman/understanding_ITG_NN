@@ -63,6 +63,10 @@ def test_s10_consensus_is_one_to_one_and_agrees_in_both_regimes():
         assert float(row["causal_effect_similarity_stable_or_near_floor"]) >= 0.5
         assert float(row["causal_effect_similarity_unstable"]) >= 0.5
         assert 1.0 <= float(row["causal_effect_rms_magnitude_ratio"]) <= 4.1
+        assert 1.0 <= float(
+            row["causal_effect_rms_magnitude_ratio_stable_or_near_floor"]
+        ) <= 5.1
+        assert 1.0 <= float(row["causal_effect_rms_magnitude_ratio_unstable"]) <= 4.1
         assert row["causal_effect_validity"] == "deliberately_off_manifold_diagnostic"
 
     for motif in _rows("motif_catalog.csv"):
@@ -119,6 +123,12 @@ def test_s10_manifest_hashes_every_committed_headline_artifact():
     ):
         assert _sha256(ARTIFACTS / name) == manifest["output_hashes"][name]
     assert manifest["postprocessing"]["source_artifact"] == "member_signatures.h5"
+
+
+def test_manifest_reproduction_hashes_track_the_current_runner():
+    """File-identity tripwire; not evidence that a scientific mutation is caught."""
+
+    manifest = json.loads((ARTIFACTS / "manifest.json").read_text(encoding="utf-8"))
     assert manifest["source_hashes"]["runner"] == (
         "fae7242276544d55179377441e4a67dafbf9f4df5eb9b9d2e9243b524afb8dfc"
     )

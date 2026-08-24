@@ -233,12 +233,21 @@ def _apply_regime_causal_gate(
         # published magnitude column is reproducible from member_signatures.h5.
         left_values = np.asarray(effects[left_member][:, left_unit], dtype=np.float32)
         right_values = np.asarray(effects[right_member][:, right_unit], dtype=np.float32)
-        left_rms = float(np.sqrt(np.mean(np.square(left_values))))
-        right_rms = float(np.sqrt(np.mean(np.square(right_values))))
-        smaller_rms = min(left_rms, right_rms)
-        row["causal_effect_rms_magnitude_ratio"] = (
-            max(left_rms, right_rms) / smaller_rms if smaller_rms > 1e-12 else float("inf")
+
+        def rms_ratio(mask: np.ndarray) -> float:
+            left_rms = float(np.sqrt(np.mean(np.square(left_values[mask]))))
+            right_rms = float(np.sqrt(np.mean(np.square(right_values[mask]))))
+            smaller_rms = min(left_rms, right_rms)
+            return (
+                max(left_rms, right_rms) / smaller_rms
+                if smaller_rms > 1e-12 else float("inf")
+            )
+
+        row["causal_effect_rms_magnitude_ratio"] = rms_ratio(
+            np.ones(len(stable), dtype=bool)
         )
+        row["causal_effect_rms_magnitude_ratio_stable_or_near_floor"] = rms_ratio(stable)
+        row["causal_effect_rms_magnitude_ratio_unstable"] = rms_ratio(~stable)
         row["causal_regime_gate"] = bool(
             stable_similarity >= minimum_similarity
             and unstable_similarity >= minimum_similarity
@@ -771,6 +780,13 @@ def run(args: argparse.Namespace) -> Path:
         [row["causal_effect_rms_magnitude_ratio"] for row in final_rows],
         dtype=np.float64,
     )
+    final_stable_effect_ratios = np.asarray([
+        row["causal_effect_rms_magnitude_ratio_stable_or_near_floor"]
+        for row in final_rows
+    ], dtype=np.float64)
+    final_unstable_effect_ratios = np.asarray([
+        row["causal_effect_rms_magnitude_ratio_unstable"] for row in final_rows
+    ], dtype=np.float64)
     medoid = int(np.argmin(distance.mean(axis=1)))
     rank_correlation, rank_p_value = spearmanr(
         np.arange(1, len(member_ids) + 1), distance[medoid]
@@ -849,6 +865,24 @@ def run(args: argparse.Namespace) -> Path:
         ),
         "final_edge_causal_effect_rms_ratio_maximum": float(
             np.max(final_effect_ratios)
+        ),
+        "final_edge_stable_causal_effect_rms_ratio_median": float(
+            np.median(final_stable_effect_ratios)
+        ),
+        "final_edge_stable_causal_effect_rms_ratio_p90": float(
+            np.quantile(final_stable_effect_ratios, 0.9)
+        ),
+        "final_edge_stable_causal_effect_rms_ratio_maximum": float(
+            np.max(final_stable_effect_ratios)
+        ),
+        "final_edge_unstable_causal_effect_rms_ratio_median": float(
+            np.median(final_unstable_effect_ratios)
+        ),
+        "final_edge_unstable_causal_effect_rms_ratio_p90": float(
+            np.quantile(final_unstable_effect_ratios, 0.9)
+        ),
+        "final_edge_unstable_causal_effect_rms_ratio_maximum": float(
+            np.max(final_unstable_effect_ratios)
         ),
         "maximum_motif_member_count": max(
             (row["member_count"] for row in motif_rows), default=0

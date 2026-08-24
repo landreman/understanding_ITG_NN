@@ -67,7 +67,9 @@ a unique natural number.
 The surviving pairs agree in both direction and useful scale. The larger of the
 two root-mean-square prediction effects is typically **1.33 times** the smaller;
 90% of pairs are within **2.17 times**, and the maximum ratio is **4.05**. Thus
-the cosine direction test is backed by an explicit magnitude comparison.
+the cosine direction test is backed by an explicit magnitude comparison. The
+same comparison remains similar when kept separate by regime: stable/near-floor
+median/p90/max **1.41/2.50/5.04**, unstable **1.34/2.21/3.98**.
 
 Only one of the eight motifs contains a unit that S05 had given a supported
 physical name. It includes the leading network's unit associated with a

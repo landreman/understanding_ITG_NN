@@ -184,8 +184,8 @@
     "member_signatures.h5": "742967d52707e399a4d86aa4a91d3cad93e2665d0e1f4d57a2ab98773961a0a4",
     "motif_catalog.csv": "40c3a3386a1b9cd6f1ba8262bf11d01e59b07372fdb57cf70aa2c248367d232b",
     "motif_threshold_sensitivity.csv": "a3a3c059a8bab315d1d70af0214bebcbefd91e4f0cb7dffc52880aefd498597d",
-    "summary.json": "7da8afcb9cbe52c986287d8afddbf344653feea3b42e74ed9dcef3bff031c133",
-    "unit_matches.csv": "adb566d088037e8ab79afbe14476bf075bf9624573d633a352049e3b34ece096"
+    "summary.json": "c30b5c302e83cad4ee82d9da90d66350baac5d3c387d1b8e8ae2a5b8083f4822",
+    "unit_matches.csv": "daa4f2e6dcf940893f02108d61f899f73fb3cd7e6d37636785b4dbd998be3f5a"
   },
   "package_versions": {
     "captum": "0.9.0",
@@ -196,6 +196,7 @@
     "torch": "2.4.1"
   },
   "postprocessing": {
+    "committed_output_hashes_provenance": "output_hashes describe post-review reproduction artifacts derived from retained registered-run arrays and tables, not the original 3601.96-second execution outputs",
     "command": "regime-specific causal audit from manifest-hashed member_signatures.h5",
     "committed_runner_reproduction": "audit, derived summary fields, cohort CKA columns, and S05 motif annotations are folded into scripts/xai_s10_cross_model.py",
     "minimum_cosine_similarity_each_regime": 0.5,
@@ -254,7 +255,7 @@
       "source_hashes": {
         "config": "6d17f7be74fb94c3d6af59d5c86be3a0521ad420f6f702481d2a54e7c6030698",
         "library": "942149016a4356194a4bf255f373a41cc8a90c7f465db69c898b5505c12b1a63",
-        "runner": "8c1cf65df0a3f58b9f4bcc156903769f62beb768da118b02a505ca7e2a59981c"
+        "runner": "a92ca5f4a4653e3e9af9697dbac0ab7716af6829ee363f0c04b190826b900e5f"
       },
       "stable_threshold_log_Q": -1.9,
       "step": "S10",
@@ -263,8 +264,10 @@
     "reproduction_source_hashes": {
       "config": "6d17f7be74fb94c3d6af59d5c86be3a0521ad420f6f702481d2a54e7c6030698",
       "library": "942149016a4356194a4bf255f373a41cc8a90c7f465db69c898b5505c12b1a63",
-      "runner": "8c1cf65df0a3f58b9f4bcc156903769f62beb768da118b02a505ca7e2a59981c"
+      "runner": "a92ca5f4a4653e3e9af9697dbac0ab7716af6829ee363f0c04b190826b900e5f"
     },
+    "reproduction_artifacts_updated_at_utc": "2026-08-24T04:00:39Z",
+    "registered_wall_time_scope": "original all-100 member-signature and CKA execution before post-review table enrichment",
     "source_artifact": "member_signatures.h5",
     "stable_rows": 240,
     "unstable_rows": 760

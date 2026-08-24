@@ -26,7 +26,7 @@ of the seven matched units has that supported name, this is a **tentative anchor
 not evidence that all seven units measure the $f_Q$ integrand. That anchor is
 also the narrowest member and an average-linkage outlier, so it is not a typical
 ensemble member under the registered description. S05 screened two units in each of motifs 001–003,
-one in motif 004, and **none** in motifs 005–008. Thus the first four unresolved
+one in motif 004, and **none** in motifs 005–008. Thus the first three unresolved
 labels mean “screened without a supported name,” while the last four mean “not
 yet screened,” not evidence that the vocabulary failed. These counts are columns in the
 [motif catalog](S10_artifacts/motif_catalog.csv).
@@ -97,6 +97,11 @@ recorded separately as `postprocessing.reproduction_source_hashes` and
 `reproduction_config`; they reproduce the retained arrays and tables but did not
 incur the historical wall time. This separation prevents later code from being
 misrepresented as the code that executed the registered run.
+The manifest also states that its committed `output_hashes` describe the
+post-review reproduction artifacts, updated at `2026-08-24T04:00:39Z`, while
+the 3,601.96 s wall time applies only to the original all-100 member-signature
+and CKA execution before table enrichment. It is intentionally a disclosed
+historical-plus-reproduction record, not the output of one command invocation.
 The production environment used SciPy 1.13.1 for average-linkage clustering.
 Its compatibility smoke test imported SciPy and completed the real 100-member
 linkage, four-cluster cut, square-distance conversion, and dendrogram calls in
@@ -143,6 +148,8 @@ Direction agreement is not enough for comparable effect size: the ratio of the
 larger to smaller all-panel root-mean-square signed effect has median **1.33**,
 90th percentile **2.17**, and maximum **4.05** across those edges. The exact
 ratio is published on every match row.
+Separately by output regime, the stable/near-floor ratio is **1.41/2.50/5.04**
+and the unstable ratio is **1.34/2.21/3.98** (median/90th percentile/maximum).
 
 Consensus motifs are connected components of the **74** final edges that also
 meet a stricter, config-driven per-regime causal cosine of at least 0.70. This
@@ -279,6 +286,11 @@ correlation, and deleting the S01 robust channel scales inside
 through the full similarity function, and an analytic gradient toy now requires
 the registered 1:1000 channel scaling; both mutations turn red.
 
+The manifest source-identity assertions live in a separately named tripwire
+test. They force provenance to be refreshed after any runner edit, but are not
+counted as evidence that a scientific mutation is caught; the mutation results
+above name the specific scientific test that turns red.
+
 ## Reproduction
 
 ```bash
@@ -300,7 +312,7 @@ The CLI supports `--config`, `--members`, `--rows`, `--device`, `--seed`,
 | PLAN criterion | Verdict | Number or artifact |
 | --- | --- | --- |
 | “correspondences survive equilibrium bootstrap and are not driven only by flux labels” | **Pass with strict attrition exposed.** | 163/582 matched pairs pass recurrence $\ge0.70$, flux-residual similarity $\ge0.50$, and both causal-regime gates; final median recurrence 1.00 and flux-residual similarity 0.892. [Unit matches](S10_artifacts/unit_matches.csv). |
-| “matched motifs have comparable causal effects” | **Pass after correction.** | All 163 final edges have signed mean-replacement cosine $\ge0.50$ separately on 240 stable/near-floor and 760 unstable rows; medians are 0.708/0.755. The larger/smaller root-mean-square effect ratio is 1.33 median, 2.17 at the 90th percentile, and 4.05 maximum. [Unit matches](S10_artifacts/unit_matches.csv) and [motif catalog](S10_artifacts/motif_catalog.csv). |
+| “matched motifs have comparable causal effects” | **Pass after correction.** | All 163 final edges have signed mean-replacement cosine $\ge0.50$ separately on 240 stable/near-floor and 760 unstable rows; medians are 0.708/0.755. Stable effect-size ratios are 1.41/2.50/5.04 and unstable ratios are 1.34/2.21/3.98 (median/p90/max). [Unit matches](S10_artifacts/unit_matches.csv) and [motif catalog](S10_artifacts/motif_catalog.csv). |
 | “lower-ranked cohorts provide a registered comparison” | **Pass.** | All 10/40/50 registered members are present. Bottleneck CKA medians are 0.796/0.814/0.816 within top/middle/lower cohorts; rank-versus-medoid distance $\rho=0.118$, $p=0.243$. [Cohort comparison](S10_artifacts/cohort_comparison.csv) and [member clusters](S10_artifacts/member_clusters.csv). |
 
 ## Reviewer reproduction
