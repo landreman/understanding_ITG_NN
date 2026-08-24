@@ -27,6 +27,7 @@
     "minimum_flux_residual_similarity": 0.5,
     "minimum_match_recurrence": 0.7,
     "minimum_match_similarity": 0.65,
+    "minimum_motif_regime_causal_similarity": 0.7,
     "minimum_regime_causal_similarity": 0.5,
     "mode": "production",
     "panel_varied_rows": 1000,
@@ -43,6 +44,8 @@
     },
     "published_dir": "reports/xai/S10_artifacts",
     "run_id": "cross-model-all100-panel1000",
+    "s05_unit_motifs": "reports/xai/S05_artifacts/unit_motifs.csv",
+    "s05_unit_motifs_sha256": "8f26193e32e966184ed422e1d63fa70d1f3d78ee4fb29b8e8662372e5501e012",
     "seed": 20260823,
     "signature_component_weights": [
       0.3,
@@ -51,9 +54,9 @@
       0.2
     ],
     "source_hashes": {
-      "config": "2c5fb4468e7afbec170e3a4a91eb9421aeb8e97cbe935938725f176fbd61db80",
+      "config": "031f2b9551c7b46c7eddc4f073c71b090d9a2e1b1df8edcfb18befda6aece504",
       "library": "942149016a4356194a4bf255f373a41cc8a90c7f465db69c898b5505c12b1a63",
-      "runner": "f4d8cd2c1aae6866b9e6b07b16e9381da9714e4d09bd524f0fc166278604b544"
+      "runner": "5b7cb1ee5ee5c07954c906927c5a148d5bbec806e1d99cb25487663ade4ff11f"
     },
     "stable_threshold_log_Q": -1.9,
     "step": "S10",
@@ -183,7 +186,7 @@
     "member_distances.csv": "83c4dcfa756d15b43aa2f5889a0411471cef1422da574454e788d61418d35b94",
     "member_signatures.h5": "742967d52707e399a4d86aa4a91d3cad93e2665d0e1f4d57a2ab98773961a0a4",
     "motif_catalog.csv": "95f411c06bec4812b10350eec0d204d1b1f1e95cb43efbff65a0e5fd3ad17c5a",
-    "summary.json": "862703eb0435e43f5056c06acf50ff8adc58d65ac5f03b893653f8f5f3550fbc",
+    "summary.json": "3aa3a49482b9d0fb49150c7da85c7bba2a5c95236309bf804c232ef76da34ce9",
     "unit_matches.csv": "c04ea26dbfb34411df82ac44238674084128def32c485ae7847cd66a8a22cd67"
   },
   "package_versions": {
@@ -196,6 +199,7 @@
   },
   "postprocessing": {
     "command": "regime-specific causal audit from manifest-hashed member_signatures.h5",
+    "committed_runner_reproduction": "audit, derived summary fields, cohort CKA columns, and S05 motif annotations are folded into scripts/xai_s10_cross_model.py",
     "minimum_cosine_similarity_each_regime": 0.5,
     "reason": "preliminary four-summary causal gate admitted opposing within-regime effects",
     "source_artifact": "member_signatures.h5",
@@ -1210,9 +1214,9 @@
   ],
   "seed": 20260823,
   "source_hashes": {
-    "config": "2c5fb4468e7afbec170e3a4a91eb9421aeb8e97cbe935938725f176fbd61db80",
+    "config": "031f2b9551c7b46c7eddc4f073c71b090d9a2e1b1df8edcfb18befda6aece504",
     "library": "942149016a4356194a4bf255f373a41cc8a90c7f465db69c898b5505c12b1a63",
-    "runner": "f4d8cd2c1aae6866b9e6b07b16e9381da9714e4d09bd524f0fc166278604b544"
+    "runner": "5b7cb1ee5ee5c07954c906927c5a148d5bbec806e1d99cb25487663ade4ff11f"
   },
   "wall_time_seconds": 3601.9557241250295
 }

@@ -43,6 +43,9 @@
     "4": 1
   },
   "members": 100,
+  "motif_eligible_edges": 74,
+  "motif_minimum_recurrence": 0.7,
+  "motif_minimum_regime_causal_similarity": 0.7,
   "motifs_with_at_least_four_members": 5,
   "narrow_member_count": 4,
   "narrow_wide_distance_median": 3.1526607350617564,

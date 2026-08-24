@@ -29,11 +29,29 @@ def test_consensus_requires_recurrence_and_comparable_causal_effects():
         {"left": units[1], "right": units[2], "recurrence": 0.85, "causal_similarity": 0.75},
         {"left": units[2], "right": units[3], "recurrence": 0.95, "causal_similarity": 0.2},
     ]
-    motifs = MODULE._consensus_components(units, edges)
+    motifs = MODULE._consensus_components(
+        units, edges, minimum_recurrence=0.7, minimum_causal_similarity=0.7
+    )
     assert len(motifs) == 1
     assert motifs[0]["unit_ids"] == ["m0:u000", "m1:u002", "m2:u001"]
     assert motifs[0]["member_count"] == 3
     assert units[3] not in motifs[0]["unit_ids"]
+
+
+def test_consensus_never_places_two_units_from_one_member_in_a_motif():
+    units = ("m0:u000", "m0:u001", "m1:u000", "m2:u000")
+    edges = [
+        {"left": units[0], "right": units[2], "recurrence": 1.0, "causal_similarity": 1.0},
+        {"left": units[1], "right": units[3], "recurrence": 0.9, "causal_similarity": 1.0},
+        {"left": units[2], "right": units[3], "recurrence": 0.8, "causal_similarity": 1.0},
+    ]
+    motifs = MODULE._consensus_components(
+        units, edges, minimum_recurrence=0.7, minimum_causal_similarity=0.7
+    )
+    assert len(motifs) == 2
+    for motif in motifs:
+        member_ids = [unit.rsplit(":u", 1)[0] for unit in motif["unit_ids"]]
+        assert len(member_ids) == len(set(member_ids))
 
 
 def test_acceptance_summary_refuses_missing_lower_rank_comparison():

@@ -48,9 +48,11 @@ summary could look similar even when the signed effects opposed one another
 within the stable or unstable regime.
 
 After requiring agreement separately in both regimes, only **163 pairs** remained.
-They form **eight shared motifs**, with at most one unit from each network in a
-motif. Five motifs occur in at least four of the top ten networks; the largest
-occurs in nine. The correction rejected 334 preliminary edges and is scientifically
+For the motif catalog, a separate stricter threshold retains 74 of
+those edges; four inconsistent unions are then removed to keep at most one unit
+from each network in a motif. The remaining 70 edges form **eight shared motifs**.
+Five motifs occur in at least four of the top ten networks; the largest occurs in
+nine. The correction rejected 334 preliminary edges and is scientifically
 important: averaging across regimes would have produced 33 apparently shared
 motifs instead of eight.
 
@@ -59,7 +61,9 @@ physical name. It includes the leading network's unit associated with a
 parallel-window average of the paper's $f_Q$ integrand, and corresponding units
 occur in six other networks. But those six units have not independently earned
 that name. It is a promising anchor, not a seven-network identification. The
-other seven motifs remain unresolved by the current concept vocabulary.
+anchoring unit also belongs to the narrowest network and a clustering outlier,
+so it is not representative of the ensemble. The other seven motifs remain
+unresolved by the current concept vocabulary.
 
 ## The networks look similar in broad outline
 
@@ -69,11 +73,12 @@ score near one means that examples have similar relative arrangements in the two
 spaces; it does not prove that the networks perform the same computation.
 
 Across all 4,950 pairs of networks, median CKA decreases from **0.948** in the
-first spatial layer to **0.814** at the final invariant bottleneck. The networks
-therefore share a broad representational scaffold, while becoming more individual
-deeper in the calculation. Removing the 5% most extreme probe examples changes
-the median score by only 0.006–0.022, so this pattern is not usually driven by a
-few outliers.
+first spatial layer to **0.814** at the final invariant bottleneck. This shows
+broadly similar representation geometry at every measured layer. It does not
+show that networks become more individual with depth because this run did not
+register a permutation or chance baseline for comparing layers. Removing the 5%
+most extreme probe examples changes the median score by only 0.006–0.022, so the
+raw scores are not usually driven by a few outliers.
 
 The uncertainty ranges for CKA use only 20 resampled panels. They are a coarse
 sensitivity check, not a precise confidence interval. The exact all-pair scores
@@ -104,6 +109,10 @@ activation patterns are abundant, but shared signed effects in both physical
 regimes are much rarer. S11 and S12 should use the eight strict motifs, retain
 the regime-specific signs, and keep the other 334 preliminary correspondences as
 negative evidence rather than silently recovering them through averaging.
+
+All 100 networks share training data and an architecture family. The recurrence
+of a motif can therefore reflect shared training bias as well as a genuinely
+necessary internal feature; S10 does not measure that shared-training floor.
 
 The seven unnamed motifs are also useful. They say that the networks repeatedly
 compute something similar that the current physical vocabulary has not captured.

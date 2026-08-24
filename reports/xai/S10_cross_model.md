@@ -10,9 +10,12 @@ bootstrap recurrence, flux-residual activation similarity, and a four-number cau
 summary. A post-run audit of the retained signed effects found that this summary
 could hide opposing effects within an output regime. Requiring cosine similarity
 of at least 0.5 separately on the 240 stable/near-floor and 760 unstable rows
-reduced the result to **163 edges and eight constrained motifs**. The 334 rejected
-edges are retained in [unit_matches.csv](S10_artifacts/unit_matches.csv), not
-dropped.
+reduced the result to **163 final edges**. Motif membership uses a separate,
+stricter 0.70 per-regime threshold, now recorded explicitly in the config: 74
+final edges are eligible, and 70 remain after the one-unit-per-member constraint
+to form **eight motifs**. The
+334 edges rejected by the 0.50 final-edge gate are retained in
+[unit_matches.csv](S10_artifacts/unit_matches.csv), not dropped.
 
 Five of the eight final motifs occur in at least four top members; their member
 counts are **9, 7, 7, 6, and 4**. The other three are two-member correspondences.
@@ -20,7 +23,9 @@ Only one motif contains a unit with an independently supported S05 name: the
 seven-member `motif_001` contains the top member's `u001`, which S05 associated
 with the 25-point circular mean of the paper's $f_Q$ integrand. Because only one
 of the seven matched units has that supported name, this is a **tentative anchor**,
-not evidence that all seven units measure the $f_Q$ integrand. The other seven
+not evidence that all seven units measure the $f_Q$ integrand. That anchor is
+also the narrowest member and one of the five clustering outliers, so it is not
+a typical ensemble member. The other seven
 motifs remain `unresolved_by_S05_vocabulary` in the
 [motif catalog](S10_artifacts/motif_catalog.csv).
 
@@ -31,7 +36,9 @@ canonical spatial layer to **0.814** at the invariant bottleneck. The intervenin
 medians are 0.922, 0.894, 0.847, and 0.865. This supports shared representation
 geometry, not identical mechanisms. Removing the 5% highest joint-norm probe rows
 changes the median pair score by only **0.0064–0.0220**, although the largest
-bottleneck change is 0.117.
+bottleneck change is 0.117. No permutation or chance baseline was registered,
+so the raw decline with depth is descriptive and does not establish that the
+networks become more individual in deeper layers.
 
 Validation rank does not organize the cross-model results strongly. A fixed
 four-cluster cut of the multi-evidence dendrogram places **95/100** members in one
@@ -39,7 +46,8 @@ core cluster and five in three small outlier clusters. Distance from the medoid
 member has Spearman rank correlation **0.118** with stored-validation rank
 ($p=0.243$). Bottleneck CKA medians are 0.796 within the top 10, 0.814 within ranks
 11–50, and 0.816 within ranks 51–100; lower-ranked members are not less
-representationally similar.
+representationally similar. The correlation includes the medoid's own zero
+distance at stored-validation rank 74.
 
 The four narrow-bottleneck members ($C\le11$) are mixed evidence. Their median
 multi-evidence distance to wide members is **3.153**, versus **1.177** between two
@@ -76,6 +84,10 @@ checkpoint SHA-256
 CPU execution, seed 20260823, all 100 member IDs, all 1,000 parent row IDs, and
 **3,601.96 s (60.03 min)** measured wall time. The manifest also records the
 post-run regime audit and updated hashes of the three affected small artifacts.
+After automated review, the audit, S05 motif annotations, cohort CKA columns,
+and every derived `summary.json` field were folded into the committed runner;
+the small summary and manifest artifacts were regenerated from the retained
+tables. The registered runner now reproduces the published schemas directly.
 The production environment used SciPy 1.13.1 for average-linkage clustering.
 Its compatibility smoke test imported SciPy and completed the real 100-member
 linkage, four-cluster cut, square-distance conversion, and dendrogram calls in
@@ -100,7 +112,10 @@ concept/density, and causal summaries by 0.30/0.30/0.20/0.20. A pure-NumPy
 Hungarian assignment finds the global one-to-one maximum and gives every left
 unit a private dummy option, so units below 0.65 remain unmatched. Pair recurrence
 uses 100 resamples of whole `equilibrium_files`; recurrence therefore has 0.01
-resolution. The final consensus edge additionally requires recurrence at least
+resolution. The bootstrap recomputes the two activation components; the
+concept/density and causal-summary components, 40% of the score by registered
+weight, remain fixed at their full-panel values. The final consensus edge
+additionally requires recurrence at least
 0.70, flux-residual similarity at least 0.50, four-summary causal similarity at
 least 0.70, and signed per-row ablation cosine at least 0.50 separately in both
 output regimes.
@@ -111,10 +126,12 @@ network, not a realizable equilibrium or a causal plasma intervention. Among the
 163 final edges, median flux-residual similarity is **0.892**, median recurrence
 is **1.00**, and median stable/unstable causal similarity is **0.708/0.755**.
 
-Consensus motifs are connected components of final edges with an extra
-one-unit-per-member constraint. Pairwise assignments can form inconsistent
-cycles, so edges are considered in descending recurrence-times-causal score and
-any union that would add a second unit from the same member is rejected.
+Consensus motifs are connected components of the **74** final edges that also
+meet a stricter, config-driven per-regime causal cosine of at least 0.70. This
+motif-membership threshold is distinct from the 0.50 final-edge threshold.
+Pairwise assignments can form inconsistent cycles, so edges are considered in
+descending recurrence-times-causal score; the one-unit-per-member constraint
+rejects four unions, leaving 70 catalog edges.
 
 ### Cross-model CKA
 
@@ -164,7 +181,7 @@ regimes rather than claiming separate causal behavior.
 ## Uncertainty and sensitivity
 
 - Unit recurrence uses 100 whole-equilibrium resamples. Final-edge recurrence is
-  0.70–1.00, with median 1.00.
+  0.78–1.00, with median 1.00.
 - CKA uses 20 whole-equilibrium draws because the original all-100 × six-layer ×
   100-draw configuration exceeded the step budget. These intervals are explicitly
   low-resolution sensitivity checks.
@@ -200,6 +217,14 @@ regimes rather than claiming separate causal behavior.
 - Validation rank is not a useful organizing axis here: rank-versus-medoid
   distance is weak and nonsignificant, and lower-ranked cohort CKA is not lower.
 - Hidden interventions are off-manifold and do not establish plasma causality.
+- All members share training data and an architecture family. Motif recurrence
+  therefore has an unmeasured shared-training floor and is not evidence of
+  independent discovery.
+- The 0.50 final-edge gate was introduced by an audit on the same 1,000 rows,
+  not an independent holdout. The motif catalog is unchanged when this edge
+  threshold is swept from 0.00 through 0.70 because the separate 0.70
+  motif-membership threshold binds; this supports catalog stability but does
+  not independently validate either cutoff.
 
 ## Mutation testing
 
@@ -213,6 +238,11 @@ Three deliberate mutations turned the focused suite red and were reverted:
    null control; and
 3. wiring the stable/near-floor causal gate from unstable rows changed a known
    stable cosine from -1 to +1 and failed the regime-specific effect test.
+
+Automated review supplied a fourth mutation: deleting the one-unit-per-member
+union constraint initially survived. A new cyclic toy graph with two units from
+one member now turns that mutation red; the constraint removes four real unions
+in the registered catalog.
 
 ## Reproduction
 
@@ -250,7 +280,8 @@ nearest proxy is the top-three/96-row pilot, which checks axes, native units,
 assignment, grouped recurrence, unmatched controls, both regime gates, and CKA.
 
 **Checkable from committed artifacts alone.** The 582 matches, 163 final edges,
-eight motifs, 29,700 CKA rows, 100 cluster rows, all cohort counts, figures, and
+74 motif-eligible edges, eight motifs, 29,700 CKA rows, 100 cluster rows, all
+cohort counts, figures, and
 headline medians are committed under [S10 artifacts](S10_artifacts/).
 `test_cross_model_artifacts.py` recomputes counts and gates, enforces one unit per
 member per motif, checks every pair/layer, and verifies committed hashes against

@@ -35,6 +35,17 @@ def test_s10_headlines_recompute_from_committed_tables():
     assert len(cka) == summary["cka_pair_layer_rows"] == 29_700
     assert len(members) == summary["members"] == 100
     assert summary["stable_rows"] == 240 and summary["unstable_rows"] == 760
+    motif_eligible = [
+        row for row in final
+        if float(row["equilibrium_bootstrap_recurrence"])
+        >= summary["motif_minimum_recurrence"]
+        and min(
+            float(row["causal_effect_similarity_stable_or_near_floor"]),
+            float(row["causal_effect_similarity_unstable"]),
+        ) >= summary["motif_minimum_regime_causal_similarity"]
+    ]
+    assert len(motif_eligible) == summary["motif_eligible_edges"] == 74
+    assert sum(int(row["edge_count"]) for row in motifs) == 70
     assert {row["cohort"] for row in members} == {
         "stored_validation_top_10",
         "stored_validation_ranks_11_50",
@@ -57,6 +68,8 @@ def test_s10_consensus_is_one_to_one_and_agrees_in_both_regimes():
         units = motif["unit_ids"].split("|")
         member_ids = [unit.rsplit(":u", 1)[0] for unit in units]
         assert len(member_ids) == len(set(member_ids)) == int(motif["member_count"])
+        assert float(motif["minimum_recurrence"]) >= 0.7
+        assert float(motif["minimum_causal_similarity"]) >= 0.7
 
 
 def test_s10_cka_covers_every_pair_and_layer():

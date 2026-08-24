@@ -17,6 +17,7 @@
   "minimum_match_recurrence": 0.7,
   "minimum_causal_similarity": 0.7,
   "minimum_regime_causal_similarity": 0.5,
+  "minimum_motif_regime_causal_similarity": 0.7,
   "minimum_flux_residual_similarity": 0.5,
   "signature_component_weights": [0.3, 0.3, 0.2, 0.2],
   "member_clusters": 4,
@@ -25,6 +26,7 @@
   "checkpoint": "models/cyclic_ensemble_pre2.pt",
   "cohorts": "reports/xai/S01_artifacts/cohorts.json",
   "channel_scales": "reports/xai/S01_artifacts/channel_robust_scales.csv",
+  "s05_unit_motifs": "reports/xai/S05_artifacts/unit_motifs.csv",
   "published_dir": "reports/xai/S10_artifacts",
   "pilot": {
     "run_id": "pilot-top3-panel96",

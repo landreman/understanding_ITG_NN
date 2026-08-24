@@ -56,7 +56,11 @@ def _member_cohort(rank: int) -> str:
 
 
 def _consensus_components(
-    unit_ids: Sequence[str], edges: Sequence[dict[str, Any]]
+    unit_ids: Sequence[str],
+    edges: Sequence[dict[str, Any]],
+    *,
+    minimum_recurrence: float,
+    minimum_causal_similarity: float,
 ) -> list[dict[str, Any]]:
     adjacency = {unit_id: set() for unit_id in unit_ids}
     parent = {unit_id: unit_id for unit_id in unit_ids}
@@ -75,7 +79,10 @@ def _consensus_components(
         reverse=True,
     )
     for edge in ordered:
-        if float(edge["recurrence"]) < 0.7 or float(edge["causal_similarity"]) < 0.7:
+        if (
+            float(edge["recurrence"]) < minimum_recurrence
+            or float(edge["causal_similarity"]) < minimum_causal_similarity
+        ):
             continue
         left, right = str(edge["left"]), str(edge["right"])
         if left not in adjacency or right not in adjacency:
@@ -127,6 +134,30 @@ def _consensus_components(
             }
         )
     return motifs
+
+
+def _annotate_motifs(
+    motif_rows: list[dict[str, Any]], *, s05_unit_motifs: Path
+) -> None:
+    """Attach only independently supported S05 names to consensus motifs."""
+
+    supported: dict[str, str] = {}
+    with s05_unit_motifs.open(newline="", encoding="utf-8") as handle:
+        for row in csv.DictReader(handle):
+            if row["motif_status"] == "supported_named_motif":
+                supported[row["unit_id"]] = row["claimed_concept"]
+    for row in motif_rows:
+        units = str(row["unit_ids"]).split("|")
+        concepts = sorted({supported[unit] for unit in units if unit in supported})
+        row["definition"] = (
+            "functional_signature_and_off_manifold_mean_ablation_agree_"
+            "in_both_output_regimes"
+        )
+        row["s05_supported_unit_count"] = sum(unit in supported for unit in units)
+        row["s05_supported_concepts"] = "|".join(concepts) if concepts else "none"
+        row["interpretive_label"] = (
+            "|".join(concepts) if concepts else "unresolved_by_S05_vocabulary"
+        )
 
 
 def _validate_summary(summary: dict[str, Any]) -> None:
@@ -384,6 +415,7 @@ def run(args: argparse.Namespace) -> Path:
     config = json.loads(args.config.read_text(encoding="utf-8"))
     resolved = _resolve(config, args)
     resolved["source_hashes"] = _source_hashes()
+    resolved["s05_unit_motifs_sha256"] = sha256_file(resolved["s05_unit_motifs"])
     set_deterministic_seed(int(resolved["seed"]))
     dataset, checkpoint = Path(resolved["dataset"]), Path(resolved["checkpoint"])
     output_dir = args.output_dir.resolve() if args.output_dir else (Path("output/xai/S10") / resolved["run_id"]).resolve()
@@ -574,13 +606,37 @@ def run(args: argparse.Namespace) -> Path:
         }
         for row in unit_match_rows if row["consensus_gate"]
     ]
+    preliminary_edges = [
+        {
+            "left": row["left_unit_id"], "right": row["right_unit_id"],
+            "recurrence": row["equilibrium_bootstrap_recurrence"],
+            "causal_similarity": row["causal_effect_similarity"],
+        }
+        for row in unit_match_rows if row["pre_regime_consensus_gate"]
+    ]
     unit_ids = [f"{member_ids[m]}:u{unit:03d}" for m in range(top_count) for unit in range(widths[m])]
-    motifs = _consensus_components(unit_ids, accepted_edges)
+    preliminary_motifs = _consensus_components(
+        unit_ids,
+        preliminary_edges,
+        minimum_recurrence=float(resolved["minimum_match_recurrence"]),
+        minimum_causal_similarity=float(resolved["minimum_causal_similarity"]),
+    )
+    motifs = _consensus_components(
+        unit_ids,
+        accepted_edges,
+        minimum_recurrence=float(resolved["minimum_match_recurrence"]),
+        minimum_causal_similarity=float(
+            resolved["minimum_motif_regime_causal_similarity"]
+        ),
+    )
     motif_rows = [
         {"motif_id": f"motif_{index:03d}", **motif, "unit_ids": "|".join(motif["unit_ids"]),
          "definition": "functional_signature_and_off_manifold_mean_ablation_agree"}
         for index, motif in enumerate(motifs, start=1)
     ]
+    _annotate_motifs(
+        motif_rows, s05_unit_motifs=Path(resolved["s05_unit_motifs"])
+    )
 
     cka_rows: list[dict[str, Any]] = []
     cka_names = [f"canonical_atrous_layer_{index}" for index in range(1, 6)] + ["invariant_bottleneck"]
@@ -613,6 +669,7 @@ def run(args: argparse.Namespace) -> Path:
     try:
         from scipy.cluster.hierarchy import dendrogram, fcluster, linkage
         from scipy.spatial.distance import squareform
+        from scipy.stats import spearmanr
     except ModuleNotFoundError as error:
         raise RuntimeError(
             "S10 member clustering requires the project XAI dependencies; "
@@ -640,7 +697,7 @@ def run(args: argparse.Namespace) -> Path:
         selected = [i for i, row in enumerate(member_rows) if row["cohort"] == cohort]
         if not selected:
             continue
-        cohort_rows.append({
+        cohort_row = {
             "cohort": cohort, "member_count": len(selected),
             "median_bottleneck_width": float(np.median(np.asarray(widths)[selected])),
             "narrow_fraction": float(np.mean(np.asarray(widths)[selected] <= 11)),
@@ -648,7 +705,46 @@ def run(args: argparse.Namespace) -> Path:
                 distance[i, j] for offset, i in enumerate(selected) for j in selected[offset + 1:]
             ])) if len(selected) > 1 else 0.0,
             "clusters_present": "|".join(map(str, sorted(set(int(cluster[i]) for i in selected)))),
-        })
+        }
+        selected_members = {member_ids[index] for index in selected}
+        for layer_name in cka_names:
+            cohort_row[f"median_cka__{layer_name}"] = float(np.median([
+                row["cka"] for row in cka_rows
+                if row["layer_name"] == layer_name
+                and row["left_member_id"] in selected_members
+                and row["right_member_id"] in selected_members
+            ]))
+        cohort_rows.append(cohort_row)
+
+    final_rows = [row for row in unit_match_rows if row["consensus_gate"]]
+    medoid = int(np.argmin(distance.mean(axis=1)))
+    rank_correlation, rank_p_value = spearmanr(
+        np.arange(1, len(member_ids) + 1), distance[medoid]
+    )
+    narrow = np.asarray(widths) <= 11
+    wide = ~narrow
+    narrow_wide = distance[np.ix_(narrow, wide)].ravel()
+    wide_wide_matrix = distance[np.ix_(wide, wide)]
+    wide_wide = wide_wide_matrix[np.triu_indices(int(wide.sum()), 1)]
+    cka_median_by_layer = {}
+    cka_trim_change_by_layer = {}
+    for layer_name in cka_names:
+        layer_rows = [row for row in cka_rows if row["layer_name"] == layer_name]
+        values = np.asarray([row["cka"] for row in layer_rows], dtype=np.float64)
+        trimmed = np.asarray(
+            [row["outlier_trimmed_cka"] for row in layer_rows], dtype=np.float64
+        )
+        cka_median_by_layer[layer_name] = float(np.median(values))
+        cka_trim_change_by_layer[layer_name] = float(np.median(np.abs(values - trimmed)))
+    motif_eligible_edges = sum(
+        float(row["equilibrium_bootstrap_recurrence"])
+        >= float(resolved["minimum_match_recurrence"])
+        and min(
+            float(row["causal_effect_similarity_stable_or_near_floor"]),
+            float(row["causal_effect_similarity_unstable"]),
+        ) >= float(resolved["minimum_motif_regime_causal_similarity"])
+        for row in final_rows
+    )
 
     summary = {
         "run_id": resolved["run_id"], "estimand": NATIVE_ESTIMAND,
@@ -662,6 +758,55 @@ def run(args: argparse.Namespace) -> Path:
             "stored_validation_top_10", "stored_validation_ranks_11_50", "stored_validation_ranks_51_100"
         )},
         "narrow_member_count": int(np.count_nonzero(np.asarray(widths) <= 11)),
+        "pre_regime_consensus_edges": len(preliminary_edges),
+        "pre_regime_consensus_motifs": len(preliminary_motifs),
+        "preliminary_edges_rejected_by_regime_causal_gate": len(preliminary_edges) - len(accepted_edges),
+        "regime_causal_gate": (
+            f"cosine_similarity>={resolved['minimum_regime_causal_similarity']} "
+            f"separately on {int(stable.sum())} stable_or_near_floor and "
+            f"{int((~stable).sum())} unstable signed mean-replacement effects"
+        ),
+        "regime_causal_gate_correction": (
+            "preliminary four-summary causal gate admitted opposing within-regime "
+            "effects; corrected before reporting"
+        ),
+        "motif_eligible_edges": motif_eligible_edges,
+        "motif_minimum_recurrence": float(resolved["minimum_match_recurrence"]),
+        "motif_minimum_regime_causal_similarity": float(
+            resolved["minimum_motif_regime_causal_similarity"]
+        ),
+        "final_edge_flux_residual_similarity_median": float(np.median([
+            row["activation_flux_residual_similarity"] for row in final_rows
+        ])),
+        "final_edge_recurrence_median": float(np.median([
+            row["equilibrium_bootstrap_recurrence"] for row in final_rows
+        ])),
+        "final_edge_stable_causal_similarity_median": float(np.median([
+            row["causal_effect_similarity_stable_or_near_floor"] for row in final_rows
+        ])),
+        "final_edge_unstable_causal_similarity_median": float(np.median([
+            row["causal_effect_similarity_unstable"] for row in final_rows
+        ])),
+        "maximum_motif_member_count": max(
+            (row["member_count"] for row in motif_rows), default=0
+        ),
+        "motifs_with_at_least_four_members": sum(
+            int(row["member_count"]) >= 4 for row in motif_rows
+        ),
+        "s05_named_consensus_motifs": sum(
+            int(row["s05_supported_unit_count"]) > 0 for row in motif_rows
+        ),
+        "cka_median_by_layer": cka_median_by_layer,
+        "cka_median_absolute_outlier_trim_change_by_layer": cka_trim_change_by_layer,
+        "member_cluster_sizes": {
+            str(label): int(np.count_nonzero(cluster == label))
+            for label in sorted(set(int(value) for value in cluster))
+        },
+        "medoid_stored_validation_rank": medoid + 1,
+        "rank_vs_medoid_distance_spearman": float(rank_correlation),
+        "rank_vs_medoid_distance_p_value": float(rank_p_value),
+        "narrow_wide_distance_median": float(np.median(narrow_wide)),
+        "wide_wide_distance_median": float(np.median(wide_wide)),
     }
     if resolved["mode"] == "production":
         _validate_summary(summary)
