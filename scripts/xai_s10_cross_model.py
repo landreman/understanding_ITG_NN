@@ -445,14 +445,12 @@ def _member_evidence_blocks(
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """The four registered evidence families used for member comparison."""
 
+    families = (predictions, attribution_profiles, causal_profiles, concept_profiles)
+    if len({id(values) for values in families}) != 4:
+        raise ValueError("member evidence families must be four distinct inputs")
     return tuple(
         np.asarray(values)
-        for values in (
-            predictions,
-            attribution_profiles,
-            causal_profiles,
-            concept_profiles,
-        )
+        for values in families
     )
 
 
@@ -462,6 +460,15 @@ def _outlier_trimmed_cka(left: np.ndarray, right: np.ndarray) -> tuple[float, in
     joint_norm = np.linalg.norm(left, axis=1) + np.linalg.norm(right, axis=1)
     keep = joint_norm <= np.quantile(joint_norm, 0.95)
     return linear_cka(left[keep], right[keep]), int(np.count_nonzero(keep))
+
+
+def _cka_pair_values(
+    left: np.ndarray, right: np.ndarray, point: float
+) -> tuple[float, float]:
+    """Emit the untrimmed point and independently recomputed outlier check."""
+
+    trimmed, _ = _outlier_trimmed_cka(left, right)
+    return float(point), trimmed
 
 
 def _density_signature(density: np.ndarray) -> np.ndarray:
@@ -798,15 +805,17 @@ def run(args: argparse.Namespace) -> Path:
         for left in range(len(member_ids)):
             for right in range(left + 1, len(member_ids)):
                 # Pairwise 5% high-norm removal checks outlier sensitivity.
-                trimmed, _ = _outlier_trimmed_cka(
-                    representations[left], representations[right]
+                point_value, trimmed = _cka_pair_values(
+                    representations[left],
+                    representations[right],
+                    point[left, right],
                 )
                 cka_rows.append({
                     "layer_index": layer, "layer_name": cka_names[layer],
                     "representation_kind": "flattened_spatial_activation" if layer < 5 else "position_mean_bottleneck",
                     "left_member_id": member_ids[left], "right_member_id": member_ids[right],
                     "left_rank": left + 1, "right_rank": right + 1,
-                    "cka": point[left, right], "cka_grouped_ci95_lower": lower[left, right],
+                    "cka": point_value, "cka_grouped_ci95_lower": lower[left, right],
                     "cka_grouped_ci95_upper": upper[left, right], "outlier_trimmed_cka": trimmed,
                     "bootstrap_group": BOOTSTRAP_GROUP, "probe_rows": len(cka_indices),
                 })

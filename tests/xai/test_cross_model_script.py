@@ -176,6 +176,18 @@ def test_density_signature_spectrum_ignores_density_offsets():
     assert np.any(original[:, :6] > 0)
 
 
+def test_correlation_removes_column_offsets():
+    import numpy as np
+
+    left = np.asarray([[0.0, 1.0], [1.0, 0.0], [2.0, 2.0]])
+    right = np.asarray([[0.0], [1.0], [2.0]])
+    registered = MODULE._correlation(left, right)
+    offset = MODULE._correlation(left + 100.0, right + 50.0)
+    assert np.allclose(registered, offset)
+    assert registered[0, 0] == pytest.approx(1.0)
+    assert registered[1, 0] == pytest.approx(0.5)
+
+
 def test_outlier_trimmed_cka_removes_the_high_joint_norm_row():
     import numpy as np
 
@@ -185,6 +197,19 @@ def test_outlier_trimmed_cka_removes_the_high_joint_norm_row():
     trimmed, retained = MODULE._outlier_trimmed_cka(left, right)
     assert retained == 19
     assert trimmed != pytest.approx(MODULE.linear_cka(left, right))
+
+
+def test_cka_pair_values_emit_the_outlier_trimmed_result():
+    import numpy as np
+
+    left = np.column_stack((np.arange(20.0), np.arange(20.0) ** 2))
+    right = left.copy()
+    right[-1] = np.asarray([-1000.0, 1000.0])
+    point = MODULE.linear_cka(left, right)
+    emitted_point, emitted_trimmed = MODULE._cka_pair_values(left, right, point)
+    assert emitted_point == pytest.approx(point)
+    assert emitted_trimmed == pytest.approx(MODULE._outlier_trimmed_cka(left, right)[0])
+    assert emitted_trimmed != pytest.approx(emitted_point)
 
 
 def test_regime_mask_assigns_floor_and_threshold_rows_to_stable():
@@ -237,6 +262,10 @@ def test_member_evidence_blocks_keep_all_four_registered_families():
     assert len(blocks) == 4
     assert [len(block) for block in blocks] == [3, 3, 3, 3]
     assert [float(block[0, 0]) for block in blocks] == [1, 2, 3, 4]
+    with pytest.raises(ValueError, match="four distinct"):
+        MODULE._member_evidence_blocks(
+            families[0], families[0], families[2], families[3]
+        )
 
 
 def test_probe_representation_flattens_and_standardizes_each_column():

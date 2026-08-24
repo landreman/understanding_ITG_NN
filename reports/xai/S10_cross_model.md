@@ -98,7 +98,7 @@ recorded separately as `postprocessing.reproduction_source_hashes` and
 incur the historical wall time. This separation prevents later code from being
 misrepresented as the code that executed the registered run.
 The manifest also states that its committed `output_hashes` describe the
-post-review reproduction artifacts, updated at `2026-08-24T07:52:43Z`, while
+post-review reproduction artifacts, updated at `2026-08-24T08:17:33Z`, while
 the 3,601.96 s wall time applies only to the original all-100 member-signature
 and CKA execution before table enrichment. It is intentionally a disclosed
 historical-plus-reproduction record, not the output of one command invocation.
@@ -353,6 +353,12 @@ now requires the weaker of the stable and unstable similarities, and the member
 evidence helper requires predictions, input attributions, causal signatures,
 and concept profiles exactly once each. Replacing `min` by `max`, or dropping or
 duplicating a family, turns the corresponding named test red.
+
+An eleventh review found correlation centering and the final CKA outlier-check
+emission. Adding large per-column offsets must leave concept correlation
+unchanged. A paired CKA helper must emit both the untrimmed point and the
+independently trimmed result, which differ on a high-norm-row toy. Deleting
+centering or copying the point into the trimmed field turns its named test red.
 
 The manifest source-identity assertions live in a separately named tripwire
 test. They force provenance to be refreshed after any runner edit, but are not
