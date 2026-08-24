@@ -1,4 +1,58 @@
-# S10 executive summary — what the networks share
+# Claude summary
+
+## What the step was for
+
+Your trained model is an *ensemble*: 100 separate neural networks, each trained on the same data but with different architectures (different layer widths, etc.), whose predictions get averaged. Earlier steps (S04, S05, S08) had dissected individual networks — mostly the single best one — and found internal quantities that seem to correspond to physical concepts. That raises an obvious question: **are those findings idiosyncrasies of one network, or do all 100 networks converge on the same internal computations?** If independent-ish networks all invent the same internal quantity, that quantity is much more likely to reflect real structure in the physics rather than an accident of training. Step 10's goal was to test that, by comparing the networks' internals to each other.
+
+The key comparison point is each network's **bottleneck**: a narrow layer in the middle of the network where the 96-point geometry profiles have been compressed down to a handful of numbers (between roughly 8 and 30, depending on the member). Each of those numbers is a "unit" — a learned summary statistic of the geometry. The bottleneck is where networks of different shapes can be compared unit-by-unit, so the central task was to match up units across networks: "unit 3 of network A computes the same thing as unit 7 of network B."
+
+## How the matching worked, briefly
+
+Two bottleneck units in different networks were declared a match only if they agreed in several independent ways at once, on the same frozen panel of 1,000 rows (one flux tube from each of 1,000 equilibria):
+
+1. **Their activations correlate** — they output similar values across the same inputs.
+2. **They still correlate after removing the easy explanation.** Any two units that both track the final heat-flux answer will correlate trivially. So the analysis subtracted out the part of each unit explained by the flux and the two gradient drives, and required the *leftover* signals to still match. This guards against "label-only" matches.
+3. **The match is stable under resampling.** The 1,000 equilibria were resampled 100 times (a *bootstrap* — redrawing the data with replacement to see whether a result depends on which particular examples happened to be included), and the pairing had to reappear in at least 70% of resamples.
+4. **They matter to their networks in the same way.** Each unit was *ablated* — its value forcibly replaced by its average, and the change in the prediction recorded for every row. Two matched units had to shift their networks' predictions in the same direction row-by-row. Crucially, this agreement was required separately on the 240 stable/near-floor rows and the 760 unstable rows, so opposite behavior in one regime couldn't hide inside a good average.
+
+Groups of mutually matched units across many networks are called **motifs** — candidate "shared computations."
+
+Two supporting analyses ran alongside. **CKA** (Centered Kernel Alignment) is a single number, 0 to 1, measuring whether two networks' internal representations have the same *geometry* — whether inputs that look similar to one network also look similar to the other — even when the layers have different widths. And a **clustering** analysis grouped all 100 members by their predictions, input sensitivities, ablation behavior, and concept profiles, to see whether any subpopulations (e.g. the four narrowest-bottleneck members, or low-ranked members) behave qualitatively differently.
+
+## What was found
+
+**The strict causal evidence for shared computations is much thinner than surface similarity suggests.** Matching started with 582 above-threshold unit pairs among the top-10 networks. After all the gates — especially the requirement that ablation effects agree separately in both output regimes — only **163 pairs survived**, and a post-run audit was what forced that regime-separated check: 334 of the preliminary pairs looked causally similar on the four-number summary but actually had *opposing* effects in at least one regime (some had cosine similarity near −0.8 on stable rows, i.e. nearly opposite). This is exactly the failure mode the project's "keep signed, per-regime results" rule exists to catch.
+
+**Eight motifs emerged, five of them substantial** — appearing in 9, 7, 7, 6, and 4 of the top 10 networks. So there *are* internal quantities that most of the best networks compute in a functionally and causally consistent way. But the report is careful about two caveats:
+
+- The count "eight" depends on a similarity threshold: sweeping it from 0.50 to 0.80 gives 14, 12, 8, or 4 motifs. Eight is a description at one chosen cutoff, not a natural number of shared mechanisms.
+- **Only one motif has a physical name.** The seven-member `motif_001` contains a unit that step S05 had linked to the circular mean of the $f_Q$ integrand from your paper — but that anchor unit lives in an atypical member (the narrowest bottleneck, an outlier in the clustering), so it's a tentative hint, not an identification of all seven. The other seven motifs are either "screened by S05 but no supported name found" (motifs 002–004) or "never screened" (005–008). Functional matching tells you units *behave alike*, not what they *mean*.
+
+**All 100 networks are representationally very similar — but that similarity is misleadingly generous.** Median CKA is 0.948 at the first internal layer, declining to 0.814 at the bottleneck. High CKA everywhere, including between the top-ranked and lowest-ranked members, and between narrow- and wide-bottleneck members. Yet the four narrow-bottleneck members are clearly *different* on the combined evidence distance (median distance 3.15 to wide members versus 1.18 wide-to-wide). The report's own conclusion: representation-geometry similarity alone would have overstated how mechanistically alike the networks are. CKA was correctly treated as supporting evidence only.
+
+**Validation rank doesn't organize anything.** Better-performing members are not more "central" or more similar to each other (rank-vs-distance correlation 0.118, not significant; lower-ranked cohorts have equally high CKA). Whatever separates a rank-5 member from a rank-90 member, it isn't a different internal representation in any way this analysis can see.
+
+**One important honesty note the report flags:** all 100 members were trained on the same data with related architectures. So when seven networks share a motif, that recurrence has an unmeasured "shared training" floor — it is not seven independent discoveries of the same physics, the way seven independent research groups finding the same result would be.
+
+## The conclusions in one paragraph
+
+The ensemble's networks agree broadly on *how they represent* the geometry
+inputs, and a small core of genuinely shared, causally consistent internal
+computations exists — eight motifs at the registered threshold, five spanning
+most of the top networks. But the step's most valuable outcome is arguably
+negative: naive similarity measures (activation correlation, CKA, pooled causal
+summaries) would have suggested far more agreement than survives strict,
+regime-separated causal testing (163 of 582 candidate pairs), and only one motif
+so far connects to a named physical quantity, tentatively. The shared motifs are
+now cataloged (in
+[motif_catalog.csv](reports/xai/S10_artifacts/motif_catalog.csv)) as the raw
+material for later steps — S11, S12, and the eventual synthesis in S14 — whose
+job includes putting physical names on the seven motifs that don't have one yet.
+
+-------------
+
+
+# S10 Codex summary — what the networks share
 
 ## What this step asked
 
