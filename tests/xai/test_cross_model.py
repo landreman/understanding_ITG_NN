@@ -143,6 +143,33 @@ def test_grouped_bootstrap_residualization_rejects_label_only_recurrence():
     assert recurrence[0, 0] < 0.1
 
 
+def test_grouped_bootstrap_residualization_keeps_an_intercept():
+    rng = np.random.default_rng(3)
+    rows = 150
+    flux = 10.0 + rng.normal(size=rows)
+    left = np.column_stack(
+        (5.0 + 0.1 * rng.normal(size=rows), rng.normal(size=rows))
+    )
+    right = np.column_stack(
+        (7.0 + 0.1 * rng.normal(size=rows), rng.normal(size=rows))
+    )
+    recurrence = grouped_bootstrap_match_recurrence(
+        left,
+        right,
+        groups=np.repeat(np.arange(50), 3),
+        covariates=flux[:, None],
+        left_auxiliary=np.ones((2, 1)),
+        right_auxiliary=np.ones((2, 1)),
+        left_effects=np.ones((2, 1)),
+        right_effects=np.ones((2, 1)),
+        component_weights=(0.0, 1.0, 0.0, 0.0),
+        minimum_similarity=0.7,
+        replicates=60,
+        seed=17,
+    )
+    assert recurrence[0, 0] < 0.1
+
+
 def test_group_bootstrap_gives_sibling_tubes_identical_multiplicity():
     groups = np.asarray(["eq0", "eq0", "eq1", "eq2", "eq2", "eq2"])
     weights = _group_bootstrap_row_weights(groups, np.random.default_rng(5))

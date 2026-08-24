@@ -198,6 +198,10 @@ Member distance equally combines four robustly standardized blocks:
 - signed/RMS mean-replacement causal profiles, separately by regime; and
 - bottleneck concept-selectivity profiles.
 
+Six non-prediction columns are constant across all 100 members and therefore
+carry no clustering information: 2 of 20 causal-signature columns and 4 of 150
+concept-profile columns. Robust standardization drops those six columns.
+
 The across-member robust standardization is what makes the seven gradient
 channels comparable in the distance. The S01 IQR scale is retained for the
 archived `scaled_signed_input_gradient` values; a per-channel constant cancels
@@ -367,6 +371,12 @@ correlation unchanged; and independently scaling each unit signature must leave
 row-wise cosine similarity unchanged. Replacing bootstrap multiplicities by
 ones, deleting correlation centering, or deleting cosine normalization turns
 the corresponding named test red.
+
+A thirteenth review isolated the constant term in weighted flux/drive
+residualization. A nonzero-offset toy with units sharing only constant offsets
+has recurrence 0.0 with the registered intercept and 1.0 when the regression is
+forced through the origin. Deleting the intercept now turns that named grouped
+bootstrap test red.
 
 The manifest source-identity assertions live in a separately named tripwire
 test. They force provenance to be refreshed after any runner edit, but are not
