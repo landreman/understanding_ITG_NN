@@ -419,6 +419,15 @@ def _concept_profile(selectivity: np.ndarray) -> np.ndarray:
     )
 
 
+def _attribution_profile(gradients: np.ndarray, stable: np.ndarray) -> np.ndarray:
+    """Signed then absolute channel means, separately by output regime."""
+
+    return np.concatenate(
+        [gradients[mask].mean(0) for mask in (stable, ~stable)]
+        + [np.abs(gradients[mask]).mean(0) for mask in (stable, ~stable)]
+    )
+
+
 def _outlier_trimmed_cka(left: np.ndarray, right: np.ndarray) -> tuple[float, int]:
     """Recompute CKA after dropping the 5% largest joint representation norms."""
 
@@ -616,11 +625,7 @@ def run(args: argparse.Namespace) -> Path:
             scales, int(resolved["batch_size"]), ensemble.device,
         )
         gradient_stable = stable[attribution_indices]
-        attribution_profile = np.concatenate([
-            gradients[mask].mean(0) for mask in (gradient_stable, ~gradient_stable)
-        ] + [
-            np.abs(gradients[mask]).mean(0) for mask in (gradient_stable, ~gradient_stable)
-        ])
+        attribution_profile = _attribution_profile(gradients, gradient_stable)
 
         width = bottleneck.shape[1]
         kernels = [int(layer.kernel_size[0]) for layer in member.model.conv_layers]

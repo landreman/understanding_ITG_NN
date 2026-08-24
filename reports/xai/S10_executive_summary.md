@@ -93,7 +93,8 @@ first spatial layer to **0.814** at the final invariant bottleneck. This shows
 broadly similar representation geometry at every measured layer. It does not
 show that networks become more individual with depth because this run did not
 register a permutation or chance baseline for comparing layers. Removing the 5%
-most extreme probe examples changes the median score by only 0.006–0.022, so the
+most extreme probe examples changes the typical pair score by a median of
+0.006–0.022, so the
 raw scores are not usually driven by a few outliers.
 
 The uncertainty ranges for CKA use only 20 resampled panels. They are a coarse

@@ -211,6 +211,16 @@ def test_concept_profile_keeps_peak_absolute_and_signed_mean_blocks():
     assert MODULE._concept_profile(selectivity) == pytest.approx([3, 4, 3, -1, -1, 2])
 
 
+def test_attribution_profile_keeps_signed_absolute_and_regime_blocks():
+    import numpy as np
+
+    gradients = np.asarray([[2.0], [2.0], [1.0], [-1.0]])
+    stable = np.asarray([True, True, False, False])
+    assert MODULE._attribution_profile(gradients, stable) == pytest.approx(
+        [2.0, 0.0, 2.0, 1.0]
+    )
+
+
 def test_probe_representation_flattens_and_standardizes_each_column():
     import numpy as np
 

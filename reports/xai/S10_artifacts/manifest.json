@@ -255,7 +255,7 @@
       "source_hashes": {
         "config": "6d17f7be74fb94c3d6af59d5c86be3a0521ad420f6f702481d2a54e7c6030698",
         "library": "942149016a4356194a4bf255f373a41cc8a90c7f465db69c898b5505c12b1a63",
-        "runner": "6476b8b30498d95658b7ce36ba9079964a1ba84c84ab6026c0c97e27a9912660"
+        "runner": "fba1c2f902308a584d6c8e97e40ec29e2249b94c060164f47341cc65c2bc5c8e"
       },
       "stable_threshold_log_Q": -1.9,
       "step": "S10",
@@ -264,9 +264,9 @@
     "reproduction_source_hashes": {
       "config": "6d17f7be74fb94c3d6af59d5c86be3a0521ad420f6f702481d2a54e7c6030698",
       "library": "942149016a4356194a4bf255f373a41cc8a90c7f465db69c898b5505c12b1a63",
-      "runner": "6476b8b30498d95658b7ce36ba9079964a1ba84c84ab6026c0c97e27a9912660"
+      "runner": "fba1c2f902308a584d6c8e97e40ec29e2249b94c060164f47341cc65c2bc5c8e"
     },
-    "reproduction_artifacts_updated_at_utc": "2026-08-24T05:55:28Z",
+    "reproduction_artifacts_updated_at_utc": "2026-08-24T06:21:19Z",
     "registered_wall_time_scope": "original all-100 member-signature and CKA execution before post-review table enrichment",
     "source_artifact": "member_signatures.h5",
     "stable_rows": 240,

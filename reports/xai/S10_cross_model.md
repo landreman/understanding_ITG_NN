@@ -98,7 +98,7 @@ recorded separately as `postprocessing.reproduction_source_hashes` and
 incur the historical wall time. This separation prevents later code from being
 misrepresented as the code that executed the registered run.
 The manifest also states that its committed `output_hashes` describe the
-post-review reproduction artifacts, updated at `2026-08-24T05:55:28Z`, while
+post-review reproduction artifacts, updated at `2026-08-24T06:21:19Z`, while
 the 3,601.96 s wall time applies only to the original all-100 member-signature
 and CKA execution before table enrichment. It is intentionally a disclosed
 historical-plus-reproduction record, not the output of one command invocation.
@@ -324,6 +324,12 @@ drives in the residualization covariates, per-column probe standardization, the
 `<= -1.9` stable/near-floor convention, and peak-absolute plus signed-mean
 concept profiles. Dropping or reversing any of those connections turns its
 named test red.
+
+A seventh review found the remaining inline attribution-profile wiring. It is
+now a named helper with an asymmetric toy requiring signed-stable,
+signed-unstable, absolute-stable, and absolute-unstable channel means in that
+order. Pooling regimes, deleting magnitude blocks, or copying signed values
+into the magnitude blocks turns the same named test red.
 
 The manifest source-identity assertions live in a separately named tripwire
 test. They force provenance to be refreshed after any runner edit, but are not
