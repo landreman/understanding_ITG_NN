@@ -66,7 +66,7 @@
     "source_hashes": {
       "config": "5663bb04c05475a087a4f0850de2843706be2142099220fb8414de7b7db1cf65",
       "library": "431b60d6fd0180e99bfaea49a348db08f6f6c2f31ba25a34a92ee01ef1319e58",
-      "runner": "032d3b2f4fcfe583add2374a55556b32be18e3f499b8e2024428c0d81f4b3989"
+      "runner": "f704fc7be3d04cbc55a83d3436ac76832b0c8152843c79796f2e4d561a97475b"
     },
     "stable_threshold_log_Q": -1.9,
     "step": "S11",
@@ -86,10 +86,10 @@
     "sha256": "9d8fa52f93f2782ad9948a38bf46943c0cd6df78cd08b94a006dad4e06c1c8ad"
   },
   "device": "cpu",
-  "git_commit": "ffb004626a6d9536acd2e4d6a0a3f2ffb83a0443",
+  "git_commit": "0073f9bd9ffe8507605c08d444e755d7044c79a4",
   "git_dirty": true,
-  "git_tracked_dirty": true,
-  "git_tree": "3e216de8193af76d7bdd223c69cbe2b19c115b08",
+  "git_tracked_dirty": false,
+  "git_tree": "9d8ec7ee412a84e3c8497543896af91300fae8a2",
   "gradient_member_ids": [
     "2864601_0.437",
     "2864601_0.371",
@@ -1391,5 +1391,5 @@
     100596
   ],
   "seed": 20260824,
-  "wall_time_seconds": 2265.737846999953
+  "wall_time_seconds": 2895.0024492910015
 }

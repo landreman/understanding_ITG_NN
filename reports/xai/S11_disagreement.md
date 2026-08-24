@@ -94,17 +94,16 @@ feature is reported, with no selection on these residuals.
 
 The registered run is `disagreement-all100-panel1000`. Its committed
 [manifest](S11_artifacts/manifest.json) records CPU execution, seed 20260824,
-all 100 member IDs, all 1,000 parent row IDs, and **2,265.74 s (37.76 min)** wall
+all 100 member IDs, all 1,000 parent row IDs, and **2,895.00 s (48.25 min)** wall
 time. The dataset SHA-256 is
 `9d8fa52f93f2782ad9948a38bf46943c0cd6df78cd08b94a006dad4e06c1c8ad`;
 the checkpoint SHA-256 is
 `d5e092348514a5ee85b68bcdcf51dbb32eaa344beea1daa28f5aaeba9e86eefb`.
-The corrected production rerun began from commit `ffb0046`; its manifest records
-the exact source hashes and worktree state at launch. `git_tracked_dirty` is true
-because the accepted review fixes were present in the tracked worktree during
-the rerun; the commit and source hashes make that code path reproducible. The
-broader `git_dirty` flag also includes the researcher's pre-existing
-ignored/untracked `output/`, `scratch/`, and notes.
+The provenance-clean production rerun began from commit `0073f9b`; its manifest
+records the exact source hashes and worktree state at launch.
+`git_tracked_dirty` is false. The broader `git_dirty` flag is true only because
+the worktree contains the researcher's pre-existing ignored/untracked `output/`,
+`scratch/`, and notes.
 
 ## Methods
 
@@ -242,7 +241,10 @@ regime values are in
   startup transient rather than hidden from the verification record.
 - The final `make check` was first invoked without activating `.venv-xai` and
   stopped immediately because the base interpreter had no `pytest`. Activating
-  the required environment and rerunning unchanged passed all **276 tests**.
+  the required environment and rerunning unchanged passed all 276 tests. After
+  the final provenance-clean rerun, two consecutive collection attempts hit the
+  same PyTorch import abort; a direct `.venv-xai` import succeeded and the
+  unchanged retry passed all **277 tests**.
 - S03 support warning is null for both spread and error.
 - S10 matched-motif activation dispersion is near null when pooled, but has a
   small positive association with both outcomes among unstable rows; the table
@@ -327,7 +329,7 @@ gradients with axes `(member, sample)`, `(sample, z, channel)`, and
 category/regime counts, threshold grid, direct spread/error table, member-level
 symmetry table and signed changes, 84 frozen feature/outcome/regime associations,
 two held-out ridge results, 252 gradient summaries, 606 perturbation summaries,
-class table, atlas, row-level diagnostics, exact hashes, member/row IDs, and 37.76-minute
+class table, atlas, row-level diagnostics, exact hashes, member/row IDs, and 48.25-minute
 wall time are committed under [S11 artifacts](S11_artifacts/). Artifact tests
 recompute counts, schemas, validity tags, exact-shift null behavior, axes, and
 hashes without the external dataset.
@@ -341,5 +343,5 @@ unavailable support cohort, but cannot reproduce the registered digits. The
 full signed `member_level_diagnostics.h5` and 200,000 signed perturbation rows
 are git-ignored; the 16-row HDF5 proxy checks their axes, signs, native units,
 and direct-autograd wiring but not every archived byte. Recomputing the full
-all-100/1,000-row gradient took 37.76 CPU minutes and is too expensive for an
+all-100/1,000-row gradient took 48.25 CPU minutes and is too expensive for an
 ordinary automated review.
