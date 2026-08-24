@@ -19,6 +19,8 @@
   "residual_feature_selection": "none_frozen_before_residual_analysis",
   "rows": 1000,
   "run_id": "disagreement-all100-panel1000",
+  "spread_error_pearson": 0.6520737143019956,
+  "spread_error_spearman": 0.7614159519844477,
   "stable_or_near_floor_rows": 240,
   "step": "S11",
   "support_reference": {

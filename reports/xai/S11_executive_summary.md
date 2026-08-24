@@ -21,13 +21,16 @@ well as shared knowledge.
 
 ## Main conclusion
 
-Disagreement is structured and partly predictable, but it is a poor substitute
-for knowing the actual prediction error.
+Disagreement is structured and ranks prediction error fairly well, but it is not
+a calibrated estimate of that error.
 
 On the frozen 1,000-equilibrium panel, median ensemble spread was **0.105 native
-units** and median absolute prediction error was **0.094**. A held-out linear
-diagnostic explained **42.5%** of the row-to-row variation in disagreement, but
-only **9.7%** of the variation in actual error. “Held out” means whole
+units** and median absolute prediction error was **0.094**. Their rank
+correlation is **0.761** overall: rows with more disagreement usually have more
+error. It is **0.829** on stable/near-floor rows but only **0.575** on unstable
+rows. A separate held-out linear diagnostic explained **42.5%** of the row-to-row
+variation in disagreement, but only **9.7%** of the variation in actual error.
+“Held out” means whole
 equilibria were kept away from model fitting and used only for evaluation, which
 prevents near-duplicate tubes from making the score look better than it is.
 
@@ -37,6 +40,9 @@ The practical lesson is asymmetric:
   often occurs even when their average prediction is good.
 - Small spread is reassuring most of the time, but it cannot guarantee success,
   because the networks can share the same mistake.
+
+So spread is useful for ranking cases for attention, but its numerical value
+should not be read as an error bar.
 
 ## Shared failures exist
 
@@ -53,6 +59,10 @@ networks agree with one another but are jointly wrong. Two are stable or near
 the model's floor value and six are unstable. Their existence is the clearest
 reason not to call ensemble spread a confidence interval.
 
+The exact count depends on the chosen cutoffs: changing both fixed thresholds
+by ±20% gives between **2 and 34** common-mode rows. This sensitivity changes
+the count, not the conclusion that shared failures exist.
+
 ![Disagreement and common-mode failure atlas](S11_artifacts/failure_atlas.png)
 
 ## What was associated with disagreement
@@ -60,9 +70,12 @@ reason not to call ensemble spread a confidence interval.
 The strongest diagnostic was how much the original, unsymmetrized network
 changes under a circular shift of the parallel coordinate. This change should
 be physically irrelevant, and the canonical model used for explanations removes
-it exactly. Nevertheless, rows with larger leftover shift error in the original
-model tend to have larger spread and larger prediction error. The rank
-correlations are **0.617** with spread and **0.482** with error. A rank
+it exactly. The feature fixed before the run averages the ten signed network
+changes before taking their magnitude; opposite changes can therefore cancel.
+Its rank correlations are **0.617** with spread and **0.482** with error. Keeping
+each network's signed change and averaging their magnitudes instead gives
+stronger correlations, **0.801** and **0.622**. This correction is important:
+ensemble averaging had hidden some member-level symmetry failure. A rank
 correlation is a measure of whether two quantities tend to rise together,
 without assuming a straight-line relationship.
 
@@ -80,8 +93,11 @@ explanation for ensemble spread.
 The networks' **concept-selective activations**—internal responses aligned with
 the full registered vocabulary of physical geometry concepts—show a modest
 relationship with spread (rank correlation **0.241**) but little relationship
-with actual error (**0.089**). By contrast, disagreement among S10's matched
-motifs is essentially unrelated to either outcome. A motif is a group of hidden
+with actual error (**0.089**). Across all rows, disagreement among S10's eight
+matched motifs in the top 10 networks is essentially unrelated to either
+outcome. On unstable rows alone, however, it has small positive associations
+with spread (**0.128**) and error (**0.085**). These exploratory results have
+not been adjusted for testing many relationships. A motif is a group of hidden
 units from different networks that S10 found to behave similarly. The S03 data-
 support warning is also unrelated to spread or error on this panel. These
 negative findings matter: the feature list was fixed before seeing residuals,
@@ -93,7 +109,9 @@ A gradient measures how a tiny input change would locally change an output. The
 seven geometry channels have very different physical scales, so the analysis
 multiplied every gradient by S01's robust channel scale before comparing them.
 
-Channels 1, 3, and 4 have the largest local effect on ensemble spread. The
+The set of channels 1, 3, and 4 has the largest local effect on ensemble spread.
+This local-gradient result does not establish a strict ordering or agreement
+with other attribution methods. The
 network-average prediction is also most sensitive to those three channels, but
 spread and mean prediction are different functions: one describes disagreement,
 the other the predicted heat flux. Their gradients were computed and stored

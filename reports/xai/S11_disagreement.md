@@ -2,30 +2,43 @@
 
 ## Result
 
-Model-to-model disagreement is structured, but it is a substantially better
-diagnostic of itself than of held-out prediction error. On S01's frozen
-1,000-equilibrium varied-gradient panel, the median all-100-member population
-standard deviation was **0.1049 native units**, while the median absolute error
-of the ensemble mean was **0.0942**. A five-fold equilibrium-held-out ridge
-model using every feature frozen in the S11 config explained **42.5%** of
-spread variation but only **9.68%** of absolute-error variation. The latter is
-the important negative result: these diagnostics do not make ensemble spread a
-calibrated error bar.
+Model-to-model disagreement ranks prediction error fairly well, but it is not a
+calibrated error estimate. On S01's frozen 1,000-equilibrium varied-gradient
+panel, spread and absolute error have Spearman rank correlation **0.761** (500
+whole-equilibrium resample interval 0.730–0.794) and Pearson correlation
+**0.652** (0.592–0.709). The rank relationship is stronger on stable/near-floor
+rows (**0.829**) than unstable rows (**0.575**). Median all-100-member population
+standard deviation was **0.1049 native units**, while median absolute error of
+the ensemble mean was **0.0942**. Separately, a five-fold equilibrium-held-out
+ridge model using every diagnostic frozen in the S11 config explained **42.5%**
+of spread variation but only **9.68%** of absolute-error variation. Thus spread
+contains useful error-ranking information, while neither spread nor the frozen
+diagnostics provide a calibrated error bar.
 
 The fixed pre-run thresholds identify **8/1,000 (0.8%) common-mode failures**:
 rows with all-member spread below 0.15 but ensemble absolute error at least 0.5
 native units. Two are stable/near-floor rows and six are unstable. The other
 categories contain 240 high-spread/low-error rows, 76 high-spread/high-error
 rows, and 676 unanimous-success rows. These are diagnostic bins at fixed native-
-unit cutoffs, not estimated confidence classes.
+unit cutoffs, not estimated confidence classes. Across a predeclared ±20%
+threshold grid, the common-mode count ranges from **2 to 34**; the primary
+8-row count is therefore threshold-dependent, while the existence of shared
+failures is not.
 
 ![Disagreement and common-mode failure atlas](S11_artifacts/failure_atlas.png)
 
 The strongest frozen rank diagnostic was the original model's residual one-
-shift symmetry error: Spearman correlation was **0.617** with all-row spread
-(500 whole-equilibrium resample interval 0.572–0.664) and **0.482** with absolute
-error (0.427–0.533). This does not mean broken symmetry causes prediction error.
-It says that geometries where the unsymmetrized network is least invariant also
+shift symmetry error. The frozen feature takes each top-10 member's signed
+prediction change, averages across members, and then takes the absolute value;
+its Spearman correlation was **0.617** with all-row spread (500 whole-
+equilibrium resample interval 0.572–0.664) and **0.482** with absolute error
+(0.427–0.533). Because signed member changes can cancel, the review-mandated
+member-level counterpart instead averages their absolute values. Its
+correlations are stronger: **0.801** with spread (0.761–0.834) and **0.622**
+with error (0.572–0.669). The median member-level value is 4.15 times the median
+ensemble-cancelled value. Both features and all 10,000 signed member-row changes
+are published. This does not mean broken symmetry causes prediction error. It
+says that geometries where the unsymmetrized network is least invariant also
 tend to be geometries where members disagree or err. The canonical S02 function
 remained exactly invariant: a random joint circular shift changed all-100 spread
 by only **2.13e-8 RMS native units**.
@@ -38,11 +51,15 @@ interpretation such as “noisier simulations always make the models disagree.�
 
 S10-derived concept-selective activation dispersion has a modest all-row
 association with spread (**0.241**, 0.182–0.307) and a weaker association with
-absolute error (**0.0889**, 0.0314–0.150). In contrast, dispersion within S10's
-matched motifs is null for both spread (**0.0028**, -0.0587–0.0599) and error
-(**-0.0178**, -0.0783–0.0373). S03's support-warning score is likewise null for
-spread (**0.0130**) and error (**-0.0132**). These nulls are retained rather than
-replacing the frozen features after seeing residuals.
+absolute error (**0.0889**, 0.0314–0.150). Across all rows, dispersion within
+S10's eight matched motifs from the top 10 members is near null for spread
+(**0.0028**, -0.0587–0.0599) and error (**-0.0178**, -0.0783–0.0373). That pooled
+result does not hold in every regime: on unstable rows the associations are
+small but positive for spread (**0.128**, 0.056–0.199) and error (**0.0845**,
+0.0206–0.156). S03's support-warning score is null for spread (**0.0130**) and
+error (**-0.0132**). These exploratory tables are not multiplicity-adjusted;
+their motif scope is the registered eight motifs and top 10 members. No feature
+was replaced after seeing residuals.
 
 ## Estimand and cohort
 
@@ -76,14 +93,17 @@ feature is reported, with no selection on these residuals.
 
 The registered run is `disagreement-all100-panel1000`. Its committed
 [manifest](S11_artifacts/manifest.json) records CPU execution, seed 20260824,
-all 100 member IDs, all 1,000 parent row IDs, and **2,409.80 s (40.16 min)** wall
+all 100 member IDs, all 1,000 parent row IDs, and **2,265.74 s (37.76 min)** wall
 time. The dataset SHA-256 is
 `9d8fa52f93f2782ad9948a38bf46943c0cd6df78cd08b94a006dad4e06c1c8ad`;
 the checkpoint SHA-256 is
 `d5e092348514a5ee85b68bcdcf51dbb32eaa344beea1daa28f5aaeba9e86eefb`.
-The run began from commit `fc9581a`; `git_tracked_dirty` is false. The manifest's
-broader `git_dirty` flag is true only because the worktree already contained the
-researcher's ignored/untracked `output/`, `scratch/`, and notes.
+The corrected production rerun began from commit `ffb0046`; its manifest records
+the exact source hashes and worktree state at launch. `git_tracked_dirty` is true
+because the accepted review fixes were present in the tracked worktree during
+the rerun; the commit and source hashes make that code path reproducible. The
+broader `git_dirty` flag also includes the researcher's pre-existing
+ignored/untracked `output/`, `scratch/`, and notes.
 
 ## Methods
 
@@ -101,10 +121,12 @@ HDF5 file, and 16 exact rows are in the committed
 [review proxy](S11_artifacts/selected_review_diagnostics.h5). Channel summaries
 multiply gradients by S01's robust per-channel IQR scale before comparison.
 
-Spread sensitivity is largest for channel 1, then channels 3 and 4: all-row mean
-absolute robust-scaled gradients are **0.001943**, **0.001668**, and **0.001320**.
-The top-10 mean-prediction gradient has the same first three channels but is a
-different object and larger: **0.009583**, **0.007237**, and **0.005858**. The
+The largest all-row mean absolute robust-scaled spread gradients form the set
+of channels **{1, 3, 4}**, with values **0.001943**, **0.001668**, and
+**0.001320**, respectively. The top-10 mean-prediction gradient has the same
+three-channel set but is a different object and larger: **0.009583**,
+**0.007237**, and **0.005858**. This is a local-gradient diagnostic only; no
+strict channel ordering or agreement across attribution families is claimed. The
 member-residual signed means agree across all ten members on channels 0
 (10/10 negative), 1 (10/10 positive), 2 (10/10 positive), 4 (10/10 negative),
 and 6 (10/10 positive), but split on channels 3 (6/10 positive) and 5 (5/10
@@ -151,6 +173,12 @@ intervals for model uncertainty. Because this panel has one tube per
 equilibrium, grouped and row resampling are numerically identical here, but the
 grouped implementation is tested on sibling tubes.
 
+The original symmetry feature was frozen before the production residuals were
+examined. The member-mean-absolute counterpart was added only to correct the
+post-review loss of signed member information; it is reported exhaustively by
+outcome and regime and was not added to, or used to optimize, the cross-fit
+model.
+
 The multivariable diagnostic is a five-fold ridge regression (a linear model
 whose coefficients are shrunk to reduce instability), with feature scaling
 learned inside each training fold and whole equilibria held out. It uses every
@@ -189,7 +217,9 @@ regime values are in
 - S10 motif and concept summaries describe internal network evidence. They do
   not establish that an edited equilibrium is physically realizable.
 - Fixed failure thresholds provide transparent case bins but are not optimized
-  operating points or calibrated warning probabilities.
+  operating points or calibrated warning probabilities. The committed
+  [threshold sensitivity table](S11_artifacts/failure_threshold_sensitivity.csv)
+  shows 2–34 common-mode rows over the ±20% grid.
 
 ## Failed checks, negative results, and corrections
 
@@ -209,8 +239,13 @@ regime values are in
   one-off import abort occurred before one mutation check; its unchanged retry
   reached the intended assertion failure. This is retained as an environment
   startup transient rather than hidden from the verification record.
+- The final `make check` was first invoked without activating `.venv-xai` and
+  stopped immediately because the base interpreter had no `pytest`. Activating
+  the required environment and rerunning unchanged passed all **276 tests**.
 - S03 support warning is null for both spread and error.
-- S10 matched-motif activation dispersion is null for both outcomes.
+- S10 matched-motif activation dispersion is near null when pooled, but has a
+  small positive association with both outcomes among unstable rows; the table
+  covers eight motifs in the top 10 members and is not multiplicity-adjusted.
 - The frozen multivariable diagnostics explain only 9.68% of held-out absolute-
   error variation.
 - `Q_stds` reverses association sign between output regimes.
@@ -228,6 +263,12 @@ Three deliberate mutations were checked after implementation and reverted:
 3. assigning folds by tube row instead of `equilibrium_files` split every
    sibling pair across two folds and failed the grouped-split check.
 
+After automated review, two further runner-level mutations were checked and
+reverted: routing spread gradients through the original function instead of the
+canonical native function failed all four prediction values in the canonical-
+path fixture; bypassing robust channel scaling at the runner call site failed
+the stable-regime scaled-gradient assertion (1.0 instead of 2.0).
+
 ## Acceptance criteria
 
 | PLAN criterion | Verdict | Number or artifact |
@@ -235,6 +276,8 @@ Three deliberate mutations were checked after implementation and reverted:
 | “residual analyses use held-out targets without selecting models or features on those same residuals” | **Pass.** | All 100 members were fixed by stored validation rank; all 15 diagnostics were frozen in config and every continuous feature appears in all outcome/regime combinations. Five-fold splits hold out whole `equilibrium_files`. [Config](../../configs/xai/S11_disagreement.json), [associations](S11_artifacts/diagnostic_associations.csv), and [cross-fit table](S11_artifacts/crossfit_diagnostics.csv). |
 | “model uncertainty is not called a confidence interval” | **Pass.** | `summary.json` says “member dispersion, not a confidence interval”; artifact columns label 500-draw ranges `grouped_resample_sensitivity_interval`. [Summary](S11_artifacts/summary.json). |
 | “common-mode failure is reported” | **Pass.** | 8/1,000 rows at fixed thresholds, split 2 stable/near-floor and 6 unstable. [Failure categories](S11_artifacts/failure_categories.csv) and [row diagnostics](S11_artifacts/row_diagnostics.csv). |
+
+The primary 8-row count is accompanied by the [±20% threshold grid](S11_artifacts/failure_threshold_sensitivity.csv), which ranges from 2 to 34 rows.
 
 ## Deferred
 
@@ -269,8 +312,10 @@ source .venv-xai/bin/activate && make check
 `tests/data/review_slice.h5`. Translate them with
 `load_review_slice_index().slice_rows()` before loading. The reviewer can
 recompute all 100 canonical predictions, native residuals, spread/error bins,
-`Q_stds`, scalar covariates, original-function symmetry error, motif/concept
-dispersion, grouped associations, cross-fit results, and both perturbations.
+direct spread/error Pearson and Spearman associations, `Q_stds`, scalar
+covariates, both original-function symmetry summaries and their 10,000 signed
+member changes, motif/concept dispersion, grouped associations, cross-fit
+results, threshold sensitivity, and both perturbations.
 The exact 16 committed parent IDs in
 `selected_review_diagnostics.h5` provide the practical gradient proxy: compare
 all-100 predictions and spread gradients plus top-10 signed member-residual
@@ -278,9 +323,10 @@ gradients with axes `(member, sample)`, `(sample, z, channel)`, and
 `(gradient_member, sample, z, channel)`.
 
 **Checkable from committed artifacts alone.** The 8 common-mode failures, all
-category/regime counts, 84 feature/outcome/regime associations, two held-out
-ridge results, 252 gradient summaries, 606 perturbation summaries, class table,
-atlas, row-level diagnostics, exact hashes, member/row IDs, and 40.16-minute
+category/regime counts, threshold grid, direct spread/error table, member-level
+symmetry table and signed changes, 84 frozen feature/outcome/regime associations,
+two held-out ridge results, 252 gradient summaries, 606 perturbation summaries,
+class table, atlas, row-level diagnostics, exact hashes, member/row IDs, and 37.76-minute
 wall time are committed under [S11 artifacts](S11_artifacts/). Artifact tests
 recompute counts, schemas, validity tags, exact-shift null behavior, axes, and
 hashes without the external dataset.
@@ -294,5 +340,5 @@ unavailable support cohort, but cannot reproduce the registered digits. The
 full signed `member_level_diagnostics.h5` and 200,000 signed perturbation rows
 are git-ignored; the 16-row HDF5 proxy checks their axes, signs, native units,
 and direct-autograd wiring but not every archived byte. Recomputing the full
-all-100/1,000-row gradient took 40.16 CPU minutes and is too expensive for an
+all-100/1,000-row gradient took 37.76 CPU minutes and is too expensive for an
 ordinary automated review.
