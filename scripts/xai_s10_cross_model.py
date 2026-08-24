@@ -180,6 +180,22 @@ def _catalog_motifs(
     )
 
 
+def _count_motif_eligible_edges(
+    final_rows: Sequence[dict[str, Any]], resolved: dict[str, Any]
+) -> int:
+    """Count edges that pass the registered recurrence and motif-level gates."""
+
+    return sum(
+        float(row["equilibrium_bootstrap_recurrence"])
+        >= float(resolved["minimum_match_recurrence"])
+        and min(
+            float(row["causal_effect_similarity_stable_or_near_floor"]),
+            float(row["causal_effect_similarity_unstable"]),
+        ) >= float(resolved["minimum_motif_regime_causal_similarity"])
+        for row in final_rows
+    )
+
+
 def _validate_summary(summary: dict[str, Any]) -> None:
     if int(summary.get("stable_rows", 0)) < 1 or int(summary.get("unstable_rows", 0)) < 1:
         raise ValueError("stable and unstable rows must both be reported")
@@ -806,15 +822,7 @@ def run(args: argparse.Namespace) -> Path:
         )
         cka_median_by_layer[layer_name] = float(np.median(values))
         cka_trim_change_by_layer[layer_name] = float(np.median(np.abs(values - trimmed)))
-    motif_eligible_edges = sum(
-        float(row["equilibrium_bootstrap_recurrence"])
-        >= float(resolved["minimum_match_recurrence"])
-        and min(
-            float(row["causal_effect_similarity_stable_or_near_floor"]),
-            float(row["causal_effect_similarity_unstable"]),
-        ) >= float(resolved["minimum_motif_regime_causal_similarity"])
-        for row in final_rows
-    )
+    motif_eligible_edges = _count_motif_eligible_edges(final_rows, resolved)
 
     summary = {
         "run_id": resolved["run_id"], "estimand": NATIVE_ESTIMAND,

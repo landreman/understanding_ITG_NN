@@ -218,7 +218,8 @@ regimes rather than claiming separate causal behavior.
 - CKA uses 20 whole-equilibrium draws because the original all-100 × six-layer ×
   100-draw configuration exceeded the step budget. These intervals are explicitly
   low-resolution sensitivity checks.
-- The CKA outlier deletion changes median scores by 0.0064–0.0220 across layers.
+- The CKA outlier deletion changes the typical pair score by a median of
+  0.0064–0.0220 across layers.
 - The clustering cut is not bootstrap-stability evidence. The continuous
   distance matrix and full dendrogram are primary; the four labels are a compact
   description.
@@ -285,6 +286,19 @@ correlation, and deleting the S01 robust channel scales inside
 `_member_attribution`, both initially stayed green. The label-only null now runs
 through the full similarity function, and an analytic gradient toy now requires
 the registered 1:1000 channel scaling; both mutations turn red.
+
+A third review found that the new stable/unstable root-mean-square magnitude
+columns were not pinned by the original symmetric fixture. The revised fixture
+has stable, unstable, and pooled ratios of 3, 1, and $\sqrt{5}$: taking the
+stable ratio from unstable rows or replacing both regime ratios by the pooled
+ratio now turns the named regime-effect test red.
+
+A fourth review found three untested motif-annotation paths. A temporary S05
+table now distinguishes supported, screened-without-support, and unscreened
+units; it catches a wrong unit separator and treating every screened unit as
+supported. A separate threshold toy catches counting motif-eligible edges with
+the 0.50 edge gate instead of the registered 0.70 motif gate. All three
+mutations now turn their named science controls red.
 
 The manifest source-identity assertions live in a separately named tripwire
 test. They force provenance to be refreshed after any runner edit, but are not

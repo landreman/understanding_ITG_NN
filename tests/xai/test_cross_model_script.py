@@ -72,6 +72,49 @@ def test_catalog_reads_the_distinct_motif_threshold_from_config():
     assert loose[0]["member_count"] == 3
 
 
+def test_annotate_motifs_counts_only_independently_supported_s05_names(tmp_path):
+    table = tmp_path / "unit_motifs.csv"
+    table.write_text(
+        "unit_id,motif_status,claimed_concept\n"
+        "m0:u001,supported_named_motif,concept_a\n"
+        "m0:u002,screened_without_support,\n",
+        encoding="utf-8",
+    )
+    rows = [
+        {"unit_ids": "m0:u001|m0:u002|m1:u003"},
+        {"unit_ids": "m1:u004|m2:u005"},
+    ]
+    MODULE._annotate_motifs(rows, s05_unit_motifs=table)
+    assert rows[0]["s05_screened_unit_count"] == 2
+    assert rows[0]["s05_supported_unit_count"] == 1
+    assert rows[0]["s05_supported_concepts"] == "concept_a"
+    assert rows[0]["interpretive_label"] == "concept_a"
+    assert rows[1]["s05_screened_unit_count"] == 0
+    assert rows[1]["s05_supported_unit_count"] == 0
+    assert rows[1]["interpretive_label"] == "unresolved_by_S05_vocabulary"
+
+
+def test_motif_eligible_count_reads_the_stricter_motif_threshold():
+    rows = [
+        {
+            "equilibrium_bootstrap_recurrence": 0.9,
+            "causal_effect_similarity_stable_or_near_floor": 0.8,
+            "causal_effect_similarity_unstable": 0.8,
+        },
+        {
+            "equilibrium_bootstrap_recurrence": 0.9,
+            "causal_effect_similarity_stable_or_near_floor": 0.6,
+            "causal_effect_similarity_unstable": 0.6,
+        },
+    ]
+    resolved = {
+        "minimum_match_recurrence": 0.7,
+        "minimum_regime_causal_similarity": 0.5,
+        "minimum_motif_regime_causal_similarity": 0.7,
+    }
+    assert MODULE._count_motif_eligible_edges(rows, resolved) == 1
+
+
 def test_acceptance_summary_refuses_missing_lower_rank_comparison():
     summary = {
         "stable_rows": 20,
