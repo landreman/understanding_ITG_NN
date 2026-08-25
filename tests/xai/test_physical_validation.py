@@ -107,6 +107,27 @@ def test_matching_is_equilibrium_disjoint_and_improves_nuisance_balance() -> Non
     np.testing.assert_allclose(result.distance, rescaled.distance)
 
 
+def test_matching_never_reuses_a_repeated_equilibrium_group() -> None:
+    """Two tubes from one equilibrium must not enter different pairs."""
+
+    rng = np.random.default_rng(41)
+    groups = np.repeat(np.asarray([f"eq-{index}" for index in range(40)]), 2)
+    nuisance = rng.normal(size=(len(groups), 2))
+    exposure = np.linspace(-2.0, 2.0, len(groups)) + 0.05 * nuisance[:, 0]
+    result = equilibrium_grouped_matches(
+        exposure,
+        nuisance,
+        groups,
+        high_quantile=0.70,
+        low_quantile=0.30,
+        caliper=2.0,
+    )
+    selected_groups = groups[
+        np.r_[result.high_positions, result.low_positions]
+    ]
+    assert len(selected_groups) == len(np.unique(selected_groups))
+
+
 def test_aipw_recovers_adjusted_observed_contrast_and_is_deterministic() -> None:
     rng = np.random.default_rng(18)
     nuisance = rng.normal(size=(500, 3))

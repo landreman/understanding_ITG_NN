@@ -8,14 +8,18 @@ claim. With the drive held at $(a/L_T,a/L_n)=(3,0.9)$, Spearman rank
 correlations with true GX `max(log Q,-2)` are **0.807** for the localized
 25-point $f_Q$-integrand peak, **0.808** for bad-curvature/compression variance,
 **0.659** for $f_{\rm stab}$, and **0.519** for geodesic-curvature/compression.
-All 500 whole-equilibrium bootstrap intervals exclude zero. These correlations
+The four intervals above, formed from 500 whole-equilibrium bootstrap
+resamples, exclude zero; across the full association table, 46 of 72 intervals
+exclude zero. These correlations
 show that the candidates track physical GX outcomes among naturally observed
 equilibria; they do not show what changing one candidate would do.
 
 Matching makes that limit sharper rather than removing it. High-versus-low
-candidate matches give positive native-output differences of **1.598, 1.486,
-1.878, and 1.317** units, respectively, but the largest remaining standardized
-nuisance imbalance is **4.151, 2.192, 3.747, and 1.068**. The registered
+candidate matches give positive native-output differences of **1.598** for the
+localized peak, **1.878** for bad-curvature/compression, **1.486** for
+$f_{\rm stab}$, and **1.317** for geodesic/compression. Their largest remaining
+standardized nuisance imbalances are **4.151, 3.747, 2.192, and 1.068** in the
+same named order. The registered
 acceptable threshold was 0.5. The candidate tails therefore occupy different
 parts of geometry space even after nearest-neighbour matching. These are
 observed comparisons, not causal effects.
@@ -50,14 +54,17 @@ The resulting order is:
    imbalance is 1.068 and overlap 0.478, so it is not intervention-ready.
 2. **Localized 25-point $f_Q$-integrand peak — observational-physical.** Strong
    raw and matched association, but no resolved gain beyond the full paper
-   baseline, severe imbalance (4.151), overlap 0.228, and an unstable-row sign
+   baseline, severe imbalance (4.151), overlap 0.232, and an unstable-row sign
    reversal under AIPW.
-3. **$f_{\rm stab}$ — observational-physical.** Adds information beyond the
-   $f_Q$ baseline, as expected because it belongs to the paper-selected set; its
-   adjusted native contrast is unresolved and the matching remains imbalanced.
-4. **Bad-curvature/compression variance — observational-physical.** Strong raw
+3. **Bad-curvature/compression variance and $f_{\rm stab}$ (tied) —
+   observational-physical.** Bad-curvature/compression has strong raw
    association but no resolved adjusted all-row contrast or gain beyond the full
-   paper baseline, with severe remaining imbalance.
+   paper baseline, with severe remaining imbalance. $f_{\rm stab}$ adds
+   information beyond the weaker $f_Q$ baseline, but that residual point is not
+   comparable because $f_{\rm stab}$ is already inside the full paper-selected
+   baseline. It therefore receives no full-baseline residual point. Both score
+   2; the CSV uses candidate name only for deterministic display order, and this
+   third-place tie does not affect the two-direction GX shortlist.
 
 No candidate is graded `intervention-ready`. The prospective GX specification
 therefore tests the top two competing directions rather than asserting either
@@ -79,8 +86,11 @@ GX simulations. The fixed panel has 23 stable/near-floor and 977 unstable rows;
 the varied panel has 240 and 760. Fixed rows use the physical drive
 $(3,0.9)$, never the legacy off-manifold marker. S12-v1 supplies the invariant
 feature formulas and S01 supplies the seven robust channel IQR scales.
+Because this panel contains exactly one tube per equilibrium, grouping by
+`equilibrium_files` is a forward-compatible guarantee rather than a numerical
+correction here; the grouped and row-level resamples coincide on these rows.
 
-The registered run is `physical-validation-panel1000`. It took **78.07 s** on
+The registered run is `physical-validation-panel1000`. It took **79.06 s** on
 CPU. The committed [manifest](S13_artifacts/manifest.json) records seed
 20260825, all 1,000 parent row IDs, source hashes, exact command, package
 versions, output hashes, dataset SHA-256
@@ -93,8 +103,8 @@ run model inference.
 The exact production command was:
 
 ```bash
-MPLCONFIGDIR=/private/tmp/mpl-s13-prod \
-XDG_CACHE_HOME=/private/tmp/cache-s13-prod \
+MPLCONFIGDIR=/private/tmp/mpl-s13-review-final \
+XDG_CACHE_HOME=/private/tmp/cache-s13-review-final \
 .venv-xai/bin/python scripts/xai_s13_physical_validation.py
 ```
 
@@ -116,6 +126,13 @@ their ordering across equilibria agrees. Intervals use 500 deterministic
 bootstrap draws of complete `equilibrium_files`. All, stable/near-floor, and
 unstable strata are separate. The fixed panel has only 23 near-floor rows, so
 that stratum is retained in the artifact but not used for a headline claim.
+
+The artifacts contain 218 nominal 95% intervals: 72 associations, 72 matched
+effects, 32 AIPW sensitivities, and 42 residual comparisons. They are not
+adjusted for multiple comparisons, and the geodesic headline was selected from
+the tested fixed-panel candidates. The secondary tables are therefore
+exploratory; an isolated interval excluding zero should not be read as a new
+mechanism without replication.
 
 `Q_stds` is a simulation-variability proxy, not an independent transport
 measurement. Its candidate correlations almost duplicate those with `log Q`,
@@ -144,6 +161,8 @@ and the best, geodesic-curvature/compression, improves only from 1.206 to 1.068.
 The balance failure is part of the result, not a reason to narrow the cohort.
 Uncertainty resamples the disjoint matched-equilibrium pairs; each pair contains
 two unique `equilibrium_files` and none is reused within a candidate analysis.
+Rows based on fewer than 20 pairs carry `interval_interpretable=False` in
+`matched_effects.csv`; this includes all 3–7-pair fixed near-floor results.
 
 ### Doubly robust sensitivity check
 
@@ -161,6 +180,11 @@ is correct, under assumptions that include no unmeasured confounding and usable
 overlap. Here measured overlap fails badly, so the large adjusted `Q_stds` and
 zonal estimates for the localized peak are not credible effect sizes. They are
 published as sensitivity failures.
+For the localized peak, adjustment also holds nearly the same quantity fixed:
+the peak has Spearman correlation **0.9524** with global $\log f_Q$. Thus the
+unstable sign reversal may reflect over-adjustment (removing part of the
+exposure itself) as well as ordinary confounding; it is not evidence for a
+negative intervention sign.
 
 ### Residual validation
 
@@ -201,6 +225,19 @@ minus steps, and a rerun of each original anchor. Six decisive cases receive
 doubled spatial resolution and averaging time. A result must keep its sign and
 change by no more than 20% at higher resolution, and exceed two combined
 `Q_stds` standard errors.
+
+The localized-peak direction is not assumed realizable. On the observed panel,
+its correlation with $\log f_Q$ is **0.9524**, the 16-column registered nuisance
+set linearly explains **95.81%** of its variance, and its partial rank
+correlation with native heat flux after holding $\log f_Q$ fixed is only
+**0.1575** (geodesic: **0.3343**, with nuisance $R^2=0.5789$). Before budget
+approval, VMEC-only Jacobian searches must demonstrate both signed directions
+at all three anchors: the candidate must move by at least **0.5 panel IQR** while
+every constrained quantity moves by at most **0.1 panel IQR**. Failure replaces
+or drops that arm and returns to the researcher; it does not trigger GX runs.
+The 24-run design must then resolve an absolute response of at least **0.2
+native-log units** and exceed two combined `Q_stds` standard errors. These are
+prospective decision thresholds, not effects measured in S13.
 
 The planning estimate is **32.5 Perlmutter node-hours**: 24 standard runs at
 0.5 node-hour (12), six convergence runs at 2 node-hours (12), 2 node-hours for
@@ -277,12 +314,12 @@ completed. A second pilot failure exposed use of a nonexistent convenience
 field on the upstream `DistillationResult`; the runner now computes the signed
 residual explicitly as target minus prediction, and the pilot was repeated.
 
-The first two full `make check` runs reached 309 passes but failed S07's
-bitwise-repeat assertion by $2.8\times10^{-17}$ and $6.9\times10^{-18}$ under
-macOS Accelerate FFT. The seeded null now quantizes only its final maxima at
-$10^{-15}$ (maximum change $5\times10^{-16}$, far below any scientific or
-bootstrap resolution), not a relaxed test tolerance. The exact assertion passed
-twice consecutively and the final full check passed **310 tests**.
+The first two full `make check` runs reached 309 passes but exposed
+$2.8\times10^{-17}$ and $6.9\times10^{-18}$ last-bit variation in S07's repeated
+FFT under macOS Accelerate. S07's estimator remains byte-for-byte identical to
+the merged implementation and its artifact hash remains valid; the repeat test
+now states an explicit absolute tolerance of $10^{-15}$, far below scientific
+or bootstrap resolution. The final full check passed **314 tests**.
 
 ## Artifacts
 

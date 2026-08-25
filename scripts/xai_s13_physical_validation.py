@@ -109,11 +109,15 @@ def _channel_scales(path: Path) -> np.ndarray:
 
 
 def _stratified_positions(
-    classes: np.ndarray, target: np.ndarray, count: int, seed: int
+    classes: np.ndarray,
+    target: np.ndarray,
+    count: int,
+    seed: int,
+    stable_threshold: float,
 ) -> np.ndarray:
     if count >= len(target):
         return np.arange(len(target), dtype=np.int64)
-    stable = target <= -1.9
+    stable = target <= stable_threshold
     rng = np.random.default_rng(seed)
     strata = [(value, flag) for value in np.unique(classes) for flag in (False, True)]
     selected: list[int] = []
@@ -191,8 +195,10 @@ def _nuisance_matrix(
     return np.column_stack(columns), tuple(names)
 
 
-def _regimes(target: np.ndarray) -> tuple[tuple[str, np.ndarray], ...]:
-    stable = target <= -1.9
+def _regimes(
+    target: np.ndarray, stable_threshold: float
+) -> tuple[tuple[str, np.ndarray], ...]:
+    stable = target <= stable_threshold
     return (
         ("all", np.ones(len(target), dtype=bool)),
         ("stable_or_near_floor", stable),
@@ -209,6 +215,7 @@ def _association_rows(
     *,
     replicates: int,
     seed: int,
+    stable_threshold: float,
 ) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     target = outcomes["target_native"]
@@ -217,7 +224,9 @@ def _association_rows(
         for outcome_index, (outcome_name, outcome) in enumerate(outcomes.items()):
             if outcome_name in {"a_over_LT", "a_over_Ln"}:
                 continue
-            for regime_index, (regime, mask) in enumerate(_regimes(target)):
+            for regime_index, (regime, mask) in enumerate(
+                _regimes(target, stable_threshold)
+            ):
                 if mask.sum() < 8:
                     continue
                 estimate, lower, upper = residual_rank_association(
@@ -262,6 +271,7 @@ def _matched_rows(
     effect_rows: list[dict[str, Any]] = []
     sensitivity_rows: list[dict[str, Any]] = []
     target = outcomes["target_native"]
+    stable_threshold = float(resolved["stable_threshold_log_Q"])
     replicates = int(resolved["bootstrap_replicates"])
     for candidate_index, candidate in enumerate(candidates):
         exposure = feature_values[:, feature_names.index(candidate)]
@@ -295,8 +305,12 @@ def _matched_rows(
                 "candidate_high": float(exposure[high_position]),
                 "candidate_low": float(exposure[low_position]),
                 "candidate_contrast": float(match.exposure_contrast[pair_index]),
-                "high_stable_or_near_floor": bool(target[high_position] <= -1.9),
-                "low_stable_or_near_floor": bool(target[low_position] <= -1.9),
+                "high_stable_or_near_floor": bool(
+                    target[high_position] <= stable_threshold
+                ),
+                "low_stable_or_near_floor": bool(
+                    target[low_position] <= stable_threshold
+                ),
                 "max_abs_nuisance_smd_before": float(
                     np.max(np.abs(match.nuisance_smd_before))
                 ),
@@ -313,7 +327,9 @@ def _matched_rows(
                     )
             pair_rows.append(row)
 
-        pair_stable = (target[high] <= -1.9) | (target[low] <= -1.9)
+        pair_stable = (target[high] <= stable_threshold) | (
+            target[low] <= stable_threshold
+        )
         pair_regimes = (
             ("all", np.ones(len(high), dtype=bool)),
             ("either_stable_or_near_floor", pair_stable),
@@ -359,6 +375,8 @@ def _matched_rows(
                         ),
                         "bootstrap_replicates": replicates,
                         "bootstrap_unit": "disjoint matched pair of equilibrium_files",
+                        "interval_interpretable": bool(mask.sum() >= 20),
+                        "interval_interpretability_minimum_pairs": 20,
                         "validity_tag": OBSERVED,
                         "causal_claim_permitted": False,
                     }
@@ -373,7 +391,10 @@ def _matched_rows(
         ):
             outcome = outcomes[outcome_name]
             for regime_index, (regime, regime_mask) in enumerate(
-                (("all", np.ones(len(target), dtype=bool)), ("unstable", target > -1.9))
+                (
+                    ("all", np.ones(len(target), dtype=bool)),
+                    ("unstable", target > stable_threshold),
+                )
             ):
                 mask = tails & regime_mask
                 if mask.sum() < 30 or np.unique(treated[mask]).size < 2:
@@ -500,7 +521,9 @@ def _residual_rows(
                     estimator_factory=_ebm_factory(resolved, augmented_names),
                 )
                 candidate_values = feature_values[:, feature_names.index(candidate)]
-                for regime_index, (regime, mask) in enumerate(_regimes(target)):
+                for regime_index, (regime, mask) in enumerate(
+                    _regimes(target, float(resolved["stable_threshold_log_Q"]))
+                ):
                     if mask.sum() < 8:
                         continue
                     baseline_residual = target - baseline.prediction
@@ -568,6 +591,10 @@ def _candidate_ranking(
     effects: list[dict[str, Any]],
     sensitivity: list[dict[str, Any]],
     residuals: list[dict[str, Any]],
+    *,
+    balance_threshold: float,
+    overlap_threshold: float,
+    paper_baseline_features: set[str],
 ) -> list[dict[str, Any]]:
     rows = []
     for candidate in candidates:
@@ -597,19 +624,27 @@ def _candidate_ranking(
         same_sign = np.sign(matched["mean_high_minus_low"]) == np.sign(
             aipw["aipw_high_minus_low"]
         )
-        balance_acceptable = matched["max_abs_nuisance_smd_after"] <= 0.5
-        overlap_acceptable = aipw["overlap_fraction"] >= 0.8
+        balance_acceptable = (
+            matched["max_abs_nuisance_smd_after"] <= balance_threshold
+        )
+        overlap_acceptable = aipw["overlap_fraction"] >= overlap_threshold
         residual_by_baseline = {
             str(row["baseline"]): row for row in residual_candidates
         }
         f_q_residual = residual_by_baseline.get("f_Q_baseline")
         paper_residual = residual_by_baseline.get("paper_selected")
-        residual_for_ranking = paper_residual or f_q_residual
-        if residual_for_ranking is None:
-            raise RuntimeError(f"no fixed-panel residual result for {candidate}")
-        residual_gain = float(residual_for_ranking["mse_improvement"])
-        residual_gain_resolved = (
-            float(residual_for_ranking["mse_improvement_ci95_lower"]) > 0
+        residual_comparable = candidate not in paper_baseline_features
+        residual_for_ranking = paper_residual if residual_comparable else None
+        if residual_comparable and residual_for_ranking is None:
+            raise RuntimeError(
+                f"no paper-selected residual result for comparable candidate {candidate}"
+            )
+        residual_gain = (
+            "" if residual_for_ranking is None else residual_for_ranking["mse_improvement"]
+        )
+        residual_gain_resolved = bool(
+            residual_for_ranking is not None
+            and float(residual_for_ranking["mse_improvement_ci95_lower"]) > 0
         )
         evidence_score = (
             int(matched_resolved)
@@ -647,19 +682,28 @@ def _candidate_ranking(
                 "max_abs_nuisance_smd_after": matched[
                     "max_abs_nuisance_smd_after"
                 ],
-                "balance_threshold": 0.5,
+                "balance_threshold": balance_threshold,
                 "balance_acceptable": bool(balance_acceptable),
                 "aipw_overlap_fraction": aipw["overlap_fraction"],
-                "overlap_threshold": 0.8,
+                "overlap_threshold": overlap_threshold,
                 "overlap_acceptable": bool(overlap_acceptable),
-                "ranking_residual_baseline": residual_for_ranking["baseline"],
+                "ranking_residual_baseline": (
+                    "not_applicable_candidate_in_baseline"
+                    if residual_for_ranking is None
+                    else residual_for_ranking["baseline"]
+                ),
+                "ranking_residual_comparable": residual_comparable,
                 "ranking_residual_mse_improvement": residual_gain,
-                "ranking_residual_mse_improvement_ci95_lower": residual_for_ranking[
-                    "mse_improvement_ci95_lower"
-                ],
-                "ranking_residual_mse_improvement_ci95_upper": residual_for_ranking[
-                    "mse_improvement_ci95_upper"
-                ],
+                "ranking_residual_mse_improvement_ci95_lower": (
+                    ""
+                    if residual_for_ranking is None
+                    else residual_for_ranking["mse_improvement_ci95_lower"]
+                ),
+                "ranking_residual_mse_improvement_ci95_upper": (
+                    ""
+                    if residual_for_ranking is None
+                    else residual_for_ranking["mse_improvement_ci95_upper"]
+                ),
                 "ranking_residual_gain_resolved": bool(residual_gain_resolved),
                 "f_Q_baseline_mse_improvement": (
                     "" if f_q_residual is None else f_q_residual["mse_improvement"]
@@ -671,7 +715,18 @@ def _candidate_ranking(
                 "causal_claim_permitted": False,
             }
         )
-    return sorted(rows, key=lambda row: (-int(row["rank_score"]), row["candidate"]))
+    ranked = sorted(rows, key=lambda row: (-int(row["rank_score"]), row["candidate"]))
+    for row in ranked:
+        score = int(row["rank_score"])
+        tied = sum(int(other["rank_score"]) == score for other in ranked)
+        row["evidence_rank"] = 1 + sum(
+            int(other["rank_score"]) > score for other in ranked
+        )
+        row["rank_tied"] = tied > 1
+        row["tie_breaker"] = (
+            "candidate_name_for_deterministic_display_only" if tied > 1 else "none"
+        )
+    return ranked
 
 
 def _contradictory_cases(
@@ -708,7 +763,92 @@ def _contradictory_cases(
     return result
 
 
-def _gx_spec(ranking: list[dict[str, Any]], design: dict[str, Any]) -> dict[str, Any]:
+def _average_ranks(values: np.ndarray) -> np.ndarray:
+    order = np.argsort(values, kind="mergesort")
+    sorted_values = np.asarray(values, dtype=np.float64)[order]
+    ranks = np.empty(len(order), dtype=np.float64)
+    start = 0
+    while start < len(order):
+        stop = start + 1
+        while stop < len(order) and sorted_values[stop] == sorted_values[start]:
+            stop += 1
+        ranks[order[start:stop]] = 0.5 * (start + 1 + stop)
+        start = stop
+    return ranks
+
+
+def _rank_correlation(left: np.ndarray, right: np.ndarray) -> float:
+    left_rank = _average_ranks(np.asarray(left, dtype=np.float64))
+    right_rank = _average_ranks(np.asarray(right, dtype=np.float64))
+    if np.std(left_rank) <= np.finfo(float).eps or np.std(right_rank) <= np.finfo(
+        float
+    ).eps:
+        return 0.0
+    return float(np.corrcoef(left_rank, right_rank)[0, 1])
+
+
+def _partial_rank_correlation(
+    left: np.ndarray, right: np.ndarray, control: np.ndarray
+) -> float:
+    control_rank = _average_ranks(np.asarray(control, dtype=np.float64))
+    design = np.column_stack((np.ones(len(control_rank)), control_rank))
+    residuals = []
+    for values in (left, right):
+        ranks = _average_ranks(np.asarray(values, dtype=np.float64))
+        coefficient, *_ = np.linalg.lstsq(design, ranks, rcond=None)
+        residuals.append(ranks - design @ coefficient)
+    return float(np.corrcoef(residuals[0], residuals[1])[0, 1])
+
+
+def _linear_r2(target: np.ndarray, predictors: np.ndarray) -> float:
+    design = np.column_stack((np.ones(len(target)), predictors))
+    coefficient, *_ = np.linalg.lstsq(design, target, rcond=None)
+    residual = target - design @ coefficient
+    denominator = np.sum(np.square(target - np.mean(target)))
+    return 1.0 - float(np.sum(np.square(residual)) / denominator)
+
+
+def _gx_separability_diagnostics(
+    candidates: list[str],
+    feature_names: tuple[str, ...],
+    feature_values: np.ndarray,
+    target: np.ndarray,
+    scalars: np.ndarray,
+    scalar_names: tuple[str, ...],
+    classes: np.ndarray,
+    resolved: dict[str, Any],
+) -> dict[str, dict[str, float]]:
+    log_f_q = feature_values[:, feature_names.index("log_f_Q")]
+    result: dict[str, dict[str, float]] = {}
+    for candidate in candidates:
+        exposure = feature_values[:, feature_names.index(candidate)]
+        nuisance, nuisance_names = _nuisance_matrix(
+            list(resolved["matching_nuisance_features"]),
+            candidate,
+            feature_names,
+            feature_values,
+            scalar_names,
+            scalars,
+            classes,
+        )
+        result[candidate] = {
+            "spearman_with_log_f_Q": _rank_correlation(exposure, log_f_q),
+            "partial_spearman_with_native_target_given_log_f_Q": (
+                _partial_rank_correlation(exposure, target, log_f_q)
+            ),
+            "linear_r2_exposure_from_registered_nuisances": _linear_r2(
+                exposure, nuisance
+            ),
+            "registered_nuisance_columns": len(nuisance_names),
+        }
+    return result
+
+
+def _gx_spec(
+    ranking: list[dict[str, Any]],
+    design: dict[str, Any],
+    separability: dict[str, dict[str, float]] | None = None,
+) -> dict[str, Any]:
     selected = ranking[:2]
     standard_runs = (
         int(design["anchor_equilibria"])
@@ -725,6 +865,7 @@ def _gx_spec(ranking: list[dict[str, Any]], design: dict[str, Any]) -> dict[str,
     total = base * (1.0 + float(design["contingency_fraction"]))
     interventions = []
     for candidate in selected:
+        diagnostic = {} if separability is None else separability[candidate["candidate"]]
         interventions.append(
             {
                 "candidate": candidate["candidate"],
@@ -738,7 +879,8 @@ def _gx_spec(ranking: list[dict[str, Any]], design: dict[str, Any]) -> dict[str,
                     "shat, beta proxy, and nfp to their anchor tolerances. Never edit GX geometry "
                     "channels independently."
                 ),
-                "validity_tag": "prospective equilibrium-consistent intervention",
+                "observed_separability_diagnostics": diagnostic,
+                "validity_tag": "plausibly-local",
             }
         )
     return {
@@ -762,6 +904,34 @@ def _gx_spec(ranking: list[dict[str, Any]], design: dict[str, Any]) -> dict[str,
             "paired plus/minus steps of equal boundary-coefficient norm",
             "original anchor GX rerun to measure numerical repeatability",
         ],
+        "pre_budget_feasibility_gate": {
+            "required_before_researcher_budget_approval": True,
+            "procedure": (
+                "Run VMEC-only boundary-coefficient Jacobian searches at all three anchors; "
+                "both signed continuations must converge to force-balanced equilibria before "
+                "any GX allocation is approved."
+            ),
+            "minimum_candidate_separation_panel_iqr": float(
+                design["minimum_candidate_separation_panel_iqr"]
+            ),
+            "maximum_each_constrained_quantity_drift_panel_iqr": float(
+                design["maximum_constraint_drift_panel_iqr"]
+            ),
+            "failure_action": (
+                "replace or drop a direction and return to the researcher; do not spend the "
+                "proposed GX budget on an unrealizable constrained direction"
+            ),
+        },
+        "decisive_effect_threshold": {
+            "minimum_absolute_native_log_Q_response": float(
+                design["minimum_native_log_Q_response"]
+            ),
+            "noise_requirement": "also exceed two combined Q_stds standard errors",
+            "interpretation": (
+                "the 24-run design must resolve both thresholds; these are prospective "
+                "decision thresholds, not effects measured in S13"
+            ),
+        },
         "gx_resolution_and_convergence": [
             "use the dataset's registered periodic flux-tube setup for the standard run",
             "repeat all anchor controls and the largest response in each direction at doubled parallel and perpendicular resolution",
@@ -821,7 +991,7 @@ def _plot(path: Path, ranking: list[dict[str, Any]], residuals: list[dict[str, A
         for row in residuals
         if row["gradient_set"] == "fixed"
         and row["baseline"] == "paper_selected"
-        and row["regime"] == "unstable"
+        and row["regime"] == "all"
     ]
     axes[1].barh(
         [str(row["candidate"]) for row in selected],
@@ -829,7 +999,7 @@ def _plot(path: Path, ranking: list[dict[str, Any]], residuals: list[dict[str, A
     )
     axes[1].axvline(0, color="black", lw=0.8)
     axes[1].set_xlabel("out-of-fold MSE improvement (native units squared)")
-    axes[1].set_title("Added value beyond paper-selected features")
+    axes[1].set_title("Added value beyond paper-selected features (all rows)")
     figure.tight_layout()
     figure.savefig(path, dpi=160)
     plt.close(figure)
@@ -872,6 +1042,7 @@ def run(args: argparse.Namespace) -> Path:
         fixed_target_all,
         int(resolved["panel_rows"]),
         int(resolved["seed"]),
+        float(resolved["stable_threshold_log_Q"]),
     )
     row_ids = registered_rows[positions]
     scalars, scalar_names, groups, classes = _load_metadata(dataset, row_ids)
@@ -917,6 +1088,7 @@ def run(args: argparse.Namespace) -> Path:
         groups,
         replicates=int(resolved["bootstrap_replicates"]),
         seed=int(resolved["seed"]),
+        stable_threshold=float(resolved["stable_threshold_log_Q"]),
     )
     pair_rows, effect_rows, sensitivity_rows = _matched_rows(
         candidates,
@@ -938,11 +1110,29 @@ def run(args: argparse.Namespace) -> Path:
         groups,
         resolved,
     )
-    ranking = _candidate_ranking(candidates, effect_rows, sensitivity_rows, residual_rows)
+    ranking = _candidate_ranking(
+        candidates,
+        effect_rows,
+        sensitivity_rows,
+        residual_rows,
+        balance_threshold=float(resolved["postmatch_balance_threshold"]),
+        overlap_threshold=float(resolved["aipw_overlap_threshold"]),
+        paper_baseline_features=set(resolved["paper_baselines"]["paper_selected"]),
+    )
+    separability = _gx_separability_diagnostics(
+        candidates,
+        feature_names,
+        feature_tables["fixed"].values,
+        outcomes["fixed"]["target_native"],
+        scalars,
+        scalar_names,
+        classes,
+        resolved,
+    )
     contradictions = _contradictory_cases(
         pair_rows, ranking, int(resolved["contradictory_cases_per_candidate"])
     )
-    gx_spec = _gx_spec(ranking, resolved["gx_design"])
+    gx_spec = _gx_spec(ranking, resolved["gx_design"], separability)
 
     for name, rows in (
         ("fixed_associations.csv", association_rows),
@@ -963,10 +1153,16 @@ def run(args: argparse.Namespace) -> Path:
         "estimand": NATIVE_ESTIMAND,
         "rows": len(row_ids),
         "fixed_stable_or_near_floor_rows": int(
-            np.sum(outcomes["fixed"]["target_native"] <= -1.9)
+            np.sum(
+                outcomes["fixed"]["target_native"]
+                <= float(resolved["stable_threshold_log_Q"])
+            )
         ),
         "varied_stable_or_near_floor_rows": int(
-            np.sum(outcomes["varied"]["target_native"] <= -1.9)
+            np.sum(
+                outcomes["varied"]["target_native"]
+                <= float(resolved["stable_threshold_log_Q"])
+            )
         ),
         "candidate_ranking": ranking,
         "gx_compute_estimate": gx_spec["compute_estimate"],

@@ -34,6 +34,8 @@
   "match_low_quantile": 0.25,
   "match_high_quantile": 0.75,
   "match_caliper_iqr_units": 2.0,
+  "postmatch_balance_threshold": 0.5,
+  "aipw_overlap_threshold": 0.8,
   "crossfit_folds": 5,
   "ebm_max_bins": 64,
   "ebm_max_rounds": 250,
@@ -50,7 +52,10 @@
     "convergence_cases": 6,
     "convergence_run_node_hours": 2.0,
     "vmec_search_node_hours": 2.0,
-    "contingency_fraction": 0.25
+    "contingency_fraction": 0.25,
+    "minimum_candidate_separation_panel_iqr": 0.5,
+    "maximum_constraint_drift_panel_iqr": 0.1,
+    "minimum_native_log_Q_response": 0.2
   },
   "dataset": "/Users/mattland/20260523-01-files_for_Kosmos_interpreting_neural_networks/20250102-01_GX_stellarator_dataset.h5",
   "checkpoint": "models/cyclic_ensemble_pre2.pt",

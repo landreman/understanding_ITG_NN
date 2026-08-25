@@ -20,6 +20,11 @@
     "original anchor GX rerun to measure numerical repeatability"
   ],
   "decision_gate": "Do not generate equilibria or launch GX until the researcher approves this intervention and budget.",
+  "decisive_effect_threshold": {
+    "interpretation": "the 24-run design must resolve both thresholds; these are prospective decision thresholds, not effects measured in S13",
+    "minimum_absolute_native_log_Q_response": 0.2,
+    "noise_requirement": "also exceed two combined Q_stds standard errors"
+  },
   "drives": [
     [
       3.0,
@@ -41,14 +46,33 @@
       "candidate": "geodesic_curvature_compression",
       "construction": "For each anchor, continue VMEC boundary coefficients in both signs while recomputing force-balanced equilibria; optimize the named invariant direction and constrain the competing candidate, log_f_Q, aspect, iota, shat, beta proxy, and nfp to their anchor tolerances. Never edit GX geometry channels independently.",
       "expected_native_log_Q_sign": 1,
-      "validity_tag": "prospective equilibrium-consistent intervention"
+      "observed_separability_diagnostics": {
+        "linear_r2_exposure_from_registered_nuisances": 0.5788966896178127,
+        "partial_spearman_with_native_target_given_log_f_Q": 0.3342633314830649,
+        "registered_nuisance_columns": 15,
+        "spearman_with_log_f_Q": 0.4218581178581179
+      },
+      "validity_tag": "plausibly-local"
     },
     {
       "candidate": "f_Q_integrand_w25_peak",
       "construction": "For each anchor, continue VMEC boundary coefficients in both signs while recomputing force-balanced equilibria; optimize the named invariant direction and constrain the competing candidate, log_f_Q, aspect, iota, shat, beta proxy, and nfp to their anchor tolerances. Never edit GX geometry channels independently.",
       "expected_native_log_Q_sign": 1,
-      "validity_tag": "prospective equilibrium-consistent intervention"
+      "observed_separability_diagnostics": {
+        "linear_r2_exposure_from_registered_nuisances": 0.9581271955876193,
+        "partial_spearman_with_native_target_given_log_f_Q": 0.15752294975084172,
+        "registered_nuisance_columns": 16,
+        "spearman_with_log_f_Q": 0.9524282444282444
+      },
+      "validity_tag": "plausibly-local"
     }
   ],
+  "pre_budget_feasibility_gate": {
+    "failure_action": "replace or drop a direction and return to the researcher; do not spend the proposed GX budget on an unrealizable constrained direction",
+    "maximum_each_constrained_quantity_drift_panel_iqr": 0.1,
+    "minimum_candidate_separation_panel_iqr": 0.5,
+    "procedure": "Run VMEC-only boundary-coefficient Jacobian searches at all three anchors; both signed continuations must converge to force-balanced equilibria before any GX allocation is approved.",
+    "required_before_researcher_budget_approval": true
+  },
   "status": "proposal_only_researcher_approval_required"
 }

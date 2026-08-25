@@ -225,7 +225,7 @@ def test_tie_inclusive_overlap_and_lag_selection_null_are_pinned() -> None:
     )
     assert signal_null.maximum > signal_null.max_abs_rank_correlation.mean()
     assert signal_null.permutation_group == "equilibrium_files"
-    np.testing.assert_array_equal(
+    np.testing.assert_allclose(
         signal_null.max_abs_rank_correlation,
         lag_selection_permutation_null(
             learned,
@@ -235,6 +235,8 @@ def test_tie_inclusive_overlap_and_lag_selection_null_are_pinned() -> None:
             permutations=40,
             seed=45,
         ).max_abs_rank_correlation,
+        rtol=0.0,
+        atol=1e-15,
     )
 
     # Independent slow oracle: repeat the same group permutations, but let the

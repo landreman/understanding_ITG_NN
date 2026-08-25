@@ -9,6 +9,7 @@
     "scripts/xai_s13_physical_validation.py"
   ],
   "config": {
+    "aipw_overlap_threshold": 0.8,
     "bootstrap_replicates": 500,
     "candidate_features": [
       "f_Q_integrand_w25_peak",
@@ -44,6 +45,9 @@
           0.9
         ]
       ],
+      "maximum_constraint_drift_panel_iqr": 0.1,
+      "minimum_candidate_separation_panel_iqr": 0.5,
+      "minimum_native_log_Q_response": 0.2,
       "signed_steps_per_direction": 2,
       "standard_run_node_hours": 0.5,
       "vmec_search_node_hours": 2.0
@@ -92,10 +96,11 @@
       "panel_rows": 96,
       "run_id": "pilot-panel96"
     },
+    "postmatch_balance_threshold": 0.5,
     "propensity_clip": 0.05,
     "published_dir": "reports/xai/S13_artifacts",
     "run_id": "physical-validation-panel1000",
-    "script_sha256": "c1dcb89c405893a305ab1055698d00dccf7150d64e0a3ee45cc4c2bc53f4574a",
+    "script_sha256": "1ef68ded89075616d5f541f1766b9f0fb6fa661e464e81a57546f4ba57b40b6d",
     "seed": 20260825,
     "stable_threshold_log_Q": -1.9,
     "step": "S13"
@@ -108,10 +113,10 @@
   },
   "device": "cpu",
   "feature_table_version": "S12-v1",
-  "git_commit": "0b370a31787a7be7b006edefbc829ec563eaaab4",
+  "git_commit": "b56a3014d550abb2fa2b31641195593e6bca7434",
   "git_dirty": true,
   "git_tracked_dirty": true,
-  "git_tree": "670eecbe8dc7de8cd94f948fc889d7cc62093d98",
+  "git_tree": "3477c45976d05f992bc43ccbc67b470a5421e067",
   "gradient_set": "fixed and varied S01 interpretation panel",
   "member_ids": [
     "2864601_0.437",
@@ -120,16 +125,16 @@
   ],
   "model_outputs_computed": false,
   "output_hashes": {
-    "candidate_ranking.csv": "20fb1ecaa70f5d7b35dfd132aa9ad13b4e7c6668812aded3d38024913748a90f",
-    "contradictory_cases.csv": "333d0752fadf4a989ba1a5c2f25e957d6f0cbb1c7442151e66d7374f7e1f5b5d",
+    "candidate_ranking.csv": "dab6945396a3e5c5f6dcbdb467a14f70c519f2a3f64a02b65854558a22bcfe64",
+    "contradictory_cases.csv": "d01a7af5dd961be6155df5a664924f209ab63837301c7e8bbe1cf722de010932",
     "doubly_robust_sensitivity.csv": "88bff1cd5c59153c6b5ebd34bc6b8b63a18a391ec8434940bc891c83702059e4",
     "fixed_associations.csv": "a3ff0d01fb144c4f1f36ed5cb30befb99850140b38fa2c021b4cdc26672bd09d",
-    "gx_experiment_spec.json": "2899cdb5f8f181479db95e7c8ac521e6761a7a3c4f34d4eba6c626977ca6700c",
-    "matched_effects.csv": "8fef8c653fd2de11c4fbf09531744715b26ef74d05b2a782d032d8031dd35680",
+    "gx_experiment_spec.json": "d24513706c00f2952cd5355f2ac3523b4aff2e817cccd62cc35208a22b9fb808",
+    "matched_effects.csv": "caf2d37a9b1ec1d09a162edf1ac1ea996f75b7a5666d05bba24d1675a3122aeb",
     "matched_pairs.csv": "66601d1320a369991fef46a9ee4a41cfa615dc36b6b24f0c737418aa8473ebd1",
-    "natural_experiment_atlas.png": "1c7e4ad7819a07655ee4deed420ec4f7561d97e40869708d5b32b9c253a0e03b",
+    "natural_experiment_atlas.png": "21151b9901cb343cc01f9aad23cb467bdc858ded06167e206aacf827034899b9",
     "residual_validation.csv": "50c3cafba4b54ea4aac8da181742ea169bd08ea6ab62d295f82d713a6cf213db",
-    "summary.json": "6786513d149f3bcd8023348006949260c62903bd5c74dfabfe73744afe133779"
+    "summary.json": "9d7b50bbc273f918fc2764f349e5e5410bf82ef3bcb6644cb69bdbe280666977"
   },
   "package_versions": {
     "captum": "0.9.0",
@@ -1155,5 +1160,5 @@
   ],
   "seed": 20260825,
   "split_unit": "equilibrium_files",
-  "wall_time_seconds": 78.0738209580013
+  "wall_time_seconds": 79.06140366700129
 }

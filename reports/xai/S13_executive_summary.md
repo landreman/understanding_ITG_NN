@@ -138,6 +138,10 @@ intervention-ready. Geodesic-curvature/compression ranks first because it alone
 adds clear fixed-drive predictive information beyond the full paper baseline.
 The localized $f_Q$ peak ranks second because its strong raw association is
 undermined by severe imbalance, poor overlap, and the adjusted sign reversal.
+Bad-curvature/compression and $f_{\rm stab}$ tie behind them. $f_{\rm stab}$ is
+already part of the full paper baseline, so its gain against the weaker
+$f_Q$-only baseline is published but does not receive a comparable ranking
+point; candidate name is used only to display the tie deterministically.
 
 Five supporting and five contradicting matched pairs for every candidate are
 published; contradictory cases were not discarded.
@@ -155,12 +159,30 @@ The change must be made through a VMEC boundary continuation, meaning the
 boundary shape is changed and a new force-balanced equilibrium is solved each
 time. Geometry channels must never be edited independently.
 
-The minimal design uses three typical unstable anchor equilibria, positive and
+There is an important feasibility risk in the second direction. The localized
+peak has rank correlation **0.9524** with global $\log f_Q$, and the registered
+nuisance geometry explains **95.81%** of the peak's variation. After holding
+$\log f_Q$ fixed, its rank correlation with heat flux drops from **0.807** to
+**0.158**; for the geodesic candidate it drops from **0.519** to **0.334**.
+The adjusted sign reversal may therefore reflect over-adjustment—holding part
+of the exposure itself fixed—as well as confounding.
+
+Before asking for a GX allocation, VMEC-only searches must show that both signed
+directions are realizable at all three anchors. The candidate must change by at
+least **0.5 panel IQR** while every constrained quantity changes by at most
+**0.1 panel IQR**. If either direction fails, it is replaced or dropped and the
+proposal returns to the researcher without launching GX.
+
+The minimal GX design uses three typical unstable anchor equilibria, positive and
 negative changes for each of the two candidates, and two drive points. That is
 **24 standard GX runs**. Six decisive cases are repeated with doubled resolution
 and longer averaging. Controls include a zero-change continuation, an
 orthogonal direction, equal-size plus/minus boundary changes, and rerunning the
 original anchors.
+
+A decisive response must be at least **0.2 native-log units** and exceed two
+combined `Q_stds` standard errors; those are prospective decision thresholds,
+not effects already measured here.
 
 The planning envelope is **32.5 Perlmutter node-hours**: 12 for standard runs,
 12 for convergence runs, 2 for equilibrium searches, and 25% contingency. This
@@ -179,4 +201,5 @@ selected formulas. The localized $f_Q$ peak is the essential competing test
 because it has the strongest raw support and the strongest sign contradiction.
 
 No new equilibrium or GX simulation has been launched. The proposed 32.5-node-
-hour experiment remains at the researcher approval gate.
+hour experiment remains behind the VMEC realizability check and then the
+researcher approval gate.

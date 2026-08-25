@@ -27,6 +27,9 @@ def test_registered_manifest_hashes_every_published_scientific_artifact() -> Non
     assert manifest["config"]["run_id"] == "physical-validation-panel1000"
     assert manifest["split_unit"] == "equilibrium_files"
     assert manifest["model_outputs_computed"] is False
+    assert manifest["config"]["postmatch_balance_threshold"] == 0.5
+    assert manifest["config"]["aipw_overlap_threshold"] == 0.8
+    assert manifest["config"]["stable_threshold_log_Q"] == -1.9
     assert manifest["gradient_set"] == "fixed and varied S01 interpretation panel"
     assert len(manifest["row_ids"]) == len(set(manifest["row_ids"])) == 1000
     expected = {
@@ -90,6 +93,14 @@ def test_headline_observed_contrasts_and_confounds_are_pinned() -> None:
         -1.0899487909048
     )
     assert float(localized_adjusted["ci95_upper"]) < 0
+    near_floor = _one(
+        matched,
+        candidate="geodesic_curvature_compression",
+        outcome="target_native",
+        regime="either_stable_or_near_floor",
+    )
+    assert int(near_floor["matched_pairs"]) < 20
+    assert near_floor["interval_interpretable"] == "False"
 
 
 def test_residual_validation_separates_fq_and_paper_baselines() -> None:
@@ -123,6 +134,7 @@ def test_claim_grades_keep_balance_overlap_and_causality_limits_visible() -> Non
     summary = json.loads((ARTIFACTS / "summary.json").read_text(encoding="utf-8"))
     assert summary["fixed_stable_or_near_floor_rows"] == 23
     assert summary["varied_stable_or_near_floor_rows"] == 240
+    assert summary["estimand"] == "native max(log Q, -2)"
     assert not summary["causal_claims_made"]
     assert not summary["invalid_perturbations_used"]
     ranking = summary["candidate_ranking"]
@@ -134,6 +146,14 @@ def test_claim_grades_keep_balance_overlap_and_causality_limits_visible() -> Non
     assert [row["candidate"] for row in csv_ranking] == [
         row["candidate"] for row in ranking
     ]
+    f_stab = _one(csv_ranking, candidate="f_stab")
+    assert f_stab["ranking_residual_baseline"] == (
+        "not_applicable_candidate_in_baseline"
+    )
+    assert f_stab["ranking_residual_comparable"] == "False"
+    bad_curvature = _one(csv_ranking, candidate="bad_curvature_compression")
+    assert f_stab["evidence_rank"] == bad_curvature["evidence_rank"] == "3"
+    assert f_stab["rank_tied"] == bad_curvature["rank_tied"] == "True"
 
 
 def test_pairs_are_equilibrium_disjoint_and_contradictions_are_balanced() -> None:
@@ -161,9 +181,21 @@ def test_gx_spec_is_proposal_only_with_auditable_planning_budget() -> None:
         "geodesic_curvature_compression",
         "f_Q_integrand_w25_peak",
     ]
+    assert {row["validity_tag"] for row in spec["interventions"]} == {
+        "plausibly-local"
+    }
     budget = spec["compute_estimate"]
     assert budget["standard_runs"] == 24
     assert budget["standard_node_hours"] == 12
     assert budget["convergence_node_hours"] == 12
     assert budget["total_perlmutter_node_hours"] == 32.5
     assert "not a measured Perlmutter pilot" in budget["basis"]
+    localized = spec["interventions"][1]["observed_separability_diagnostics"]
+    assert float(localized["spearman_with_log_f_Q"]) == pytest.approx(0.9524282444)
+    assert float(
+        localized["partial_spearman_with_native_target_given_log_f_Q"]
+    ) == pytest.approx(0.1575229498)
+    assert float(localized["linear_r2_exposure_from_registered_nuisances"]) > 0.95
+    assert spec["pre_budget_feasibility_gate"][
+        "required_before_researcher_budget_approval"
+    ]
