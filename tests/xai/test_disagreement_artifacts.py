@@ -80,6 +80,7 @@ def test_diagnostics_use_frozen_features_and_equilibrium_resampling():
     assert {row["feature_selection"] for row in crossfit} == {"none_frozen_before_residual_analysis"}
     assert {int(row["repeat_count"]) for row in crossfit} == {50}
     assert all(float(row["heldout_r2_repeat_lower"]) <= float(row["heldout_r2_repeat_median"]) <= float(row["heldout_r2_repeat_upper"]) for row in crossfit)
+    assert all(float(row["heldout_r2_repeat_upper"]) > float(row["heldout_r2_repeat_lower"]) for row in crossfit)
 
     equivariance = _rows("gradient_equivariance.csv")
     assert {row["outcome"] for row in equivariance} == {

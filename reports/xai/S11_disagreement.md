@@ -298,6 +298,9 @@ perturbation difference; resampling rows instead of whole equilibria in the
 paired spread/error interval; dropping the member-level signed-change column;
 and breaking the exact shifted-map equivariance relation. Each changes a
 published estimand or its uncertainty rather than merely formatting output.
+Two final mutations were also red: sorting calibration bins by error instead of
+spread, and reusing one fold seed for all 50 cross-fit repeats. Replacing
+`error > spread` with the vacuous `error > 0` likewise failed the mixed fixture.
 
 ## Acceptance criteria
 

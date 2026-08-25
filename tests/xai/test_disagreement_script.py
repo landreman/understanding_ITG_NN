@@ -69,6 +69,7 @@ def test_crossfit_table_accepts_a_single_equilibrium_class_pilot():
     assert rows[0]["split_unit"] == "equilibrium_files"
     assert rows[0]["repeat_count"] == 5
     assert rows[0]["heldout_r2_repeat_lower"] <= rows[0]["heldout_r2_repeat_median"] <= rows[0]["heldout_r2_repeat_upper"]
+    assert rows[0]["heldout_r2_repeat_upper"] > rows[0]["heldout_r2_repeat_lower"]
 
 
 def test_runner_spread_gradient_uses_canonical_native_outputs():
@@ -148,13 +149,20 @@ def test_runner_equivariance_and_calibration_helpers_pin_null_and_miscalibration
     assert row["max_absolute_error"] == 0.0
     assert row["map_count"] == 2
 
-    calibration = _module()._spread_calibration_rows(
-        np.arange(1.0, 11.0), np.arange(1.0, 11.0) * 2.0
-    )
+    spread = np.arange(1.0, 11.0)
+    error = np.asarray([1.5, 0.5, 4.0, 1.0, 7.0, 2.0, 9.0, 3.0, 12.0, 4.0])
+    calibration = _module()._spread_calibration_rows(spread, error)
     assert len(calibration) == 5
     assert {row["sample_count"] for row in calibration} == {2}
-    assert all(row["mean_error_to_mean_spread_ratio"] == 2.0 for row in calibration)
-    assert all(row["fraction_error_exceeds_spread"] == 1.0 for row in calibration)
+    assert [row["mean_spread_native"] for row in calibration] == [1.5, 3.5, 5.5, 7.5, 9.5]
+    assert all(
+        left < right
+        for left, right in zip(
+            [row["mean_spread_native"] for row in calibration],
+            [row["mean_spread_native"] for row in calibration][1:],
+        )
+    )
+    assert any(0.0 < row["fraction_error_exceeds_spread"] < 1.0 for row in calibration)
 
 
 def test_runner_perturbation_summary_keeps_exact_symmetry_null():
