@@ -48,7 +48,7 @@ class AIPWResult:
     overlap_fraction: float
     split_unit: str = "equilibrium_files"
     validity_tag: str = "observed-comparison"
-    method: str = "in_repo_logistic_irls_plus_ridge"
+    method: str = "in_repo_logistic_irls_plus_common_scale_ridge"
 
 
 def _average_ranks(values: np.ndarray) -> np.ndarray:
@@ -230,10 +230,13 @@ def cross_fitted_aipw(
     mu1 = np.empty(len(y), dtype=np.float64)
 
     def standardized(
-        train_values: np.ndarray, test_values: np.ndarray
+        train_values: np.ndarray,
+        test_values: np.ndarray,
+        reference_values: np.ndarray | None = None,
     ) -> tuple[np.ndarray, np.ndarray]:
-        center = np.mean(train_values, axis=0)
-        scale = np.std(train_values, axis=0)
+        reference = train_values if reference_values is None else reference_values
+        center = np.mean(reference, axis=0)
+        scale = np.std(reference, axis=0)
         scale = np.where(scale > np.finfo(float).eps, scale, 1.0)
         return (train_values - center) / scale, (test_values - center) / scale
 
@@ -241,8 +244,11 @@ def cross_fitted_aipw(
         train_values: np.ndarray,
         train_outcome: np.ndarray,
         test_values: np.ndarray,
+        reference_values: np.ndarray,
     ) -> np.ndarray:
-        train_scaled, test_scaled = standardized(train_values, test_values)
+        train_scaled, test_scaled = standardized(
+            train_values, test_values, reference_values
+        )
         design = np.column_stack((np.ones(len(train_scaled)), train_scaled))
         penalty = np.eye(design.shape[1], dtype=np.float64)
         penalty[0, 0] = 0.0
@@ -289,7 +295,7 @@ def cross_fitted_aipw(
             if selected.sum() < 2:
                 raise ValueError("each treatment level needs two training rows")
             destination[test] = ridge_predict(
-                x[selected], y[selected], x[test]
+                x[selected], y[selected], x[test], x[train]
             )
     overlap = float(
         np.mean(

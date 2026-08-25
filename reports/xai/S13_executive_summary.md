@@ -67,7 +67,7 @@ similar nuisance geometry exist in this panel.
 That failure was kept visible. The precise matched differences are not causal
 effects.
 
-## The adjustment check found a contradiction
+## The adjustment check is specification-sensitive
 
 A second analysis used AIPW, a “doubly robust” estimator. It combines two fitted
 models: one predicts whether a row belongs to the high or low candidate tail,
@@ -80,11 +80,20 @@ Comparable high/low rows were scarce. The fraction with acceptable overlap was
 only **0.232–0.478**, below the required 0.8. The adjusted numbers are therefore
 sensitivity warnings rather than reliable effect estimates.
 
-The clearest warning concerns the localized $f_Q$ peak. Among unstable matched
-pairs, high peak goes with **+1.544** higher heat flux. After the adjustment it
-goes with **-1.091** lower heat flux, and both uncertainty ranges exclude zero.
-That sign reversal means the natural data cannot tell us which sign belongs to
-an equilibrium-consistent intervention.
+Both potential-outcome models now use one common scale fitted on the complete
+training fold. Under that specification, geodesic/compression has adjusted
+contrast **+0.559 [0.318, 0.764]** and bad-curvature/compression **+0.203
+[0.001, 0.476]**. The localized peak is unresolved: **+0.084 [-0.145, 0.380]**
+over all rows and **-0.011 [-0.161, 0.141]** among unstable rows. Scaling each
+tail separately had produced a resolved -1.09 unstable value. Its disappearance
+under common scaling shows that the apparent sign reversal came from nuisance-
+model specification, not a measured physical contradiction.
+
+Matching has a parallel warning. The candidate/heat-flux difference grows with
+leftover nuisance distance (rank correlations **0.71–0.79**). In the closest
+quarter of pairs, the mean contrasts shrink from **1.32–1.88** to **0.41–0.79**,
+although all four signs remain positive. Much of the full matched association is
+therefore concentrated where comparison quality is worst.
 
 ## Which feature adds information beyond the published formulas?
 
@@ -100,10 +109,18 @@ geodesic-curvature/compression raises this to **82.65%**, a gain of **1.39
 percentage points**. The mean squared error improvement is **0.0188**, with a
 95% range **[0.0062, 0.0325]** that stays above zero.
 
-The localized peak and bad-curvature/compression variation each add about 0.6
-percentage point, but their uncertainty ranges include no improvement. Thus
-geodesic-curvature/compression is the only tested addition with a clear
-fixed-drive gain beyond the full paper-selected set. The gain is real but small.
+Under the registered fold assignment, the localized peak and
+bad-curvature/compression variation each add about 0.6 percentage point, but
+their uncertainty ranges include no improvement. That "only geodesic resolves"
+statement is fold-dependent: over seven assignments geodesic resolves **7/7**
+times and has the largest gain every time, bad-curvature resolves **5/7**, and
+the localized peak **4/7**. The EBM's own random seed is held fixed, so this
+changes only which equilibria enter each fold. Geodesic's first place is robust; exclusivity under
+one split is not.
+
+The result is panel-dependent too. On the varied-gradient panel all three
+non-baseline candidates resolve, and geodesic has the smallest gain
+($\Delta R^2=0.00633$ versus **0.00978** and **0.01053**).
 
 This does not make the geodesic candidate causal. It makes it the best next
 candidate to test.
@@ -134,14 +151,22 @@ The report uses three levels:
   overlapping to give a defensible expected intervention.
 
 All four candidates reach observational-physical. None reaches
-intervention-ready. Geodesic-curvature/compression ranks first because it alone
-adds clear fixed-drive predictive information beyond the full paper baseline.
-The localized $f_Q$ peak ranks second because its strong raw association is
-undermined by severe imbalance, poor overlap, and the adjusted sign reversal.
-Bad-curvature/compression and $f_{\rm stab}$ tie behind them. $f_{\rm stab}$ is
+intervention-ready. Geodesic-curvature/compression ranks first because its
+fixed-drive residual gain is largest and resolved in all seven fold assignments.
+Bad-curvature/compression ranks second because it has the strongest raw
+correlation, a resolved common-scale adjusted contrast, and resolves beyond the
+paper baseline in five assignments. The localized peak and $f_{\rm stab}$ tie
+behind them. $f_{\rm stab}$ is
 already part of the full paper baseline, so its gain against the weaker
 $f_Q$-only baseline is published but does not receive a comparable ranking
 point; candidate name is used only to display the tie deterministically.
+
+This physical ranking is deliberately not the same as upstream network
+recurrence. In S12, geodesic/compression recurred in only **0.27–0.60** of
+member bootstrap fits, versus **0.83–0.87** for the localized peak and
+**0.83–0.90** for $f_{\rm stab}$. Testing geodesic first asks whether a less
+consistently learned signal is nevertheless real physics; it does not call that
+signal the ensemble's most stable rule.
 
 Five supporting and five contradicting matched pairs for every candidate are
 published; contradictory cases were not discarded.
@@ -150,22 +175,20 @@ published; contradictory cases were not discarded.
 
 The next calculation should compare the top two competing directions directly:
 
-1. change geodesic-curvature/compression while holding the localized $f_Q$ peak
+1. change geodesic-curvature/compression while holding bad-curvature/compression
    and key global properties close to the anchor;
-2. change the localized $f_Q$ peak while holding the geodesic candidate and the
+2. change bad-curvature/compression while holding the geodesic candidate and the
    same global properties close.
 
 The change must be made through a VMEC boundary continuation, meaning the
 boundary shape is changed and a new force-balanced equilibrium is solved each
 time. Geometry channels must never be edited independently.
 
-There is an important feasibility risk in the second direction. The localized
-peak has rank correlation **0.9524** with global $\log f_Q$, and the registered
-nuisance geometry explains **95.81%** of the peak's variation. After holding
-$\log f_Q$ fixed, its rank correlation with heat flux drops from **0.807** to
-**0.158**; for the geodesic candidate it drops from **0.519** to **0.334**.
-The adjusted sign reversal may therefore reflect over-adjustment—holding part
-of the exposure itself fixed—as well as confounding.
+The second direction still has a feasibility risk: bad-curvature/compression
+has rank correlation **0.9532** with global $\log f_Q$, and its heat-flux rank
+correlation after holding $\log f_Q$ fixed is only **0.1592**. For geodesic the
+partial correlation is **0.3343**. The pre-budget VMEC screen is therefore a
+real decision gate, not paperwork.
 
 Before asking for a GX allocation, VMEC-only searches must show that both signed
 directions are realizable at all three anchors. The candidate must change by at

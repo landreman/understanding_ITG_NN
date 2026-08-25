@@ -26,13 +26,14 @@ observed comparisons, not causal effects.
 
 The cross-fitted augmented inverse-probability weighting sensitivity analysis
 (AIPW: it combines an outcome model with a model of which rows enter the high
-candidate tail) reaches the same all-row sign for every candidate, but overlap
-is only **0.232–0.478**, below the registered 0.8 requirement. Its most important
-contradiction is the localized $f_Q$ peak: the both-unstable matched contrast is
-**+1.544 [1.402, 1.693]**, while the adjusted unstable-tail contrast is
-**-1.091 [-1.424, -0.806]**. This sign reversal under a confounding adjustment
-with poor overlap is evidence that the observational comparison is not robust
-enough to specify a physical sign.
+candidate tail) has only **0.232–0.478** overlap, below the registered 0.8
+requirement. Using one common training-fold scale for both potential-outcome
+models, geodesic/compression is **+0.559 [0.318, 0.764]** and bad-curvature/
+compression is **+0.203 [0.001, 0.476]**. The localized peak is unresolved both
+over all rows, **+0.084 [-0.145, 0.380]**, and among unstable rows, **-0.011
+[-0.161, 0.141]**. The earlier per-arm scaling produced a resolved -1.09
+unstable contrast; because that conclusion disappears under common scaling, it
+is a nuisance-model specification artifact rather than a physical sign reversal.
 
 Residual validation gives the clearest positive result. Starting from a
 cross-fitted EBM using the paper-selected features
@@ -41,30 +42,38 @@ geodesic-curvature/compression raises fixed-panel held-out $R^2$ from **0.8125
 to 0.8265** ($\Delta R^2=0.01394$) and improves mean squared error by **0.01880
 [0.00617, 0.03252]** native units squared. The windowed $f_Q$ peak and
 bad-curvature/compression add only $\Delta R^2=0.00580$ and 0.00589; their MSE
-improvement intervals cross zero. Thus geodesic-curvature/compression contains a
-small amount of fixed-drive physical predictive information beyond the paper's
-selected feature set, but the natural data do not isolate it well enough to call
-that information causal.
+improvement intervals cross zero under the registered fold assignment. Across
+seven fold assignments, geodesic stays resolved and has the largest gain **7/7**
+times; bad-curvature resolves **5/7** times and the peak **4/7**. Thus
+geodesic-curvature/compression contains the most fold-robust fixed-drive
+predictive information beyond the paper's selected feature set, but the natural
+data do not isolate it well enough to call that information causal.
 
 The resulting order is:
 
-1. **Geodesic-curvature/compression — observational-physical.** The only
-   candidate with a resolved fixed-drive gain beyond the full paper-selected
-   baseline, and matched/AIPW physical associations of the same sign. Remaining
-   imbalance is 1.068 and overlap 0.478, so it is not intervention-ready.
-2. **Localized 25-point $f_Q$-integrand peak — observational-physical.** Strong
-   raw and matched association, but no resolved gain beyond the full paper
-   baseline, severe imbalance (4.151), overlap 0.232, and an unstable-row sign
-   reversal under AIPW.
-3. **Bad-curvature/compression variance and $f_{\rm stab}$ (tied) —
-   observational-physical.** Bad-curvature/compression has strong raw
-   association but no resolved adjusted all-row contrast or gain beyond the full
-   paper baseline, with severe remaining imbalance. $f_{\rm stab}$ adds
+1. **Geodesic-curvature/compression — observational-physical.** Its residual
+   gain is largest and resolved in all seven fold assignments, and matched/AIPW
+   physical associations have the same sign. Remaining imbalance is 1.068 and
+   overlap 0.478, so it is not intervention-ready.
+2. **Bad-curvature/compression variance — observational-physical.** It has the
+   strongest raw correlation, a resolved common-scale adjusted contrast, and a
+   residual gain that resolves in five of seven fold assignments. Severe
+   imbalance (3.747) and overlap 0.246 still preclude a causal sign.
+3. **Localized peak and $f_{\rm stab}$ (tied) — observational-physical.** The
+   localized peak has strong raw and matched association but unresolved adjusted
+   and registered-fold residual contrasts, severe imbalance (4.151), and overlap
+   0.232. $f_{\rm stab}$ adds
    information beyond the weaker $f_Q$ baseline, but that residual point is not
    comparable because $f_{\rm stab}$ is already inside the full paper-selected
    baseline. It therefore receives no full-baseline residual point. Both score
-   2; the CSV uses candidate name only for deterministic display order, and this
-   third-place tie does not affect the two-direction GX shortlist.
+   2; the CSV uses candidate name only for deterministic display order.
+
+This physical ranking differs from upstream model stability. S12 found member
+bootstrap recurrence of **0.27–0.60** for geodesic/compression, versus
+**0.83–0.87** for the localized peak and **0.83–0.90** for $f_{\rm stab}$.
+S13 prioritizes the fold-robust independent GX gain because this intervention is
+designed to test whether a less consistently learned candidate is real physics;
+it does not imply that geodesic/compression is the ensemble's most stable rule.
 
 No candidate is graded `intervention-ready`. The prospective GX specification
 therefore tests the top two competing directions rather than asserting either
@@ -90,7 +99,7 @@ Because this panel contains exactly one tube per equilibrium, grouping by
 `equilibrium_files` is a forward-compatible guarantee rather than a numerical
 correction here; the grouped and row-level resamples coincide on these rows.
 
-The registered run is `physical-validation-panel1000`. It took **79.06 s** on
+The registered run is `physical-validation-panel1000`. It took **85.83 s** on
 CPU. The committed [manifest](S13_artifacts/manifest.json) records seed
 20260825, all 1,000 parent row IDs, source hashes, exact command, package
 versions, output hashes, dataset SHA-256
@@ -103,8 +112,8 @@ run model inference.
 The exact production command was:
 
 ```bash
-MPLCONFIGDIR=/private/tmp/mpl-s13-review-final \
-XDG_CACHE_HOME=/private/tmp/cache-s13-review-final \
+MPLCONFIGDIR=/private/tmp/mpl-s13-final-head \
+XDG_CACHE_HOME=/private/tmp/cache-s13-final-head \
 .venv-xai/bin/python scripts/xai_s13_physical_validation.py
 ```
 
@@ -127,8 +136,9 @@ bootstrap draws of complete `equilibrium_files`. All, stable/near-floor, and
 unstable strata are separate. The fixed panel has only 23 near-floor rows, so
 that stratum is retained in the artifact but not used for a headline claim.
 
-The artifacts contain 218 nominal 95% intervals: 72 associations, 72 matched
-effects, 32 AIPW sensitivities, and 42 residual comparisons. They are not
+The artifacts contain 239 nominal 95% intervals: 72 associations, 72 matched
+effects, 32 AIPW sensitivities, 42 registered residual comparisons, and 21
+fold-assignment sensitivity rows. They are not
 adjusted for multiple comparisons, and the geodesic headline was selected from
 the tested fixed-panel candidates. The secondary tables are therefore
 exploratory; an isolated interval excluding zero should not be read as a new
@@ -163,28 +173,39 @@ Uncertainty resamples the disjoint matched-equilibrium pairs; each pair contains
 two unique `equilibrium_files` and none is reused within a candidate analysis.
 Rows based on fewer than 20 pairs carry `interval_interpretable=False` in
 `matched_effects.csv`; this includes all 3–7-pair fixed near-floor results.
+The matched difference is also concentrated in poorly matched pairs. Across
+candidates, the correlation between nuisance distance and the native-output
+difference is **0.713–0.792**. Restricting to the best-matched quarter reduces
+the mean contrast from **1.317 to 0.463** for geodesic, **1.878 to 0.788** for
+bad-curvature, **1.598 to 0.742** for the localized peak, and **1.486 to 0.411**
+for $f_{\rm stab}$. Every closest-quarter sign stays positive, but the reduction
+of roughly one-half to three-quarters is direct evidence that leftover nuisance
+geometry accounts for much of the full matched association.
 
 ### Doubly robust sensitivity check
 
 The AIPW check uses only upper- and lower-quartile rows. Five-fold cross-fitting
 holds out complete `equilibrium_files`; within each training fold, logistic
 regression predicts tail assignment and ridge regressions predict each potential
-outcome. Propensities are clipped at 0.05 only after the overlap fraction is
+outcome. Both outcome regressions use the same center and scale fitted on the
+complete training fold; separate per-arm scales produced an unstable result and
+are not used. Propensities are clipped at 0.05 only after the overlap fraction is
 recorded. Intervals resample complete equilibria from the cross-fitted influence
 values. Every artifact row records the production code path
-`in_repo_logistic_irls_plus_ridge`; there is no optional scikit-learn branch.
+`in_repo_logistic_irls_plus_common_scale_ridge`; there is no optional
+scikit-learn branch.
 
 “Doubly robust” does not mean immune to confounding. It means the estimator can
 remain consistent if either its treatment-assignment model or its outcome model
 is correct, under assumptions that include no unmeasured confounding and usable
 overlap. Here measured overlap fails badly, so the large adjusted `Q_stds` and
 zonal estimates for the localized peak are not credible effect sizes. They are
-published as sensitivity failures.
-For the localized peak, adjustment also holds nearly the same quantity fixed:
-the peak has Spearman correlation **0.9524** with global $\log f_Q$. Thus the
-unstable sign reversal may reflect over-adjustment (removing part of the
-exposure itself) as well as ordinary confounding; it is not evidence for a
-negative intervention sign.
+published as sensitivity failures. For the localized peak, adjustment also
+holds nearly the same quantity fixed: the peak has Spearman correlation
+**0.9524** with global $\log f_Q$. Its unresolved common-scale result is
+consistent with the adjustment removing part of the exposure itself; neither
+the positive matched sign nor the near-zero adjusted sign identifies an
+intervention effect.
 
 ### Residual validation
 
@@ -200,8 +221,12 @@ as a separate diagnostic.
 Against the $f_Q$ baseline on fixed rows, all four additions improve all-row
 MSE with intervals above zero: $f_{\rm stab}$ **0.07192**, geodesic/compression
 **0.06437**, the windowed peak **0.03703**, and bad-curvature variance
-**0.01725**. Against the full paper-selected baseline, only the geodesic
-candidate stays resolved. On the varied panel the three non-baseline candidates
+**0.01725**. Against the full paper-selected baseline, geodesic is the only
+candidate resolved under the registered fold assignment; this wording is
+fold-specific. Across seven assignments geodesic resolves 7/7 with gains
+**0.01824–0.02662**, bad-curvature 5/7 with gains **0.00618–0.01532**, and the
+localized peak 4/7 with gains **0.00517–0.01144**. The EBM model seed is held
+fixed, so only fold membership changes. On the varied panel the three non-baseline candidates
 give small resolved all-row gains ($\Delta R^2=0.00633$–0.01053), showing that
 the ranking is panel-dependent rather than a universal feature order.
 
@@ -210,10 +235,11 @@ the ranking is panel-dependent rather than a universal feature order.
 The machine-readable [GX specification](S13_artifacts/gx_experiment_spec.json)
 compares the top two directions:
 
-1. increase/decrease geodesic-curvature/compression while constraining the
-   localized $f_Q$ peak, $\log f_Q$, aspect, iota, shat, beta proxy, and `nfp`;
-2. increase/decrease the localized 25-point $f_Q$ peak while constraining the
-   geodesic candidate and the same global quantities.
+1. increase/decrease geodesic-curvature/compression while constraining
+   bad-curvature/compression, $\log f_Q$, aspect, iota, shat, beta proxy, and
+   `nfp`;
+2. increase/decrease bad-curvature/compression while constraining the geodesic
+   candidate and the same global quantities.
 
 For each of three typical unstable anchors, the geometry must be produced by a
 VMEC boundary-coefficient continuation that recomputes a force-balanced
@@ -226,11 +252,14 @@ doubled spatial resolution and averaging time. A result must keep its sign and
 change by no more than 20% at higher resolution, and exceed two combined
 `Q_stds` standard errors.
 
-The localized-peak direction is not assumed realizable. On the observed panel,
-its correlation with $\log f_Q$ is **0.9524**, the 16-column registered nuisance
-set linearly explains **95.81%** of its variance, and its partial rank
-correlation with native heat flux after holding $\log f_Q$ fixed is only
-**0.1575** (geodesic: **0.3343**, with nuisance $R^2=0.5789$). Before budget
+Neither direction is assumed realizable. On the observed panel,
+bad-curvature/compression correlates **0.9532** with $\log f_Q$, although the
+15-column registered nuisance set linearly explains only **34.41%** of its
+variance; its partial rank correlation with native heat flux after holding
+$\log f_Q$ fixed is **0.1592** (geodesic: **0.3343**, nuisance $R^2=0.5789$).
+For transparency, the unselected localized peak is even less separable:
+correlation **0.9524**, nuisance $R^2=0.9581$, and partial correlation **0.1575**.
+Before budget
 approval, VMEC-only Jacobian searches must demonstrate both signed directions
 at all three anchors: the candidate must move by at least **0.5 panel IQR** while
 every constrained quantity moves by at most **0.1 panel IQR**. Failure replaces
@@ -246,10 +275,10 @@ measured Perlmutter pilot**. If approved, one standard and one convergence case
 must be benchmarked before the allocation is requested; the estimate is revised
 from those timings rather than silently treated as measured.
 
-The expected observational sign is positive for both directions, but the
-localized-peak unstable AIPW reversal means its sign is explicitly uncertain.
-The decisive outcome is the paired GX response under the equilibrium-consistent
-continuation, not agreement with the observational expectation.
+The expected observational sign is positive for both directions, but poor
+balance and overlap make both signs uncertain. The decisive outcome is the
+paired GX response under the equilibrium-consistent continuation, not agreement
+with the observational expectation.
 
 ## Contradictory cases and negative results
 
@@ -260,11 +289,16 @@ continuation, not agreement with the observational expectation.
 - No candidate passes the 0.5 post-match balance threshold or the 0.8 overlap
   threshold; none is intervention-ready.
 - The localized $f_Q$ peak changes from a positive both-unstable matched
-  contrast to a negative adjusted unstable-tail contrast.
-- $f_{\rm stab}$ and bad-curvature/compression have unresolved adjusted all-row
-  native contrasts.
+  contrast to a near-zero, unresolved common-scale adjusted contrast. The
+  previously resolved negative value was not stable to outcome-model scaling.
+- $f_{\rm stab}$ and the localized peak have unresolved adjusted all-row native
+  contrasts.
 - The localized peak and bad-curvature/compression do not give resolved MSE
-  gains beyond the full paper-selected fixed-panel baseline.
+  gains beyond the full paper-selected fixed-panel baseline under the
+  registered fold assignment; across seven assignments they resolve 4/7 and
+  5/7 times, respectively.
+- The all-pair matched effects shrink by 54–72% in the best-matched quarter,
+  while retaining a positive sign.
 - The geodesic candidate does not dominate the raw zonal-flow association;
   $f_{\rm stab}$ is stronger.
 - Fixed near-floor evidence rests on only 23 rows and 3–7 matched pairs, so no
@@ -306,6 +340,11 @@ Three deliberate mutations turned the focused suite red and were reverted:
 3. reversing the signed AIPW high-minus-low estimate changed the analytic
    +1.25 effect to -1.25 and failed the signed-effect test.
 
+Two review-driven mutations also turned red and were reverted: restoring
+separate per-arm outcome-model scaling changed the pinned analytic AIPW result,
+and replacing equilibrium-grouped bootstrap draws with row draws made the
+repeated-equilibrium interval equal to the deliberately narrower row interval.
+
 The first pilot stopped before artifact generation because a summed
 15-dimensional distance made the 2-IQR caliper unintentionally tighten with
 dimension. The estimator now uses root-mean-square IQR distance per nuisance
@@ -319,7 +358,7 @@ $2.8\times10^{-17}$ and $6.9\times10^{-18}$ last-bit variation in S07's repeated
 FFT under macOS Accelerate. S07's estimator remains byte-for-byte identical to
 the merged implementation and its artifact hash remains valid; the repeat test
 now states an explicit absolute tolerance of $10^{-15}$, far below scientific
-or bootstrap resolution. The final full check passed **314 tests**.
+or bootstrap resolution. The final full check passed **316 tests**.
 
 ## Artifacts
 
@@ -333,6 +372,10 @@ or bootstrap resolution. The final full check passed **314 tests**.
   32 AIPW sensitivity rows with overlap disclosed.
 - [residual_validation.csv](S13_artifacts/residual_validation.csv): 42 fixed/
   varied, baseline/candidate, regime-specific cross-fitted results.
+- [residual_fold_sensitivity.csv](S13_artifacts/residual_fold_sensitivity.csv):
+  21 fixed-panel paper-baseline results over seven fold assignments.
+- [match_distance_sensitivity.csv](S13_artifacts/match_distance_sensitivity.csv):
+  all-pair, closest-quarter, and farthest-quarter matched contrasts.
 - [candidate_ranking.csv](S13_artifacts/candidate_ranking.csv) and
   [contradictory_cases.csv](S13_artifacts/contradictory_cases.csv): claim grades,
   ranking evidence, and balanced natural contradictions.
@@ -361,7 +404,7 @@ with `load_review_slice_index().slice_rows(parent_rows)` before loading.
 - `tests/xai/test_physical_validation.py` pins the cyclic analytic signal, null
   feature, native estimand, whole-equilibrium folds/bootstrap, robust-distance
   matching, and adjusted estimator. The artifact suite pins the exact geodesic
-  headline, localized-peak sign reversal, residual-baseline distinction, and
+  headline, common-scale adjusted contrasts, residual-baseline distinction, and
   claim gates.
 
 ### Checkable from committed artifacts alone
@@ -370,11 +413,12 @@ with `load_review_slice_index().slice_rows(parent_rows)` before loading.
   cross-check the ranking against its source rows, pair uniqueness, 40 balanced
   contradictions, claim flags, budget arithmetic, and every manifest hash.
 - The exact geodesic rows are matched **1.3168418645 [1.1499375294,
-  1.5023806914]**, AIPW **0.7716516129 [0.5279196206, 1.0130847739]**, and
+  1.5023806914]**, AIPW **0.5588252059 [0.3183377164, 0.7640170908]**, and
   paper-baseline MSE improvement **0.0188012346 [0.0061692239,
   0.0325162110]**.
-- The localized unstable sign contradiction is fully committed: matched
-  **+1.5441856155** versus adjusted **-1.0899487909**.
+- The localized unstable specification warning is fully committed: matched
+  **+1.5441856155** versus common-scale adjusted **-0.0111822093
+  [-0.1608632187, 0.1412527438]**.
 
 ### Not checkable off the researcher's machine, and why
 

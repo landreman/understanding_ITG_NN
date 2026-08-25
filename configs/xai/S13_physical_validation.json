@@ -37,6 +37,7 @@
   "postmatch_balance_threshold": 0.5,
   "aipw_overlap_threshold": 0.8,
   "crossfit_folds": 5,
+  "residual_fold_seed_offsets": [0, 1, 2, 3, 4, 5, 6],
   "ebm_max_bins": 64,
   "ebm_max_rounds": 250,
   "ebm_outer_bags": 2,

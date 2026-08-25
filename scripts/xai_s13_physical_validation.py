@@ -21,7 +21,11 @@ import numpy as np
 
 from itg_nn.data import clipped_log_heat_flux, load_hdf5_rows
 from itg_nn.xai.artifacts import RunArtifacts, sha256_file
-from itg_nn.xai.distillation import grouped_ebm_crossfit, invariant_feature_table
+from itg_nn.xai.distillation import (
+    grouped_ebm_crossfit,
+    grouped_folds,
+    invariant_feature_table,
+)
 from itg_nn.xai.physical_validation import (
     cross_fitted_aipw,
     equilibrium_grouped_matches,
@@ -568,6 +572,7 @@ def _residual_rows(
                             "augmented_r2": _r2(target, augmented.prediction, mask),
                             "delta_r2": _r2(target, augmented.prediction, mask)
                             - _r2(target, baseline.prediction, mask),
+                            "r2_meaningful": regime != "stable_or_near_floor",
                             "baseline_mse": float(np.mean(baseline_sq)),
                             "augmented_mse": float(np.mean(augmented_sq)),
                             "mse_improvement": delta_mse,
@@ -595,6 +600,7 @@ def _candidate_ranking(
     balance_threshold: float,
     overlap_threshold: float,
     paper_baseline_features: set[str],
+    residual_fold_sensitivity: list[dict[str, Any]] | None = None,
 ) -> list[dict[str, Any]]:
     rows = []
     for candidate in candidates:
@@ -646,6 +652,16 @@ def _candidate_ranking(
             residual_for_ranking is not None
             and float(residual_for_ranking["mse_improvement_ci95_lower"]) > 0
         )
+        fold_rows = [
+            row
+            for row in (residual_fold_sensitivity or [])
+            if row["candidate"] == candidate
+        ]
+        resolved_fold_fraction: float | str = ""
+        if fold_rows:
+            resolved_fold_fraction = float(
+                np.mean([bool(row["mse_improvement_resolved"]) for row in fold_rows])
+            )
         evidence_score = (
             int(matched_resolved)
             + int(aipw_resolved)
@@ -705,6 +721,7 @@ def _candidate_ranking(
                     else residual_for_ranking["mse_improvement_ci95_upper"]
                 ),
                 "ranking_residual_gain_resolved": bool(residual_gain_resolved),
+                "residual_resolved_fold_fraction": resolved_fold_fraction,
                 "f_Q_baseline_mse_improvement": (
                     "" if f_q_residual is None else f_q_residual["mse_improvement"]
                 ),
@@ -808,6 +825,134 @@ def _linear_r2(target: np.ndarray, predictors: np.ndarray) -> float:
     return 1.0 - float(np.sum(np.square(residual)) / denominator)
 
 
+def _residual_fold_sensitivity_rows(
+    candidates: list[str],
+    feature_names: tuple[str, ...],
+    feature_values: np.ndarray,
+    target: np.ndarray,
+    groups: np.ndarray,
+    resolved: dict[str, Any],
+) -> list[dict[str, Any]]:
+    baseline_name = "paper_selected"
+    baseline_names = tuple(resolved["paper_baselines"][baseline_name])
+    baseline_indices = [feature_names.index(name) for name in baseline_names]
+    rows: list[dict[str, Any]] = []
+    registered_fit_seed = int(resolved["seed"]) + 4001
+
+    def prediction(
+        values: np.ndarray,
+        names: tuple[str, ...],
+        *,
+        fold_seed: int,
+    ) -> np.ndarray:
+        fold = grouped_folds(groups, int(resolved["crossfit_folds"]), fold_seed)
+        predicted = np.empty_like(target)
+        factory = _ebm_factory(resolved, names)
+        for fold_index in range(int(resolved["crossfit_folds"])):
+            train = fold != fold_index
+            test = ~train
+            estimator = factory(
+                seed=registered_fit_seed + fold_index, interactions=()
+            )
+            estimator.fit(values[train], target[train])
+            predicted[test] = estimator.predict(values[test])
+        return predicted
+
+    for seed_offset in resolved["residual_fold_seed_offsets"]:
+        fold_seed = registered_fit_seed + int(seed_offset)
+        baseline_prediction = prediction(
+            feature_values[:, baseline_indices],
+            baseline_names,
+            fold_seed=fold_seed,
+        )
+        baseline_sq = np.square(target - baseline_prediction)
+        for candidate_index, candidate in enumerate(candidates):
+            if candidate in baseline_names:
+                continue
+            augmented_names = (*baseline_names, candidate)
+            augmented_indices = [feature_names.index(name) for name in augmented_names]
+            augmented_prediction = prediction(
+                feature_values[:, augmented_indices],
+                augmented_names,
+                fold_seed=fold_seed,
+            )
+            augmented_sq = np.square(target - augmented_prediction)
+
+            def improvement(values: np.ndarray) -> float:
+                return float(np.mean(values[:, 0] - values[:, 1]))
+
+            point, lower, upper = grouped_bootstrap_interval(
+                np.column_stack((baseline_sq, augmented_sq)),
+                groups,
+                replicates=int(resolved["bootstrap_replicates"]),
+                seed=int(resolved["seed"]) + 5100 + 10 * candidate_index,
+                statistic=improvement,
+            )
+            rows.append(
+                {
+                    "candidate": candidate,
+                    "baseline": baseline_name,
+                    "gradient_set": "fixed",
+                    "regime": "all",
+                    "fold_seed_offset": int(seed_offset),
+                    "fold_seed": fold_seed,
+                    "model_seed_held_fixed": registered_fit_seed,
+                    "mse_improvement": point,
+                    "mse_improvement_ci95_lower": lower,
+                    "mse_improvement_ci95_upper": upper,
+                    "mse_improvement_resolved": lower > 0,
+                    "delta_r2": _r2(
+                        target, augmented_prediction, np.ones(len(target), bool)
+                    )
+                    - _r2(target, baseline_prediction, np.ones(len(target), bool)),
+                    "split_unit": "equilibrium_files",
+                    "bootstrap_unit": "equilibrium_files",
+                    "estimand": NATIVE_ESTIMAND,
+                    "validity_tag": OBSERVED,
+                }
+            )
+    return rows
+
+
+def _match_distance_sensitivity_rows(
+    pair_rows: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    result: list[dict[str, Any]] = []
+    for candidate in sorted({str(row["candidate"]) for row in pair_rows}):
+        selected = [row for row in pair_rows if row["candidate"] == candidate]
+        distance = np.asarray(
+            [float(row["nuisance_distance_iqr_units"]) for row in selected]
+        )
+        difference = np.asarray(
+            [float(row["target_native_high_minus_low"]) for row in selected]
+        )
+        q25, q75 = np.quantile(distance, (0.25, 0.75))
+        strata = (
+            ("all", np.ones(len(distance), dtype=bool)),
+            ("best_matched_quarter", distance <= q25),
+            ("worst_matched_quarter", distance >= q75),
+        )
+        distance_effect_rho = _rank_correlation(distance, difference)
+        for stratum, mask in strata:
+            result.append(
+                {
+                    "candidate": candidate,
+                    "distance_stratum": stratum,
+                    "pairs": int(mask.sum()),
+                    "mean_native_high_minus_low": float(np.mean(difference[mask])),
+                    "median_nuisance_distance_iqr_units": float(
+                        np.median(distance[mask])
+                    ),
+                    "distance_effect_spearman_rho_all_pairs": distance_effect_rho,
+                    "best_quarter_distance_upper_bound": float(q25),
+                    "worst_quarter_distance_lower_bound": float(q75),
+                    "validity_tag": OBSERVED,
+                    "causal_claim_permitted": False,
+                }
+            )
+    return result
+
+
 def _gx_separability_diagnostics(
     candidates: list[str],
     feature_names: tuple[str, ...],
@@ -890,6 +1035,7 @@ def _gx_spec(
             "intervention and budget."
         ),
         "interventions": interventions,
+        "observed_candidate_separability": separability or {},
         "anchors": {
             "count": int(design["anchor_equilibria"]),
             "selection": (
@@ -1110,6 +1256,15 @@ def run(args: argparse.Namespace) -> Path:
         groups,
         resolved,
     )
+    residual_fold_rows = _residual_fold_sensitivity_rows(
+        candidates,
+        feature_names,
+        feature_tables["fixed"].values,
+        outcomes["fixed"]["target_native"],
+        groups,
+        resolved,
+    )
+    match_distance_rows = _match_distance_sensitivity_rows(pair_rows)
     ranking = _candidate_ranking(
         candidates,
         effect_rows,
@@ -1118,6 +1273,7 @@ def run(args: argparse.Namespace) -> Path:
         balance_threshold=float(resolved["postmatch_balance_threshold"]),
         overlap_threshold=float(resolved["aipw_overlap_threshold"]),
         paper_baseline_features=set(resolved["paper_baselines"]["paper_selected"]),
+        residual_fold_sensitivity=residual_fold_rows,
     )
     separability = _gx_separability_diagnostics(
         candidates,
@@ -1140,6 +1296,8 @@ def run(args: argparse.Namespace) -> Path:
         ("matched_effects.csv", effect_rows),
         ("doubly_robust_sensitivity.csv", sensitivity_rows),
         ("residual_validation.csv", residual_rows),
+        ("residual_fold_sensitivity.csv", residual_fold_rows),
+        ("match_distance_sensitivity.csv", match_distance_rows),
         ("candidate_ranking.csv", ranking),
         ("contradictory_cases.csv", contradictions),
     ):
@@ -1181,6 +1339,10 @@ def run(args: argparse.Namespace) -> Path:
             ],
             "caliper_iqr_units": resolved["match_caliper_iqr_units"],
             "remaining_imbalance_published": True,
+        },
+        "claim_gates_applied": {
+            "postmatch_balance_threshold": ranking[0]["balance_threshold"],
+            "aipw_overlap_threshold": ranking[0]["overlap_threshold"],
         },
     }
     artifacts.write_json("summary.json", summary)
@@ -1225,6 +1387,8 @@ def run(args: argparse.Namespace) -> Path:
             "matched_effects.csv",
             "doubly_robust_sensitivity.csv",
             "residual_validation.csv",
+            "residual_fold_sensitivity.csv",
+            "match_distance_sensitivity.csv",
             "candidate_ranking.csv",
             "contradictory_cases.csv",
             "gx_experiment_spec.json",

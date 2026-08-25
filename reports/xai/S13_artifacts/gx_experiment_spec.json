@@ -55,18 +55,44 @@
       "validity_tag": "plausibly-local"
     },
     {
-      "candidate": "f_Q_integrand_w25_peak",
+      "candidate": "bad_curvature_compression",
       "construction": "For each anchor, continue VMEC boundary coefficients in both signs while recomputing force-balanced equilibria; optimize the named invariant direction and constrain the competing candidate, log_f_Q, aspect, iota, shat, beta proxy, and nfp to their anchor tolerances. Never edit GX geometry channels independently.",
       "expected_native_log_Q_sign": 1,
       "observed_separability_diagnostics": {
-        "linear_r2_exposure_from_registered_nuisances": 0.9581271955876193,
-        "partial_spearman_with_native_target_given_log_f_Q": 0.15752294975084172,
-        "registered_nuisance_columns": 16,
-        "spearman_with_log_f_Q": 0.9524282444282444
+        "linear_r2_exposure_from_registered_nuisances": 0.3440922918682018,
+        "partial_spearman_with_native_target_given_log_f_Q": 0.15920134867310115,
+        "registered_nuisance_columns": 15,
+        "spearman_with_log_f_Q": 0.9531723382801396
       },
       "validity_tag": "plausibly-local"
     }
   ],
+  "observed_candidate_separability": {
+    "bad_curvature_compression": {
+      "linear_r2_exposure_from_registered_nuisances": 0.3440922918682018,
+      "partial_spearman_with_native_target_given_log_f_Q": 0.15920134867310115,
+      "registered_nuisance_columns": 15,
+      "spearman_with_log_f_Q": 0.9531723382801396
+    },
+    "f_Q_integrand_w25_peak": {
+      "linear_r2_exposure_from_registered_nuisances": 0.9581271955876193,
+      "partial_spearman_with_native_target_given_log_f_Q": 0.15752294975084172,
+      "registered_nuisance_columns": 16,
+      "spearman_with_log_f_Q": 0.9524282444282444
+    },
+    "f_stab": {
+      "linear_r2_exposure_from_registered_nuisances": 0.7231199957043775,
+      "partial_spearman_with_native_target_given_log_f_Q": 0.03951578288731267,
+      "registered_nuisance_columns": 15,
+      "spearman_with_log_f_Q": 0.7885866205866207
+    },
+    "geodesic_curvature_compression": {
+      "linear_r2_exposure_from_registered_nuisances": 0.5788966896178127,
+      "partial_spearman_with_native_target_given_log_f_Q": 0.3342633314830649,
+      "registered_nuisance_columns": 15,
+      "spearman_with_log_f_Q": 0.4218581178581179
+    }
+  },
   "pre_budget_feasibility_gate": {
     "failure_action": "replace or drop a direction and return to the researcher; do not spend the proposed GX budget on an unrealizable constrained direction",
     "maximum_each_constrained_quantity_drift_panel_iqr": 0.1,

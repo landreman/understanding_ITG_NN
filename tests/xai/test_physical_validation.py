@@ -142,10 +142,13 @@ def test_aipw_recovers_adjusted_observed_contrast_and_is_deterministic() -> None
         treated, outcome, nuisance, groups, folds=5, seed=31
     )
     assert first.estimate == second.estimate
+    np.testing.assert_allclose(
+        first.estimate, 1.2496032513324662, rtol=0.0, atol=1e-12
+    )
     np.testing.assert_array_equal(first.fold, second.fold)
     assert abs(first.estimate - 1.25) < 0.15
     assert first.overlap_fraction > 0.9
-    assert first.method == "in_repo_logistic_irls_plus_ridge"
+    assert first.method == "in_repo_logistic_irls_plus_common_scale_ridge"
     for fold in np.unique(first.fold):
         assert set(groups[first.fold == fold]).isdisjoint(groups[first.fold != fold])
 
@@ -158,6 +161,18 @@ def test_grouped_bootstrap_resamples_complete_equilibria() -> None:
     assert first == second
     assert first[1] <= first[0] <= first[2]
     assert first[0] == np.mean(values)
+
+
+def test_grouped_bootstrap_is_wider_for_repeated_equilibrium_rows() -> None:
+    group_values = np.linspace(-2.0, 2.0, 24)
+    values = np.repeat(group_values, 3)
+    repeated_groups = np.repeat(np.arange(len(group_values)), 3)
+    row_groups = np.arange(len(values))
+    grouped = grouped_bootstrap_interval(
+        values, repeated_groups, replicates=1000, seed=27
+    )
+    by_row = grouped_bootstrap_interval(values, row_groups, replicates=1000, seed=27)
+    assert grouped[2] - grouped[1] > by_row[2] - by_row[1]
 
 
 def test_residual_rank_association_retains_sign_and_null() -> None:
