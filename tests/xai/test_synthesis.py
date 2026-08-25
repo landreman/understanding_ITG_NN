@@ -38,6 +38,8 @@ def _evidence(
         "method_family": method_family,
         "direction": direction,
         "estimand": NATIVE_ESTIMAND,
+        "outcome": NATIVE_ESTIMAND,
+        "outcome_source": "toy.csv:estimand",
         "function_scope": "invariant_tilde_f",
         "cohort": "analytic cyclic toy",
         "regime": "all",
@@ -45,6 +47,8 @@ def _evidence(
         "intervention": "joint circular shift" if direction == "null_control" else "analytic channel edit",
         "intervention_executed": True,
         "machine_readable": True,
+        "uncertainty_unit": "not_applicable_no_interval_selected",
+        "uncertainty_unit_source": "not_applicable",
         "summary": "analytic result",
     }
 
@@ -122,16 +126,50 @@ def test_headline_claim_requires_two_independent_method_families() -> None:
         "claim_text": "candidate is supported",
         "status": "supported",
         "scope": "invariant_tilde_f",
-        "causal_statement": False,
-        "intervention": "not_causal",
+        "candidate_ids": "candidate",
+        "evidence_polarity": "supports",
+        "physical_causal_statement": False,
+        "physical_intervention": "not_causal",
         "evidence_ids": "one;two",
         "limitations": "toy only",
     }
-    with pytest.raises(ValueError, match="independent method families"):
+    with pytest.raises(ValueError, match="corroborating method families"):
         validate_claim_register([claim], validate_evidence_ledger(evidence))
     evidence[1]["method_family"] = "hidden_intervention"
     validated = validate_claim_register([claim], validate_evidence_ledger(evidence))
-    assert validated[0]["independent_method_family_count"] == 2
+    assert validated[0]["corroborating_method_family_count"] == 2
+
+
+def test_headline_does_not_count_noncorroborating_or_other_candidate_evidence() -> None:
+    evidence = [
+        _evidence("one", "candidate", "input_attribution", "gradient_path"),
+        _evidence(
+            "two",
+            "candidate",
+            "hidden_encoding",
+            "hidden_intervention",
+            direction="mixed",
+        ),
+    ]
+    claim = {
+        "claim_id": "C1",
+        "headline": True,
+        "claim_text": "candidate is supported",
+        "status": "supported",
+        "scope": "invariant_tilde_f",
+        "candidate_ids": "candidate",
+        "evidence_polarity": "supports",
+        "physical_causal_statement": False,
+        "physical_intervention": "not_causal",
+        "evidence_ids": "one;two",
+        "limitations": "toy only",
+    }
+    with pytest.raises(ValueError, match="corroborating method families"):
+        validate_claim_register([claim], validate_evidence_ledger(evidence))
+    evidence[1]["direction"] = "supports"
+    evidence[1]["candidate_id"] = "other"
+    with pytest.raises(ValueError, match="outside its candidates"):
+        validate_claim_register([claim], validate_evidence_ledger(evidence))
 
 
 def test_causal_statement_requires_named_executed_intervention() -> None:
@@ -145,15 +183,28 @@ def test_causal_statement_requires_named_executed_intervention() -> None:
         "claim_text": "editing the candidate changes the native output",
         "status": "supported",
         "scope": "invariant_tilde_f",
-        "causal_statement": True,
-        "intervention": "not_causal",
+        "candidate_ids": "candidate",
+        "evidence_polarity": "supports",
+        "physical_causal_statement": True,
+        "physical_intervention": "not_causal",
         "evidence_ids": "one;two",
         "limitations": "toy only",
     }
     with pytest.raises(ValueError, match="intervention"):
         validate_claim_register([claim], validate_evidence_ledger(evidence))
-    claim["intervention"] = "analytic channel edit"
+    claim["physical_intervention"] = "analytic channel edit"
     assert validate_claim_register([claim], validate_evidence_ledger(evidence))
+
+
+def test_invalid_validity_tag_and_direction_are_rejected() -> None:
+    row = _evidence("bad", "candidate", "input_attribution", "gradient_path")
+    row["validity_tag"] = "looks_local"
+    with pytest.raises(ValueError, match="validity tag"):
+        validate_evidence_ledger([row])
+    row["validity_tag"] = "plausibly-local"
+    row["direction"] = "probably_supports"
+    with pytest.raises(ValueError, match="direction"):
+        validate_evidence_ledger([row])
 
 
 def test_matrix_requires_every_plan_column_and_explicit_absence() -> None:
@@ -209,4 +260,3 @@ def test_reproducibility_index_checks_manifest_content_and_hash(tmp_path: Path) 
     row["manifest_sha256"] = "wrong"
     with pytest.raises(ValueError, match="hash"):
         validate_reproducibility_index([row], repository=tmp_path)
-

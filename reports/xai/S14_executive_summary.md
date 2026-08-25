@@ -37,8 +37,10 @@ regression models fitted to network outputs.
 The networks care about arrangement along the field line. Independently shifting
 the seven geometry channels changes member outputs by a median 2.41 residual
 standard deviations. Removing the low-frequency spatial structure changes them
-by 3.85, while the matched high-frequency control changes them by only 0.10.
-Those two results show that alignment and broad spatial structure matter. They
+by 3.85, while the high-frequency control—applied at a roughly seven-times
+smaller robust input dose—changes them by only 0.10. The middle band gives an
+intermediate 1.22 response, and the exact common-shift control is only
+0.00000081. Those results show that alignment and broad spatial structure matter. They
 do not yet tell us whether parallel order itself matters after broad structure
 is held fixed; that decomposition remains unresolved.
 
@@ -126,12 +128,13 @@ The committed S14 package contains:
 
 - an [11-candidate evidence matrix](S14_artifacts/evidence_matrix.csv), including
   uncertainty and negative results;
-- a [57-record evidence ledger](S14_artifacts/evidence_ledger.csv) with exact
+- a [64-record evidence ledger](S14_artifacts/evidence_ledger.csv) with exact
   source selectors and values;
 - a [nine-headline claim register](S14_artifacts/claim_register.csv), with at
   least two method families per claim;
-- an [18-run reproducibility index](S14_artifacts/reproducibility_index.csv),
-  with manifest paths and SHA-256 hashes; and
+- an [18-run/19-record provenance index](S14_artifacts/reproducibility_index.csv),
+  with manifest paths, the S03 publication verification, SHA-256 hashes, and an
+  explicit content-hash pin for every evidence artifact; and
 - a [five-item next-experiment list](S14_artifacts/next_experiments.csv).
 
 The full interpretation, limitations, commands, mutation tests, acceptance

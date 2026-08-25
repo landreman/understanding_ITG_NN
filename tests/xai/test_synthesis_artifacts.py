@@ -30,7 +30,8 @@ def test_registered_manifest_hashes_all_synthesis_outputs() -> None:
     assert manifest["model_outputs_computed"] is False
     assert manifest["gx_outputs_computed"] is False
     assert manifest["review_slice_used"] is False
-    assert manifest["source_manifest_count"] == 18
+    assert manifest["source_manifest_count"] == 19
+    assert manifest["source_run_manifest_count"] == 18
     assert manifest["source_evidence_artifact_count"] == 21
     expected_regular = {
         "evidence_ledger.csv",
@@ -61,10 +62,20 @@ def test_registered_manifest_hashes_all_synthesis_outputs() -> None:
 
 def test_evidence_ledger_selectors_reproduce_every_source_value() -> None:
     ledger = _rows("evidence_ledger.csv")
-    assert len(ledger) == 57
-    assert len({row["evidence_id"] for row in ledger}) == 57
+    assert len(ledger) == 64
+    assert len({row["evidence_id"] for row in ledger}) == 64
     assert {row["estimand"] for row in ledger} == {NATIVE_ESTIMAND}
     assert {row["machine_readable"] for row in ledger} == {"True"}
+    assert {row["outcome"] for row in ledger} == {
+        NATIVE_ESTIMAND,
+        "target_native",
+        "Qz_localization",
+        "log10_zonal_phi2",
+    }
+    for row in ledger:
+        if "ci95" in row["source_fields"] or "interval_" in row["source_fields"]:
+            assert row["uncertainty_unit"] == "equilibrium_files"
+            assert row["uncertainty_unit_source"] != "not_applicable"
     for evidence in ledger:
         source = ROOT / evidence["source_artifact"]
         selector = json.loads(evidence["source_selector"])
@@ -111,11 +122,11 @@ def test_every_headline_is_machine_readable_and_triangulated() -> None:
     claims = _rows("claim_register.csv")
     assert len(claims) == 9
     assert {row["headline"] for row in claims} == {"True"}
-    assert {row["causal_statement"] for row in claims} == {"False"}
-    assert {row["intervention"] for row in claims} == {"not_causal"}
+    assert {row["physical_causal_statement"] for row in claims} == {"False"}
+    assert {row["physical_intervention"] for row in claims} == {"not_causal"}
     for row in claims:
-        assert int(row["independent_method_family_count"]) >= 2
-        assert len(row["independent_method_families"].split(";")) >= 2
+        assert int(row["corroborating_method_family_count"]) >= 2
+        assert len(row["corroborating_method_families"].split(";")) >= 2
         for path in row["machine_readable_sources"].split(";"):
             assert (ROOT / path).is_file()
 
@@ -157,8 +168,9 @@ def test_headline_numbers_and_contradictions_are_pinned() -> None:
 
 def test_reproducibility_index_resolves_and_hashes_every_run_manifest() -> None:
     rows = _rows("reproducibility_index.csv")
-    assert len(rows) == 18
+    assert len(rows) == 19
     assert {row["recreates_claims"] for row in rows} == {"True"}
+    assert sum(row["is_run_manifest"] == "True" for row in rows) == 18
     assert {row["step"] for row in rows} >= {
         "S00",
         "S01",
@@ -181,10 +193,29 @@ def test_reproducibility_index_resolves_and_hashes_every_run_manifest() -> None:
         assert path.is_file()
         assert hashlib.sha256(path.read_bytes()).hexdigest() == row["manifest_sha256"]
         manifest = json.loads(path.read_text(encoding="utf-8"))
-        assert manifest["config"]["run_id"] == row["run_id"]
-        assert manifest["command"]
-        assert manifest["dataset"]["sha256"]
-        assert manifest["checkpoint"]["sha256"]
+        if row["role"] == "publication_verification":
+            assert manifest["published_output_hashes"]
+            assert "reports/xai/S03_artifacts/ladder_summary.csv" in row[
+                "pins_evidence_artifacts"
+            ]
+        else:
+            assert manifest["config"]["run_id"] == row["run_id"]
+            assert manifest["command"]
+            assert manifest["dataset"]["sha256"]
+            assert manifest["checkpoint"]["sha256"]
+
+
+def test_every_evidence_artifact_is_content_hash_pinned_by_an_indexed_manifest() -> None:
+    source_hashes = json.loads(
+        (ARTIFACTS / "source_hashes.json").read_text(encoding="utf-8")
+    )["evidence_artifacts"]
+    pinned = {
+        path
+        for row in _rows("reproducibility_index.csv")
+        for path in row["pins_evidence_artifacts"].split(";")
+        if path != "none"
+    }
+    assert pinned == set(source_hashes)
 
 
 def test_smallest_next_calculation_is_vmec_only_before_gx() -> None:

@@ -41,9 +41,9 @@ approval is required before that external computation.
 
 The machine-readable synthesis consists of the
 [evidence matrix](S14_artifacts/evidence_matrix.csv),
-[57-record evidence ledger](S14_artifacts/evidence_ledger.csv),
+[64-record evidence ledger](S14_artifacts/evidence_ledger.csv),
 [nine-claim register](S14_artifacts/claim_register.csv),
-[18-run reproducibility index](S14_artifacts/reproducibility_index.csv), and
+[18-run/19-record provenance index](S14_artifacts/reproducibility_index.csv), and
 [prioritized next-experiment list](S14_artifacts/next_experiments.csv).
 
 ## What function and outcome each conclusion concerns
@@ -71,8 +71,9 @@ population of all 100 $\tilde f_m$. S13 concerns observed GX and performs no
 network inference. Spatial comparisons retain the original-$f_m$ result beside
 the invariant result where applicable. The
 [evidence ledger](S14_artifacts/evidence_ledger.csv) records `function_scope`,
-`estimand`, cohort, regime, validity tag, and intervention status for every
-piece of evidence.
+the native claim `estimand`, the specifically measured `outcome`, cohort,
+regime, validity tag, uncertainty grouping unit, and intervention status for
+every piece of evidence.
 
 ## Cohorts and regimes
 
@@ -122,22 +123,26 @@ qualifications.
 Every row below is registered in the
 [claim register](S14_artifacts/claim_register.csv). Its evidence IDs resolve to
 exact CSV selectors, fields, and verbatim values in the
-[evidence ledger](S14_artifacts/evidence_ledger.csv). `Families` counts genuinely
-different analysis families, not multiple rows from one method.
+[evidence ledger](S14_artifacts/evidence_ledger.csv). `Families` counts only
+claim-aligned evidence (`supports` for positive claims and `contradicts` for
+rejection claims), and every linked evidence row must belong to a candidate the
+claim explicitly names. The register separately retains all method families
+consulted, including mixed and null results.
 
 | ID | conclusion | independent families | representative machine-readable evidence |
 |---|---|---:|---|
-| C01 | The networks encode and use the paper's $f_Q$/$f_{\rm stab}$/curvature-compression family, without one scalar uniquely owning the credit. | 2 | exact hidden-unit credit and direction removal in [S04](S04_artifacts/encoded_vs_used.csv); hidden concept edits in [S08](S08_artifacts/tcav_use.csv); feature recurrence in [S12](S12_artifacts/term_recurrence.csv) |
+| C01 | The networks encode and use the paper's $f_Q$/$f_{\rm stab}$ family, without one scalar uniquely owning the credit. | 2 | exact hidden-direction removal in [S04](S04_artifacts/encoded_vs_used.csv); hidden concept edits in [S08](S08_artifacts/tcav_use.csv); feature recurrence in [S12](S12_artifacts/term_recurrence.csv) |
 | C02 | Cross-channel alignment and low-frequency spatial structure matter, but order cannot yet be separated from the low-frequency envelope. | 4 | registered perturbation ladder in [S03](S03_artifacts/ladder_summary.csv); low-pass attribution in [S06b](S06b_artifacts/channel_consensus.csv); hidden co-location edits in [S08](S08_artifacts/tcav_use.csv) |
 | C03 | Members share a coarse channel/representation story, not one common signed position-by-position mechanism. | 3 | member attribution agreement in [S06b](S06b_artifacts/member_agreement.csv); signed spatial null in [S07](S07_artifacts/spatial_alignment.csv); representation similarity and motifs in [S10](S10_artifacts/cohort_comparison.csv) |
-| C04 | A 17-feature invariant vocabulary reproduces about 86% of three member outputs, but is not an exact formula. | 2 | concept completeness in [S09](S09_artifacts/completeness.csv); held-out distillation in [S12](S12_artifacts/fidelity.csv) and its [nested subsets](S12_artifacts/subset_fidelity.csv) |
-| C05 | All four physical candidates are associated with GX output; no physical causal effect has been measured. | 3 | adjusted and matching checks in [S13 rankings](S13_artifacts/candidate_ranking.csv); spatial and zonal observed comparisons in [S13 associations](S13_artifacts/fixed_associations.csv) |
-| C06 | Geodesic/compression is the highest-value next physical target, not a causal winner. | 4 | hidden-use evidence in [S08](S08_artifacts/tcav_use.csv); recurrence in [S12](S12_artifacts/term_recurrence.csv); GX adjusted and residual checks in [S13](S13_artifacts/candidate_ranking.csv) |
-| C07 | The evidence contradicts a specific learned GX zonal-flow mechanism. | 3 | hidden probe and use failures in [S08](S08_artifacts/probe_scores.csv) and [S08 use](S08_artifacts/tcav_use.csv); observed association in [S13](S13_artifacts/fixed_associations.csv) |
+| C04 | Broad concept decoding reaches about 91% and a compact 17-feature invariant vocabulary about 86%; neither is an exact formula. | 2 | concept completeness in [S09](S09_artifacts/completeness.csv); held-out distillation and the 13/64 unit limit in [S12](S12_artifacts/fidelity.csv), with [nested subsets](S12_artifacts/subset_fidelity.csv) |
+| C05 | All four physical candidates are associated with the same native GX output; no physical causal effect has been measured. | 2 | grouped-bootstrap native-output rank correlations in [S13 associations](S13_artifacts/fixed_associations.csv); adjusted and matching checks on that same outcome in [S13 rankings](S13_artifacts/candidate_ranking.csv) |
+| C06 | Geodesic/compression is the highest-value next physical target, not a causal winner. | 4 | hidden-use evidence in [S08](S08_artifacts/tcav_use.csv); recurrence in [S12](S12_artifacts/term_recurrence.csv); native GX rank association plus adjusted/residual checks in [S13](S13_artifacts/candidate_ranking.csv) |
+| C07 | The evidence contradicts a specific learned GX zonal-flow mechanism. | 2 | hidden probe and use failures in [S08](S08_artifacts/probe_scores.csv) and [S08 use](S08_artifacts/tcav_use.csv); contextual observed association in [S07](S07_artifacts/zonal_association.csv) is retained but does not count as corroboration |
 | C08 | Ensemble spread ranks error but is not a calibrated confidence interval or guaranteed bound. | 2 | spread/error association in [S11](S11_artifacts/spread_error_associations.csv); common-mode failure audit in [S11](S11_artifacts/failure_categories.csv) |
-| C09 | The evidence contradicts direct shared signed focus where GX transports heat along $z$. | 4 | signed spatial attribution in [S07](S07_artifacts/spatial_alignment.csv); local hidden probes and edits in [S08](S08_artifacts/probe_scores.csv) and [S08 use](S08_artifacts/tcav_use.csv) |
+| C09 | The evidence contradicts direct shared signed focus where GX transports heat along $z$. | 3 | signed spatial attribution in [S07](S07_artifacts/spatial_alignment.csv); local hidden probes and edits in [S08](S08_artifacts/probe_scores.csv) and [S08 use](S08_artifacts/tcav_use.csv) |
 
-None of these nine rows is a physical causal statement. S03, S04, S06, and S08
+None of these nine rows is a physical causal statement—the register names that
+column `physical_causal_statement`. S03, S04, S06, and S08
 did execute named **model interventions**—respectively shifting/attenuating input
 arrays, editing bottleneck coalitions, restoring frequencies along a gradient
 path, and editing hidden states along matched concept directions. Those edits
@@ -160,8 +165,10 @@ The input perturbation ladder independently shows that geometry is not treated
 as an unordered bag. Independently shifting the seven channels changes top-10
 member outputs by a median **2.413 residual standard deviations**. Jointly
 permuting the 96 position vectors changes them by **3.258**. Fully attenuating
-the low Fourier band changes them by **3.847**, whereas the registered
-high-frequency control is only **0.099**. Because joint permutation also
+the low Fourier band changes them by **3.847**; the middle band is **1.223** and
+the high-frequency control, at a roughly seven-times smaller robust input dose,
+is **0.099**. The exact common circular-shift control is **8.1e-7**, at
+round-off scale. Because joint permutation also
 destroys the low-frequency envelope, parallel order and that envelope remain
 unresolved as separate mechanisms.
 
@@ -248,7 +255,9 @@ S14 is a synthesis of committed evidence only. It recomputed neither model nor
 GX outputs and did not use `tests/data/review_slice.h5` for development,
 selection, or reporting. The production run is
 `synthesis-registered-evidence-s01-s13`. It read 21 committed source evidence
-artifacts and indexed 18 registered production/correction runs from S00–S13.
+artifacts and indexed 18 registered production/correction runs from S00–S13,
+plus the S03 publication-verification manifest that pins the corrected ladder
+CSV by content hash.
 
 The [S14 manifest](S14_artifacts/manifest.json) records exact command, config,
 seed, Python and package versions, wall time (**0.718 s**), Git commit/tree,
@@ -280,42 +289,52 @@ The production command was:
   --published-dir reports/xai/S14_artifacts
 ```
 
-The [reproducibility index](S14_artifacts/reproducibility_index.csv) contains
-each run ID, manifest path and SHA-256, exact command, dataset/checkpoint
+The [reproducibility index](S14_artifacts/reproducibility_index.csv) contains 18
+run manifests and one publication-verification record. It carries each run ID,
+manifest path and SHA-256, exact command, dataset/checkpoint
 fingerprints, Git state, row/member counts, and disclosed legacy caveats. Five
 early manifests that previously existed only in ignored output directories are
 copied verbatim into
 [upstream_manifests](S14_artifacts/upstream_manifests/); later manifests remain
-at their original committed paths. All 18 hashes resolve in the committed tree.
+at their original committed paths. All 19 provenance hashes resolve in the
+committed tree, and together they content-hash pin all 21 evidence artifacts.
 
 ## Verification
 
 Tests were written before implementation. The first focused run failed in six
 intended places while the synthesis validators were stubs. The final focused
-suite passes 14 tests, including a cyclic toy ledger with a known relevant
-feature and an explicit null control, exact source-row reproduction for all 57
+suite passes 20 tests, including a cyclic toy ledger with a known relevant
+feature and an explicit null control, exact source-row reproduction for all 64
 evidence records, artifact hashes, numerical headline pins, and full manifest
-resolution.
+resolution. A real pilot-run test checks finalization and `--no-publish`, and
+the ledger rejects unknown validity/direction labels and intervals without a
+traceable grouping unit.
 
 Three deliberate mutations were each confirmed to turn the suite red and were
 then reverted:
 
-1. weakened the headline requirement from two independent method families to
-   one; `test_headline_claim_requires_two_independent_method_families` failed;
-2. bypassed validation that a causal statement name an executed intervention;
-   `test_causal_statement_requires_named_executed_intervention` failed;
-3. bypassed reproducibility-index manifest hash checking;
-   `test_reproducibility_index_checks_manifest_content_and_hash` failed.
+1. truncated an exact two-row CSV selection to its first row;
+   `test_csv_selector_returns_every_exact_row_and_rejects_empty_selection`
+   failed;
+2. bypassed the validity-tag whitelist;
+   `test_invalid_validity_tag_and_direction_are_rejected` failed;
+3. weakened the headline requirement from two claim-aligned corroborating
+   method families to one;
+   `test_headline_claim_requires_two_independent_method_families` failed.
+
+The earlier production round also turned red when the physical-intervention
+guard and reproducibility-index manifest hash check were bypassed. No attempted
+mutation stayed green after the review fixes.
 
 Final local commands and outcomes:
 
 ```text
 .venv-xai/bin/python -m pytest tests/xai/test_synthesis.py \
   tests/xai/test_synthesis_script.py tests/xai/test_synthesis_artifacts.py -q
-14 passed
+20 passed
 
 source .venv-xai/bin/activate && make check
-330 passed
+336 passed
 ```
 
 ## Interpretation limits
@@ -341,17 +360,20 @@ source .venv-xai/bin/activate && make check
 1. **Every headline conclusion links to machine-readable evidence and at least
    two independent method families.** Pass. The
    [claim register](S14_artifacts/claim_register.csv) has nine headline rows;
-   every `independent_method_family_count` is at least 2 and every source is a
-   committed CSV. Exact source selectors and values are in the 57-row
+   every `corroborating_method_family_count` is at least 2 after filtering by
+   claim polarity and candidate scope, and every source is a committed CSV.
+   Exact source selectors and values are in the 64-row
    [evidence ledger](S14_artifacts/evidence_ledger.csv).
 2. **Every causal statement identifies its intervention.** Pass. The claim
-   register contains zero causal statements because no physical intervention
-   was executed. Every model diagnostic in the ledger records its named
+   register contains zero physical causal statements because no physical
+   intervention was executed. Every model diagnostic in the ledger records its named
    intervention and whether it ran; prospective N01 explicitly names the VMEC
    boundary-coefficient intervention and says it has not run.
 3. **All runs can be recreated from manifests.** Pass. The
    [reproducibility index](S14_artifacts/reproducibility_index.csv) resolves and
-   SHA-256-verifies all 18 S00–S13 production/correction manifests; the S14
+   SHA-256-verifies all 18 S00–S13 production/correction manifests and the S03
+   publication-verification record; every one of the 21 evidence artifacts is
+   content-hash pinned by at least one indexed record. The S14
    [manifest](S14_artifacts/manifest.json) recreates this synthesis.
 4. **Deliverables.** Pass. This `FINAL_REPORT.md`, the compact reproducibility
    index, the 11-candidate evidence matrix, and the five-item prioritized
@@ -380,11 +402,14 @@ future decision-gated experiments, not incomplete S14 work.
 **Checkable from committed artifacts alone.**
 
 - Exact status counts (**11 candidates: 5 supported, 3 regime-dependent,
-  2 contradicted, 1 unresolved**), 57 evidence records, nine headline claims,
-  18 indexed manifests, and five prioritized experiments.
+  2 contradicted, 1 unresolved**), 64 evidence records, nine headline claims,
+  18 run manifests plus one publication-verification record, and five prioritized
+  experiments.
 - Every evidence selector and value, every claim-to-evidence link, the minimum
   two-family count, all negative-result cells, source and output SHA-256 hashes,
-  immutable dataset/checkpoint fingerprints, and all copied legacy manifests.
+  and immutable dataset/checkpoint fingerprints. The copied legacy manifests
+  themselves are checkable as committed bytes; fidelity to their ignored source
+  files is only partially corroborated, as described below.
 - The headline values quoted in this report, using the evidence IDs in the
   claim register and `source_values_json` in the ledger.
 
@@ -395,6 +420,12 @@ future decision-gated experiments, not incomplete S14 work.
   proxy is exact recomputation on the registered 2,000-row review slice plus
   comparison with the committed selected-row values; agreement validates code
   path and row mapping, but not claims about rows outside the slice.
+- Fidelity of the five copied legacy manifests to their original ignored files
+  cannot be established off the researcher's machine. The S03 pair is
+  independently pinned by `review3_manifest.json`; S01 and S02 each retain
+  committed artifacts matching several recorded output hashes; S00 has no such
+  independent committed corroboration. Those checks support the copies but do
+  not prove their absent originals byte-for-byte.
 - The prospective VMEC and GX interventions cannot be checked because they have
   not been authorized or run. The nearest current proxy is S13's committed
   feasibility specification and natural-comparison diagnostics. Agreement only

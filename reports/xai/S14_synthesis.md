@@ -6,8 +6,9 @@ The canonical detailed step report and PLAN deliverable is
 are under [S14_artifacts](S14_artifacts/).
 
 The registered run is `synthesis-registered-evidence-s01-s13`. It produced an
-11-candidate matrix, 57 exact evidence records, nine headline claims, an 18-run
-manifest index, and five prioritized next experiments without recomputing model
+11-candidate matrix, 64 exact evidence records, nine headline claims, an 18-run
+plus one-publication-record provenance index, and five prioritized next
+experiments without recomputing model
 or GX outputs.
 
 ## Acceptance criteria
@@ -21,7 +22,8 @@ or GX outputs.
   [evidence_ledger.csv](S14_artifacts/evidence_ledger.csv) and
   [next_experiments.csv](S14_artifacts/next_experiments.csv).
 - All runs can be recreated from manifests: pass for all 18 indexed upstream
-  runs plus the S14 [manifest](S14_artifacts/manifest.json).
+  runs; the 19th provenance row separately pins the corrected S03 publication,
+  and the S14 [manifest](S14_artifacts/manifest.json) recreates this synthesis.
 
 ## Deferred
 

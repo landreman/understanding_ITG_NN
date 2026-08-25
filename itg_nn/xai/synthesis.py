@@ -36,6 +36,8 @@ _EVIDENCE_REQUIRED = {
     "method_family",
     "direction",
     "estimand",
+    "outcome",
+    "outcome_source",
     "function_scope",
     "cohort",
     "regime",
@@ -43,6 +45,8 @@ _EVIDENCE_REQUIRED = {
     "intervention",
     "intervention_executed",
     "machine_readable",
+    "uncertainty_unit",
+    "uncertainty_unit_source",
     "summary",
 }
 _MATRIX_REQUIRED = {
@@ -62,8 +66,10 @@ _CLAIM_REQUIRED = {
     "claim_text",
     "status",
     "scope",
-    "causal_statement",
-    "intervention",
+    "candidate_ids",
+    "evidence_polarity",
+    "physical_causal_statement",
+    "physical_intervention",
     "evidence_ids",
     "limitations",
 }
@@ -159,10 +165,14 @@ def validate_evidence_ledger(
             "source_selector",
             "source_fields",
             "method_family",
+            "outcome",
+            "outcome_source",
             "function_scope",
             "cohort",
             "regime",
             "intervention",
+            "uncertainty_unit",
+            "uncertainty_unit_source",
             "summary",
         ):
             if not str(row[field]).strip():
@@ -251,34 +261,62 @@ def validate_claim_register(
         unknown = sorted(set(ids) - set(evidence))
         if unknown:
             raise ValueError(f"claim {claim_id} references unknown evidence: {unknown}")
-        families = sorted({str(evidence[item]["method_family"]) for item in ids})
-        headline = _as_bool(row["headline"], field="headline")
-        if headline and len(families) < 2:
+        candidate_ids = set(_ids(row["candidate_ids"]))
+        if not candidate_ids:
+            raise ValueError(f"claim {claim_id} has no candidate_ids")
+        mismatched = sorted(
+            item for item in ids if str(evidence[item]["candidate_id"]) not in candidate_ids
+        )
+        if mismatched:
             raise ValueError(
-                f"headline claim {claim_id} needs at least two independent method families"
+                f"claim {claim_id} links evidence outside its candidates: {mismatched}"
             )
-        causal = _as_bool(row["causal_statement"], field="causal_statement")
-        intervention = str(row["intervention"]).strip()
+        evidence_polarity = str(row["evidence_polarity"]).strip()
+        if evidence_polarity not in {"supports", "contradicts"}:
+            raise ValueError(
+                f"claim {claim_id} evidence_polarity must be supports or contradicts"
+            )
+        families = sorted({str(evidence[item]["method_family"]) for item in ids})
+        corroborating_ids = [
+            item for item in ids if evidence[item]["direction"] == evidence_polarity
+        ]
+        corroborating_families = sorted(
+            {str(evidence[item]["method_family"]) for item in corroborating_ids}
+        )
+        headline = _as_bool(row["headline"], field="headline")
+        if headline and len(corroborating_families) < 2:
+            raise ValueError(
+                f"headline claim {claim_id} needs at least two corroborating method families"
+            )
+        causal = _as_bool(
+            row["physical_causal_statement"], field="physical_causal_statement"
+        )
+        intervention = str(row["physical_intervention"]).strip()
         if causal:
             if not intervention or intervention == "not_causal":
-                raise ValueError(f"causal claim {claim_id} must identify its intervention")
+                raise ValueError(
+                    f"physical causal claim {claim_id} must identify its intervention"
+                )
             if not any(
                 evidence[item]["intervention_executed"]
                 and evidence[item]["intervention"] == intervention
                 for item in ids
             ):
                 raise ValueError(
-                    f"causal claim {claim_id} lacks evidence from the named intervention"
+                    f"physical causal claim {claim_id} lacks evidence from the named intervention"
                 )
         elif intervention != "not_causal":
             raise ValueError(
-                f"non-causal claim {claim_id} must use intervention='not_causal'"
+                f"non-causal claim {claim_id} must use physical_intervention='not_causal'"
             )
         row["headline"] = headline
-        row["causal_statement"] = causal
+        row["physical_causal_statement"] = causal
         row["evidence_source_count"] = len(set(ids))
-        row["independent_method_family_count"] = len(families)
-        row["independent_method_families"] = ";".join(families)
+        row["consulted_method_family_count"] = len(families)
+        row["consulted_method_families"] = ";".join(families)
+        row["corroborating_evidence_ids"] = ";".join(corroborating_ids)
+        row["corroborating_method_family_count"] = len(corroborating_families)
+        row["corroborating_method_families"] = ";".join(corroborating_families)
         row["machine_readable_sources"] = ";".join(
             sorted({str(evidence[item]["source_artifact"]) for item in ids})
         )
@@ -327,6 +365,40 @@ def validate_reproducibility_index(
             manifest = json.loads(path.read_text(encoding="utf-8"))
         except (json.JSONDecodeError, UnicodeDecodeError) as error:
             raise ValueError(f"manifest for {run_key} is not valid JSON") from error
+        is_publication_verification = row["role"] == "publication_verification"
+        if is_publication_verification:
+            required_publication = {
+                "generator",
+                "generator_sha256",
+                "phase_manifest_sha256",
+                "published_output_hashes",
+                "source_manifest_sha256",
+            }
+            missing_publication = sorted(required_publication - set(manifest))
+            if missing_publication:
+                raise ValueError(
+                    f"publication manifest for {run_key} missing: {missing_publication}"
+                )
+            output_hashes = manifest["published_output_hashes"]
+            if not isinstance(output_hashes, dict) or not output_hashes:
+                raise ValueError(f"publication manifest for {run_key} has no output hashes")
+            row["recreates_claims"] = _as_bool(
+                row["recreates_claims"], field="recreates_claims"
+            )
+            row["is_run_manifest"] = False
+            row["output_count"] = len(output_hashes)
+            row["member_count"] = 0
+            row["row_count"] = 0
+            row["git_commit"] = "not_applicable_publication_verification"
+            row["git_tracked_dirty"] = "not_applicable"
+            row["dataset_sha256"] = "verified_through_source_manifests"
+            row["checkpoint_sha256"] = "verified_through_source_manifests"
+            row["command"] = json.dumps(
+                [manifest["generator"]], separators=(",", ":")
+            )
+            row["config_path_or_inline"] = "publication verification manifest"
+            result.append(row)
+            continue
         missing_manifest = sorted(_MANIFEST_REQUIRED - set(manifest))
         if missing_manifest:
             raise ValueError(
@@ -342,6 +414,7 @@ def validate_reproducibility_index(
         row["recreates_claims"] = _as_bool(
             row["recreates_claims"], field="recreates_claims"
         )
+        row["is_run_manifest"] = True
         row["output_count"] = len(manifest["output_hashes"])
         row["member_count"] = len(manifest["member_ids"])
         row["row_count"] = len(manifest["row_ids"])
@@ -352,4 +425,60 @@ def validate_reproducibility_index(
         row["command"] = json.dumps(manifest["command"], separators=(",", ":"))
         row["config_path_or_inline"] = str(row.get("config_path_or_inline", "manifest.config"))
         result.append(row)
+    return tuple(result)
+
+
+def attach_evidence_manifest_pins(
+    rows: Sequence[Mapping[str, Any]],
+    evidence_rows: Sequence[Mapping[str, Any]],
+    *,
+    repository: str | Path,
+    require_all: bool = True,
+) -> tuple[dict[str, Any], ...]:
+    """Attach and validate content-hash links from evidence CSVs to manifests."""
+
+    root = Path(repository).resolve()
+    evidence_hashes = {
+        str(row["source_artifact"]): hashlib.sha256(
+            (root / str(row["source_artifact"])).read_bytes()
+        ).hexdigest()
+        for row in evidence_rows
+    }
+    pinned: set[str] = set()
+    result: list[dict[str, Any]] = []
+
+    def sha256_values(value: Any) -> set[str]:
+        if isinstance(value, Mapping):
+            result_values: set[str] = set()
+            for nested in value.values():
+                result_values.update(sha256_values(nested))
+            return result_values
+        if isinstance(value, Sequence) and not isinstance(value, (str, bytes)):
+            result_values = set()
+            for nested in value:
+                result_values.update(sha256_values(nested))
+            return result_values
+        if isinstance(value, str) and len(value) == 64:
+            try:
+                int(value, 16)
+            except ValueError:
+                return set()
+            return {value.lower()}
+        return set()
+
+    for source in rows:
+        row = dict(source)
+        manifest = json.loads(
+            (root / str(row["manifest_path"])).read_text(encoding="utf-8")
+        )
+        digest_values = sha256_values(manifest)
+        paths = sorted(
+            path for path, digest in evidence_hashes.items() if digest in digest_values
+        )
+        pinned.update(paths)
+        row["pins_evidence_artifacts"] = ";".join(paths) if paths else "none"
+        result.append(row)
+    missing = sorted(set(evidence_hashes) - pinned)
+    if require_all and missing:
+        raise ValueError(f"evidence artifacts lack a manifest content-hash pin: {missing}")
     return tuple(result)

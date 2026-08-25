@@ -14,7 +14,7 @@ from typing import Any
 
 from itg_nn.xai.artifacts import RunArtifacts, sha256_file
 from itg_nn.xai.synthesis import (
-    NATIVE_ESTIMAND,
+    attach_evidence_manifest_pins,
     validate_claim_register,
     validate_evidence_ledger,
     validate_evidence_matrix,
@@ -105,8 +105,77 @@ def _select_csv_rows(
     return [{field: row[field] for field in fields} for row in selected]
 
 
+def _selected_source_outcome(
+    path: Path,
+    selector: dict[str, Any],
+    *,
+    default_outcome: str,
+) -> tuple[str, str]:
+    with path.open(newline="", encoding="utf-8") as handle:
+        rows = [
+            row
+            for row in csv.DictReader(handle)
+            if all(str(row[key]) == str(value) for key, value in selector.items())
+        ]
+    for field in ("outcome", "estimand"):
+        values = {str(row[field]).strip() for row in rows if field in row and row[field]}
+        if len(values) > 1:
+            raise ValueError(f"selector {selector} has multiple {field} values in {path}")
+        if values:
+            return values.pop(), f"{path.name}:{field}"
+    return default_outcome, "config.estimand"
+
+
+def _json_path_value(path: Path, keys: list[str]) -> Any:
+    value: Any = json.loads(path.read_text(encoding="utf-8"))
+    for key in keys:
+        value = value[key]
+    return value
+
+
+def _uncertainty_unit(
+    spec: dict[str, Any],
+    fields: list[str],
+    values: list[dict[str, str]],
+    *,
+    repository: Path,
+) -> tuple[str, str]:
+    unit_fields = (
+        "bootstrap_unit",
+        "resampling_unit",
+        "split_unit",
+        "outer_split_unit",
+    )
+    for field in unit_fields:
+        if field in fields:
+            units = {row[field] for row in values if row[field]}
+            if len(units) != 1:
+                raise ValueError(
+                    f"evidence {spec['evidence_id']} has ambiguous {field}: {units}"
+                )
+            return units.pop(), f"{spec['source_artifact']}:{field}"
+    has_interval = any("ci95" in field or "interval_" in field for field in fields)
+    sidecar = spec.get("uncertainty_unit_source")
+    if sidecar is not None:
+        sidecar_path = _repository_path(repository, str(sidecar["artifact"]))
+        sidecar_unit = str(_json_path_value(sidecar_path, list(sidecar["json_path"])))
+        configured = str(spec["uncertainty_unit"])
+        if sidecar_unit != configured:
+            raise ValueError(
+                f"evidence {spec['evidence_id']} uncertainty unit does not match sidecar"
+            )
+        return configured, (
+            f"{sidecar['artifact']}:" + ".".join(str(key) for key in sidecar["json_path"])
+        )
+    if has_interval:
+        raise ValueError(
+            f"evidence {spec['evidence_id']} selects an interval without its grouping unit"
+        )
+    return "not_applicable_no_interval_selected", "not_applicable"
+
+
 def _evidence_rows(
-    specs: list[dict[str, Any]], repository: Path
+    specs: list[dict[str, Any]], repository: Path, *, estimand: str
 ) -> tuple[dict[str, Any], ...]:
     rows: list[dict[str, Any]] = []
     for spec in specs:
@@ -116,6 +185,18 @@ def _evidence_rows(
         selector = dict(spec.get("selector", {}))
         fields = [str(field) for field in spec["source_fields"]]
         values = _select_csv_rows(path, selector, fields)
+        outcome, outcome_source = _selected_source_outcome(
+            path, selector, default_outcome=estimand
+        )
+        configured_outcome = spec.get("outcome")
+        if configured_outcome is not None and str(configured_outcome) != outcome:
+            raise ValueError(
+                f"evidence {spec['evidence_id']} outcome {configured_outcome!r} "
+                f"does not match source {outcome!r}"
+            )
+        uncertainty_unit, uncertainty_unit_source = _uncertainty_unit(
+            spec, fields, values, repository=repository
+        )
         rows.append(
             {
                 "evidence_id": spec["evidence_id"],
@@ -131,7 +212,9 @@ def _evidence_rows(
                 ),
                 "method_family": spec["method_family"],
                 "direction": spec["direction"],
-                "estimand": NATIVE_ESTIMAND,
+                "estimand": estimand,
+                "outcome": outcome,
+                "outcome_source": outcome_source,
                 "function_scope": spec["function_scope"],
                 "cohort": spec["cohort"],
                 "regime": spec["regime"],
@@ -139,6 +222,8 @@ def _evidence_rows(
                 "intervention": spec["intervention"],
                 "intervention_executed": bool(spec["intervention_executed"]),
                 "machine_readable": True,
+                "uncertainty_unit": uncertainty_unit,
+                "uncertainty_unit_source": uncertainty_unit_source,
                 "summary": spec["summary"],
             }
         )
@@ -247,7 +332,9 @@ def run(args: argparse.Namespace) -> Path:
     artifacts = RunArtifacts(output_dir)
 
     evidence_specs, matrix_specs, claim_specs = _pilot_specs(resolved)
-    evidence = _evidence_rows(evidence_specs, repository)
+    evidence = _evidence_rows(
+        evidence_specs, repository, estimand=str(resolved["estimand"])
+    )
     matrix = validate_evidence_matrix(matrix_specs, evidence)
     claims = validate_claim_register(claim_specs, evidence)
     manifest_sources = list(resolved["manifest_sources"])
@@ -258,6 +345,12 @@ def run(args: argparse.Namespace) -> Path:
         repository=repository,
         artifacts=artifacts,
         publish=publish,
+    )
+    manifests = attach_evidence_manifest_pins(
+        manifests,
+        evidence,
+        repository=repository,
+        require_all=resolved["mode"] == "production",
     )
     next_experiments = [dict(row) for row in resolved["next_experiments"]]
     if [int(row["priority"]) for row in next_experiments] != list(
@@ -279,7 +372,7 @@ def run(args: argparse.Namespace) -> Path:
         "step": "S14",
         "run_id": resolved["run_id"],
         "synthesis_kind": "registered committed evidence only; no new model or GX computation",
-        "estimand": NATIVE_ESTIMAND,
+        "estimand": resolved["estimand"],
         "canonical_function": "invariant_tilde_f",
         "function_scopes_separated": [
             "original_f",
@@ -299,18 +392,25 @@ def run(args: argparse.Namespace) -> Path:
         "headline_claim_count": sum(bool(row["headline"]) for row in claims),
         "all_headlines_have_two_independent_method_families": all(
             not bool(row["headline"])
-            or int(row["independent_method_family_count"]) >= 2
+            or int(row["corroborating_method_family_count"]) >= 2
             for row in claims
         ),
-        "causal_statement_count": sum(bool(row["causal_statement"]) for row in claims),
-        "all_causal_statements_name_executed_interventions": all(
-            not bool(row["causal_statement"])
-            or str(row["intervention"]) != "not_causal"
+        "physical_causal_statement_count": sum(
+            bool(row["physical_causal_statement"]) for row in claims
+        ),
+        "all_physical_causal_statements_name_executed_interventions": all(
+            not bool(row["physical_causal_statement"])
+            or str(row["physical_intervention"]) != "not_causal"
             for row in claims
         ),
-        "indexed_upstream_run_count": len(manifests),
+        "indexed_upstream_run_count": sum(
+            bool(row["is_run_manifest"]) for row in manifests
+        ),
+        "indexed_provenance_record_count": len(manifests),
         "all_indexed_runs_recreatable_from_manifests": all(
-            bool(row["recreates_claims"]) for row in manifests
+            bool(row["recreates_claims"])
+            for row in manifests
+            if bool(row["is_run_manifest"])
         ),
         "matrix_status_counts": status_counts,
         "smallest_next_calculation": next_experiments[0],
@@ -337,6 +437,9 @@ def run(args: argparse.Namespace) -> Path:
             "model_outputs_computed": False,
             "gx_outputs_computed": False,
             "source_manifest_count": len(manifests),
+            "source_run_manifest_count": sum(
+                bool(row["is_run_manifest"]) for row in manifests
+            ),
             "source_evidence_artifact_count": len(source_hashes["evidence_artifacts"]),
             "synthesis_source_hashes": source_hashes,
             "review_slice_used": False,
