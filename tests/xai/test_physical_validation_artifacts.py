@@ -248,6 +248,14 @@ def test_pairs_are_equilibrium_disjoint_and_contradictions_are_balanced() -> Non
         selected = [row for row in contradictions if row["candidate"] == candidate]
         assert sum(row["case_type"] == "supporting" for row in selected) == 5
         assert sum(row["case_type"] == "contradicting" for row in selected) == 5
+        for row in selected:
+            signed_difference = float(row["expected_population_sign"]) * float(
+                row["target_native_high_minus_low"]
+            )
+            if row["case_type"] == "supporting":
+                assert signed_difference > 0
+            else:
+                assert signed_difference < 0
 
 
 def test_gx_spec_is_proposal_only_with_auditable_planning_budget() -> None:

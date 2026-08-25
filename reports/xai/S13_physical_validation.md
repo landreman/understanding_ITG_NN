@@ -321,10 +321,12 @@ with the observational expectation.
   supporting and five contradicting matched pairs for each candidate. The
   negative cases were selected by the same signed population rule as the
   supporting cases and are given equal space. They are not balanced on match
-  quality: computed from the committed pair table, supporting exemplars sit at
-  the **87th–94th nuisance-distance percentiles**, with 19/20 in the
-  worst-matched quartile, while contradicting exemplars sit at the **7th–32nd
-  percentiles**, with none above the 32nd. The table therefore illustrates the
+  quality: computed from the committed pair table, the per-candidate median
+  supporting exemplar sits at the **87th–94th nuisance-distance percentile**,
+  while the corresponding contradicting median sits at the **7th–32nd**.
+  Individual rows span the 62nd–99th and 2nd–65th percentiles, respectively;
+  19/20 supporting exemplars, but no contradicting exemplars, are in the
+  worst-matched quartile. The table therefore illustrates the
   confounding pattern—large supporting differences occur where comparison
   quality is worst—as much as it illustrates candidate physics.
 - No candidate passes the 0.5 post-match balance threshold or the 0.8 overlap
