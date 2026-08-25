@@ -40,7 +40,7 @@ def _evidence(
         "direction": direction,
         "direction_rule": "analytic toy expectation",
         "direction_source": "test fixture",
-        "estimand": NATIVE_ESTIMAND,
+        "program_estimand": NATIVE_ESTIMAND,
         "outcome": NATIVE_ESTIMAND,
         "outcome_source": "toy.csv:estimand",
         "function_scope": "invariant_tilde_f",
@@ -109,10 +109,10 @@ def test_analytic_cyclic_toy_triangulates_signal_and_keeps_null_control() -> Non
 
 def test_native_output_and_machine_readable_source_are_required() -> None:
     row = _evidence("bad", "candidate", "input_attribution", "gradient_path")
-    row["estimand"] = "Q"
+    row["program_estimand"] = "Q"
     with pytest.raises(ValueError, match="native max"):
         validate_evidence_ledger([row])
-    row["estimand"] = NATIVE_ESTIMAND
+    row["program_estimand"] = NATIVE_ESTIMAND
     row["machine_readable"] = False
     with pytest.raises(ValueError, match="machine-readable"):
         validate_evidence_ledger([row])
@@ -143,6 +143,10 @@ def test_headline_claim_requires_two_independent_method_families() -> None:
     evidence[1]["method_family"] = "hidden_intervention"
     validated = validate_claim_register([claim], validate_evidence_ledger(evidence))
     assert validated[0]["corroborating_method_family_count"] == 2
+    assert validated[0]["minimum_corroborating_families_per_conjunct"] == 2
+    assert validated[0]["corroborating_source_step_count"] == 1
+    assert validated[0]["corroborating_source_artifact_count"] == 1
+    assert validated[0]["gate_margin"] == 0
 
 
 def test_headline_uses_claim_alignment_not_candidate_direction() -> None:
@@ -209,6 +213,63 @@ def test_claim_alignment_and_conjunct_cover_exactly_the_linked_evidence() -> Non
     claim["evidence_conjunct"]["two"] = "second conjunct"
     claim["evidence_alignment"]["extra"] = "corroborates"
     with pytest.raises(ValueError, match="evidence_alignment"):
+        validate_claim_register([claim], evidence)
+
+
+def test_unknown_claim_alignment_is_rejected() -> None:
+    evidence = validate_evidence_ledger(
+        [
+            _evidence("one", "candidate", "input_attribution", "gradient_path"),
+            _evidence("two", "candidate", "hidden_encoding", "hidden_probe"),
+        ]
+    )
+    claim = {
+        "claim_id": "C1",
+        "headline": True,
+        "claim_text": "candidate claim",
+        "status": "supported",
+        "scope": "toy",
+        "candidate_ids": "candidate",
+        "evidence_polarity": "supports",
+        "physical_causal_statement": False,
+        "physical_intervention": "not_causal",
+        "evidence_ids": "one;two",
+        "evidence_alignment": {"one": "corroborates", "two": "maybe"},
+        "evidence_conjunct": {"one": "claim", "two": "claim"},
+        "limitations": "toy only",
+    }
+    with pytest.raises(ValueError, match="invalid evidence_alignment"):
+        validate_claim_register([claim], evidence)
+
+
+def test_every_declared_candidate_needs_claim_aligned_evidence() -> None:
+    evidence = validate_evidence_ledger(
+        [
+            _evidence("a-one", "candidate-a", "input_attribution", "gradient_path"),
+            _evidence("a-two", "candidate-a", "hidden_encoding", "hidden_probe"),
+            _evidence("b", "candidate-b", "distillation", "distillation"),
+        ]
+    )
+    claim = {
+        "claim_id": "C1",
+        "headline": True,
+        "claim_text": "two-candidate claim",
+        "status": "supported",
+        "scope": "toy",
+        "candidate_ids": "candidate-a;candidate-b",
+        "evidence_polarity": "supports",
+        "physical_causal_statement": False,
+        "physical_intervention": "not_causal",
+        "evidence_ids": "a-one;a-two;b",
+        "evidence_alignment": {
+            "a-one": "corroborates",
+            "a-two": "corroborates",
+            "b": "qualifies",
+        },
+        "evidence_conjunct": {"a-one": "claim", "a-two": "claim", "b": "limit"},
+        "limitations": "toy only",
+    }
+    with pytest.raises(ValueError, match="candidates without claim-aligned evidence"):
         validate_claim_register([claim], evidence)
 
 

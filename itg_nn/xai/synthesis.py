@@ -37,7 +37,7 @@ _EVIDENCE_REQUIRED = {
     "direction",
     "direction_rule",
     "direction_source",
-    "estimand",
+    "program_estimand",
     "outcome",
     "outcome_source",
     "function_scope",
@@ -175,9 +175,10 @@ def validate_evidence_ledger(
         seen.add(evidence_id)
         if row["matrix_column"] not in MATRIX_EVIDENCE_COLUMNS:
             raise ValueError(f"unknown evidence-matrix column {row['matrix_column']!r}")
-        if row["estimand"] != NATIVE_ESTIMAND:
+        if row["program_estimand"] != NATIVE_ESTIMAND:
             raise ValueError(
-                f"evidence {evidence_id} must retain the native max(log Q, -2) estimand"
+                f"evidence {evidence_id} must retain the native max(log Q, -2) "
+                "program estimand"
             )
         if row["validity_tag"] not in _VALIDITY_TAGS:
             raise ValueError(f"evidence {evidence_id} has invalid validity tag")
@@ -333,6 +334,20 @@ def validate_claim_register(
         corroborating_families = sorted(
             {str(evidence[item]["method_family"]) for item in corroborating_ids}
         )
+        families_by_conjunct: dict[str, set[str]] = {}
+        for item in corroborating_ids:
+            families_by_conjunct.setdefault(conjunct[item], set()).add(
+                str(evidence[item]["method_family"])
+            )
+        family_counts_by_conjunct = {
+            item: len(families_by_conjunct[item]) for item in sorted(families_by_conjunct)
+        }
+        source_steps = sorted(
+            {str(evidence[item]["source_step"]) for item in corroborating_ids}
+        )
+        source_artifacts = sorted(
+            {str(evidence[item]["source_artifact"]) for item in corroborating_ids}
+        )
         headline = _as_bool(row["headline"], field="headline")
         if headline and len(corroborating_families) < 2:
             raise ValueError(
@@ -386,6 +401,28 @@ def validate_claim_register(
         row["corroborating_evidence_ids"] = ";".join(corroborating_ids)
         row["corroborating_method_family_count"] = len(corroborating_families)
         row["corroborating_method_families"] = ";".join(corroborating_families)
+        row["corroborating_families_per_conjunct"] = json.dumps(
+            {
+                item: sorted(families_by_conjunct[item])
+                for item in sorted(families_by_conjunct)
+            },
+            sort_keys=True,
+            separators=(",", ":"),
+        )
+        row["corroborating_family_counts_per_conjunct"] = json.dumps(
+            family_counts_by_conjunct, sort_keys=True, separators=(",", ":")
+        )
+        row["minimum_corroborating_families_per_conjunct"] = min(
+            family_counts_by_conjunct.values()
+        )
+        row["maximum_corroborating_families_per_conjunct"] = max(
+            family_counts_by_conjunct.values()
+        )
+        row["corroborating_source_step_count"] = len(source_steps)
+        row["corroborating_source_steps"] = ";".join(source_steps)
+        row["corroborating_source_artifact_count"] = len(source_artifacts)
+        row["corroborating_source_artifacts"] = ";".join(source_artifacts)
+        row["gate_margin"] = len(corroborating_families) - 2
         row["machine_readable_sources"] = ";".join(
             sorted({str(evidence[item]["source_artifact"]) for item in ids})
         )

@@ -384,7 +384,7 @@ def _evidence_rows(
                     direction_rule, sort_keys=True, separators=(",", ":")
                 ),
                 "direction_source": direction_source,
-                "estimand": estimand,
+                "program_estimand": estimand,
                 "outcome": outcome,
                 "outcome_source": outcome_source,
                 "function_scope": spec["function_scope"],
@@ -562,9 +562,18 @@ def run(args: argparse.Namespace) -> Path:
         "candidate_count": len(matrix),
         "evidence_record_count": len(evidence),
         "headline_claim_count": sum(bool(row["headline"]) for row in claims),
-        "all_headlines_have_two_independent_method_families": all(
+        "all_headlines_have_two_claim_aligned_method_families": all(
             not bool(row["headline"])
             or int(row["corroborating_method_family_count"]) >= 2
+            for row in claims
+        ),
+        "headline_claims_with_two_corroborating_source_steps": sum(
+            bool(row["headline"]) and int(row["corroborating_source_step_count"]) >= 2
+            for row in claims
+        ),
+        "headline_claims_with_two_families_on_one_conjunct": sum(
+            bool(row["headline"])
+            and int(row["maximum_corroborating_families_per_conjunct"]) >= 2
             for row in claims
         ),
         "physical_causal_statement_count": sum(
@@ -606,6 +615,7 @@ def run(args: argparse.Namespace) -> Path:
         command=sys.argv,
         published_dir=published_dir,
         extra_manifest={
+            "run_id": resolved["run_id"],
             "model_outputs_computed": False,
             "gx_outputs_computed": False,
             "source_manifest_count": len(manifests),

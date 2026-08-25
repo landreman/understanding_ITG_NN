@@ -27,6 +27,7 @@ def _one(rows: list[dict[str, str]], **keys: str) -> dict[str, str]:
 def test_registered_manifest_hashes_all_synthesis_outputs() -> None:
     manifest = json.loads((ARTIFACTS / "manifest.json").read_text(encoding="utf-8"))
     assert manifest["config"]["run_id"] == "synthesis-registered-evidence-s01-s13"
+    assert manifest["run_id"] == "synthesis-registered-evidence-s01-s13"
     assert manifest["model_outputs_computed"] is False
     assert manifest["gx_outputs_computed"] is False
     assert manifest["review_slice_used"] is False
@@ -64,7 +65,8 @@ def test_evidence_ledger_selectors_reproduce_every_source_value() -> None:
     ledger = _rows("evidence_ledger.csv")
     assert len(ledger) == 64
     assert len({row["evidence_id"] for row in ledger}) == 64
-    assert {row["estimand"] for row in ledger} == {NATIVE_ESTIMAND}
+    assert {row["program_estimand"] for row in ledger} == {NATIVE_ESTIMAND}
+    assert "estimand" not in ledger[0]
     assert {row["machine_readable"] for row in ledger} == {"True"}
     assert all(row["direction_rule"] for row in ledger)
     assert all(row["direction_source"] for row in ledger)
@@ -132,6 +134,9 @@ def test_every_headline_is_machine_readable_and_triangulated() -> None:
         evidence_ids = set(row["evidence_ids"].split(";"))
         assert set(json.loads(row["evidence_alignment"])) == evidence_ids
         assert set(json.loads(row["evidence_conjunct"])) == evidence_ids
+        assert int(row["corroborating_source_step_count"]) >= 1
+        assert int(row["corroborating_source_artifact_count"]) >= 1
+        assert int(row["gate_margin"]) == int(row["corroborating_method_family_count"]) - 2
         for path in row["machine_readable_sources"].split(";"):
             assert (ROOT / path).is_file()
     spread = _one(claims, claim_id="C08_SPREAD_NOT_ERROR_BAR")
@@ -139,6 +144,12 @@ def test_every_headline_is_machine_readable_and_triangulated() -> None:
         "E11_COMMON_MODE_FAILURE": "not a calibrated guarantee",
         "E11_SPREAD_ERROR_ASSOCIATION": "error-ranking utility",
     }
+    assert json.loads(spread["corroborating_family_counts_per_conjunct"]) == {
+        "error-ranking utility": 1,
+        "not a calibrated guarantee": 1,
+    }
+    assert spread["corroborating_source_step_count"] == "1"
+    assert spread["corroborating_source_artifact_count"] == "2"
     direct_qz = _one(claims, claim_id="C09_DIRECT_QZ_FOCUS_REJECTED")
     assert set(direct_qz["corroborating_evidence_ids"].split(";")) == {
         "E07_DENSITY_QZ_CONTRADICTION",
