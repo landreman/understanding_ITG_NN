@@ -10,6 +10,7 @@ import torch
 from itg_nn.xai.synthesis import (
     MATRIX_EVIDENCE_COLUMNS,
     NATIVE_ESTIMAND,
+    attach_evidence_manifest_pins,
     validate_claim_register,
     validate_evidence_ledger,
     validate_evidence_matrix,
@@ -37,6 +38,8 @@ def _evidence(
         "source_record_count": 1,
         "method_family": method_family,
         "direction": direction,
+        "direction_rule": "analytic toy expectation",
+        "direction_source": "test fixture",
         "estimand": NATIVE_ESTIMAND,
         "outcome": NATIVE_ESTIMAND,
         "outcome_source": "toy.csv:estimand",
@@ -131,6 +134,8 @@ def test_headline_claim_requires_two_independent_method_families() -> None:
         "physical_causal_statement": False,
         "physical_intervention": "not_causal",
         "evidence_ids": "one;two",
+        "evidence_alignment": {"one": "corroborates", "two": "corroborates"},
+        "evidence_conjunct": {"one": "candidate support", "two": "candidate support"},
         "limitations": "toy only",
     }
     with pytest.raises(ValueError, match="corroborating method families"):
@@ -140,7 +145,7 @@ def test_headline_claim_requires_two_independent_method_families() -> None:
     assert validated[0]["corroborating_method_family_count"] == 2
 
 
-def test_headline_does_not_count_noncorroborating_or_other_candidate_evidence() -> None:
+def test_headline_uses_claim_alignment_not_candidate_direction() -> None:
     evidence = [
         _evidence("one", "candidate", "input_attribution", "gradient_path"),
         _evidence(
@@ -162,14 +167,49 @@ def test_headline_does_not_count_noncorroborating_or_other_candidate_evidence() 
         "physical_causal_statement": False,
         "physical_intervention": "not_causal",
         "evidence_ids": "one;two",
+        "evidence_alignment": {"one": "corroborates", "two": "qualifies"},
+        "evidence_conjunct": {"one": "candidate support", "two": "scope limit"},
         "limitations": "toy only",
     }
     with pytest.raises(ValueError, match="corroborating method families"):
         validate_claim_register([claim], validate_evidence_ledger(evidence))
-    evidence[1]["direction"] = "supports"
+    claim["evidence_alignment"]["two"] = "corroborates"
+    validated = validate_claim_register([claim], validate_evidence_ledger(evidence))
+    assert validated[0]["corroborating_method_family_count"] == 2
+    assert validated[0]["corroborating_evidence_ids"] == "one;two"
     evidence[1]["candidate_id"] = "other"
     with pytest.raises(ValueError, match="outside its candidates"):
         validate_claim_register([claim], validate_evidence_ledger(evidence))
+
+
+def test_claim_alignment_and_conjunct_cover_exactly_the_linked_evidence() -> None:
+    evidence = validate_evidence_ledger(
+        [
+            _evidence("one", "candidate", "input_attribution", "gradient_path"),
+            _evidence("two", "candidate", "hidden_encoding", "hidden_probe"),
+        ]
+    )
+    claim = {
+        "claim_id": "C1",
+        "headline": True,
+        "claim_text": "compound candidate claim",
+        "status": "supported",
+        "scope": "toy",
+        "candidate_ids": "candidate",
+        "evidence_polarity": "supports",
+        "physical_causal_statement": False,
+        "physical_intervention": "not_causal",
+        "evidence_ids": "one;two",
+        "evidence_alignment": {"one": "corroborates", "two": "corroborates"},
+        "evidence_conjunct": {"one": "first conjunct"},
+        "limitations": "toy only",
+    }
+    with pytest.raises(ValueError, match="evidence_conjunct"):
+        validate_claim_register([claim], evidence)
+    claim["evidence_conjunct"]["two"] = "second conjunct"
+    claim["evidence_alignment"]["extra"] = "corroborates"
+    with pytest.raises(ValueError, match="evidence_alignment"):
+        validate_claim_register([claim], evidence)
 
 
 def test_causal_statement_requires_named_executed_intervention() -> None:
@@ -188,6 +228,8 @@ def test_causal_statement_requires_named_executed_intervention() -> None:
         "physical_causal_statement": True,
         "physical_intervention": "not_causal",
         "evidence_ids": "one;two",
+        "evidence_alignment": {"one": "corroborates", "two": "corroborates"},
+        "evidence_conjunct": {"one": "physical effect", "two": "physical effect"},
         "limitations": "toy only",
     }
     with pytest.raises(ValueError, match="intervention"):
@@ -260,3 +302,16 @@ def test_reproducibility_index_checks_manifest_content_and_hash(tmp_path: Path) 
     row["manifest_sha256"] = "wrong"
     with pytest.raises(ValueError, match="hash"):
         validate_reproducibility_index([row], repository=tmp_path)
+
+
+def test_manifest_pin_guard_rejects_unpinned_evidence(tmp_path: Path) -> None:
+    evidence_path = tmp_path / "evidence.csv"
+    evidence_path.write_text("value\n1\n", encoding="utf-8")
+    manifest_path = tmp_path / "manifest.json"
+    manifest_path.write_text(json.dumps({"output_hashes": {}}), encoding="utf-8")
+    rows = [{"manifest_path": "manifest.json"}]
+    evidence = [{"source_artifact": "evidence.csv"}]
+    with pytest.raises(ValueError, match="lack a manifest content-hash pin"):
+        attach_evidence_manifest_pins(
+            rows, evidence, repository=tmp_path, require_all=True
+        )

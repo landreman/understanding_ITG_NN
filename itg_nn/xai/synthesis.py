@@ -35,6 +35,8 @@ _EVIDENCE_REQUIRED = {
     "source_record_count",
     "method_family",
     "direction",
+    "direction_rule",
+    "direction_source",
     "estimand",
     "outcome",
     "outcome_source",
@@ -71,6 +73,8 @@ _CLAIM_REQUIRED = {
     "physical_causal_statement",
     "physical_intervention",
     "evidence_ids",
+    "evidence_alignment",
+    "evidence_conjunct",
     "limitations",
 }
 _MANIFEST_REQUIRED = {
@@ -124,6 +128,35 @@ def _ids(value: Any) -> tuple[str, ...]:
     return tuple(item.strip() for item in str(value).split(";") if item.strip())
 
 
+def _claim_mapping(
+    value: Any,
+    *,
+    field: str,
+    evidence_ids: tuple[str, ...],
+) -> dict[str, str]:
+    if isinstance(value, Mapping):
+        parsed = {str(key): str(item).strip() for key, item in value.items()}
+    elif isinstance(value, str):
+        try:
+            loaded = json.loads(value)
+        except json.JSONDecodeError as error:
+            raise ValueError(f"{field} must be a JSON object") from error
+        if not isinstance(loaded, Mapping):
+            raise ValueError(f"{field} must be a JSON object")
+        parsed = {str(key): str(item).strip() for key, item in loaded.items()}
+    else:
+        raise ValueError(f"{field} must be a mapping")
+    if set(parsed) != set(evidence_ids):
+        raise ValueError(
+            f"{field} keys must exactly match evidence_ids: "
+            f"missing={sorted(set(evidence_ids) - set(parsed))}, "
+            f"extra={sorted(set(parsed) - set(evidence_ids))}"
+        )
+    if any(not item for item in parsed.values()):
+        raise ValueError(f"{field} values must be nonempty")
+    return parsed
+
+
 def validate_evidence_ledger(
     rows: Sequence[Mapping[str, Any]],
 ) -> tuple[dict[str, Any], ...]:
@@ -165,6 +198,8 @@ def validate_evidence_ledger(
             "source_selector",
             "source_fields",
             "method_family",
+            "direction_rule",
+            "direction_source",
             "outcome",
             "outcome_source",
             "function_scope",
@@ -276,10 +311,25 @@ def validate_claim_register(
             raise ValueError(
                 f"claim {claim_id} evidence_polarity must be supports or contradicts"
             )
+        alignment = _claim_mapping(
+            row["evidence_alignment"],
+            field="evidence_alignment",
+            evidence_ids=ids,
+        )
+        invalid_alignment = sorted(
+            {item for item in alignment.values() if item not in {"corroborates", "qualifies", "contradicts", "context"}}
+        )
+        if invalid_alignment:
+            raise ValueError(
+                f"claim {claim_id} has invalid evidence_alignment values: {invalid_alignment}"
+            )
+        conjunct = _claim_mapping(
+            row["evidence_conjunct"],
+            field="evidence_conjunct",
+            evidence_ids=ids,
+        )
         families = sorted({str(evidence[item]["method_family"]) for item in ids})
-        corroborating_ids = [
-            item for item in ids if evidence[item]["direction"] == evidence_polarity
-        ]
+        corroborating_ids = [item for item in ids if alignment[item] == "corroborates"]
         corroborating_families = sorted(
             {str(evidence[item]["method_family"]) for item in corroborating_ids}
         )
@@ -287,6 +337,19 @@ def validate_claim_register(
         if headline and len(corroborating_families) < 2:
             raise ValueError(
                 f"headline claim {claim_id} needs at least two corroborating method families"
+            )
+        uncorroborated_candidates = sorted(
+            candidate_id
+            for candidate_id in candidate_ids
+            if not any(
+                str(evidence[item]["candidate_id"]) == candidate_id
+                for item in corroborating_ids
+            )
+        )
+        if headline and uncorroborated_candidates:
+            raise ValueError(
+                f"headline claim {claim_id} has candidates without claim-aligned evidence: "
+                f"{uncorroborated_candidates}"
             )
         causal = _as_bool(
             row["physical_causal_statement"], field="physical_causal_statement"
@@ -311,6 +374,12 @@ def validate_claim_register(
             )
         row["headline"] = headline
         row["physical_causal_statement"] = causal
+        row["evidence_alignment"] = json.dumps(
+            alignment, sort_keys=True, separators=(",", ":")
+        )
+        row["evidence_conjunct"] = json.dumps(
+            conjunct, sort_keys=True, separators=(",", ":")
+        )
         row["evidence_source_count"] = len(set(ids))
         row["consulted_method_family_count"] = len(families)
         row["consulted_method_families"] = ";".join(families)

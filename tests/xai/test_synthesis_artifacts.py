@@ -66,6 +66,8 @@ def test_evidence_ledger_selectors_reproduce_every_source_value() -> None:
     assert len({row["evidence_id"] for row in ledger}) == 64
     assert {row["estimand"] for row in ledger} == {NATIVE_ESTIMAND}
     assert {row["machine_readable"] for row in ledger} == {"True"}
+    assert all(row["direction_rule"] for row in ledger)
+    assert all(row["direction_source"] for row in ledger)
     assert {row["outcome"] for row in ledger} == {
         NATIVE_ESTIMAND,
         "target_native",
@@ -127,8 +129,21 @@ def test_every_headline_is_machine_readable_and_triangulated() -> None:
     for row in claims:
         assert int(row["corroborating_method_family_count"]) >= 2
         assert len(row["corroborating_method_families"].split(";")) >= 2
+        evidence_ids = set(row["evidence_ids"].split(";"))
+        assert set(json.loads(row["evidence_alignment"])) == evidence_ids
+        assert set(json.loads(row["evidence_conjunct"])) == evidence_ids
         for path in row["machine_readable_sources"].split(";"):
             assert (ROOT / path).is_file()
+    spread = _one(claims, claim_id="C08_SPREAD_NOT_ERROR_BAR")
+    assert json.loads(spread["evidence_conjunct"]) == {
+        "E11_COMMON_MODE_FAILURE": "not a calibrated guarantee",
+        "E11_SPREAD_ERROR_ASSOCIATION": "error-ranking utility",
+    }
+    direct_qz = _one(claims, claim_id="C09_DIRECT_QZ_FOCUS_REJECTED")
+    assert set(direct_qz["corroborating_evidence_ids"].split(";")) == {
+        "E07_DENSITY_QZ_CONTRADICTION",
+        "E07_ATTRIBUTION_QZ_NULL",
+    }
 
 
 def test_headline_numbers_and_contradictions_are_pinned() -> None:
@@ -164,12 +179,39 @@ def test_headline_numbers_and_contradictions_are_pinned() -> None:
     assert geodesic["aipw_resolved_fold_count"] == "7"
     assert float(geodesic["max_abs_nuisance_smd_after"]) > 0.5
     assert float(geodesic["aipw_overlap_fraction"]) < 0.8
+    expected_directions = {
+        "E07_FQ_QZ": "mixed",
+        "E08_COLOCATION_USE": "regime-dependent",
+        "E08_GEO_USE": "regime-dependent",
+        "E08_LOCAL_QZ_ENCODING": "mixed",
+        "E08_LOCAL_QZ_USE": "regime-dependent",
+        "E11_COMMON_MODE_FAILURE": "contradicts",
+        "E11_SPREAD_ERROR_ASSOCIATION": "regime-dependent",
+        "E12_BAD_RECURRENCE": "mixed",
+        "E12_GEO_RECURRENCE": "regime-dependent",
+        "E13_BAD_NATURAL": "regime-dependent",
+        "E13_FQ_NATURAL": "unresolved",
+        "E13_FSTAB_NATURAL": "regime-dependent",
+        "E13_GEO_NATURAL": "supports",
+    }
+    for evidence_id, direction in expected_directions.items():
+        row = _one(evidence, evidence_id=evidence_id)
+        assert row["direction"] == direction
+        assert row["direction_source"].startswith("config.direction_rule:")
+    local_qz_use = values("E08_LOCAL_QZ_USE")
+    assert len(local_qz_use) == 15
+    assert sum(row["use_claim_permitted"] == "True" for row in local_qz_use) == 7
 
 
 def test_reproducibility_index_resolves_and_hashes_every_run_manifest() -> None:
     rows = _rows("reproducibility_index.csv")
     assert len(rows) == 19
-    assert {row["recreates_claims"] for row in rows} == {"True"}
+    phase = _one(rows, run_key="S03_PHASE")
+    assert phase["recreates_claims"] == "False"
+    assert phase["git_commit"] in {"", "None"}
+    assert all(
+        row["recreates_claims"] == "True" for row in rows if row["run_key"] != "S03_PHASE"
+    )
     assert sum(row["is_run_manifest"] == "True" for row in rows) == 18
     assert {row["step"] for row in rows} >= {
         "S00",

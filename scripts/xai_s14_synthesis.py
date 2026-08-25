@@ -8,6 +8,7 @@ import copy
 import csv
 import io
 import json
+import statistics
 import sys
 from pathlib import Path
 from typing import Any
@@ -174,6 +175,164 @@ def _uncertainty_unit(
     return "not_applicable_no_interval_selected", "not_applicable"
 
 
+def _derive_direction(
+    spec: dict[str, Any], values: list[dict[str, str]]
+) -> tuple[str, str]:
+    """Derive candidate-level evidence direction from a declared, auditable rule."""
+
+    rule = spec.get("direction_rule")
+    if rule is None:
+        direction = str(spec["direction"])
+        return direction, "config.direction:interpretive_not_used_for_claim_gate"
+    if not isinstance(rule, dict):
+        raise ValueError(f"evidence {spec['evidence_id']} direction_rule must be an object")
+    kind = str(rule.get("kind", ""))
+
+    def numbers(field: str) -> list[float]:
+        try:
+            return [float(row[field]) for row in values]
+        except (KeyError, TypeError, ValueError) as error:
+            raise ValueError(
+                f"evidence {spec['evidence_id']} cannot derive direction from {field}"
+            ) from error
+
+    statistic = ""
+    if kind == "tcav_pass_fraction":
+        field = str(rule["field"])
+        verdicts = [str(row[field]).lower() == "true" for row in values]
+        passed = sum(verdicts)
+        direction = (
+            "supports"
+            if passed == len(verdicts)
+            else "regime-dependent"
+            if passed
+            else "contradicts"
+        )
+        statistic = f"{field}={passed}/{len(verdicts)}"
+    elif kind == "probe_vs_permutation":
+        minimum_gain = float(rule["minimum_gain"])
+        control = statistics.median(numbers(str(rule["control_field"])))
+        overall_gain = statistics.median(numbers(str(rule["encoded_field"]))) - control
+        stable_gain = statistics.median(numbers(str(rule["stable_field"]))) - control
+        unstable_gain = statistics.median(numbers(str(rule["unstable_field"]))) - control
+        direction = (
+            "contradicts"
+            if overall_gain < minimum_gain
+            else "supports"
+            if stable_gain >= minimum_gain and unstable_gain >= minimum_gain
+            else "mixed"
+        )
+        statistic = (
+            f"median_gains=overall:{overall_gain:.6g},stable:{stable_gain:.6g},"
+            f"unstable:{unstable_gain:.6g};minimum_gain={minimum_gain:.6g}"
+        )
+    elif kind == "resolved_fold_count":
+        field = str(rule["field"])
+        counts = {int(float(row[field])) for row in values}
+        if len(counts) != 1:
+            raise ValueError(
+                f"evidence {spec['evidence_id']} has ambiguous resolved-fold counts"
+            )
+        count = counts.pop()
+        total = int(rule["total"])
+        direction = (
+            "supports"
+            if count == total
+            else "regime-dependent"
+            if count > 0
+            else "unresolved"
+        )
+        statistic = f"{field}={count}/{total}"
+    elif kind == "recurrence_across_members":
+        recurrence = numbers(str(rule["field"]))
+        threshold = float(rule["support_threshold"])
+        direction = (
+            "supports"
+            if min(recurrence) >= threshold
+            else "regime-dependent"
+            if max(recurrence) >= threshold
+            else "mixed"
+            if max(recurrence) > 0
+            else "contradicts"
+        )
+        statistic = (
+            f"range={min(recurrence):.6g}-{max(recurrence):.6g};"
+            f"support_threshold={threshold:.6g}"
+        )
+    elif kind == "signed_spatial_association":
+        correlations = numbers(str(rule["correlation_field"]))
+        lags = numbers(str(rule["lag_field"]))
+        direction = (
+            "supports"
+            if statistics.median(correlations) > 0 and statistics.median(lags) == 0
+            else "mixed"
+        )
+        statistic = (
+            f"median_correlation={statistics.median(correlations):.6g};"
+            f"median_lag={statistics.median(lags):.6g}"
+        )
+    elif kind == "positive_association_with_disjoint_regime_intervals":
+        field = str(rule["field"])
+        lower_field = str(rule["lower_field"])
+        upper_field = str(rule["upper_field"])
+        regime_field = str(rule["regime_field"])
+        regime_values = [str(item) for item in rule["regime_values"]]
+        by_regime = {
+            str(row[regime_field]): (
+                float(row[field]),
+                float(row[lower_field]),
+                float(row[upper_field]),
+            )
+            for row in values
+            if str(row[regime_field]) in regime_values
+        }
+        if set(by_regime) != set(regime_values):
+            raise ValueError(
+                f"evidence {spec['evidence_id']} lacks declared regime intervals"
+            )
+        intervals = [by_regime[item] for item in regime_values]
+        all_positive = all(lower > 0 for _, lower, _ in intervals)
+        disjoint = intervals[0][1] > intervals[1][2] or intervals[1][1] > intervals[0][2]
+        direction = (
+            "contradicts"
+            if not all_positive
+            else "regime-dependent"
+            if disjoint
+            else "supports"
+        )
+        statistic = ";".join(
+            f"{regime}={by_regime[regime][0]:.6g}"
+            f"[{by_regime[regime][1]:.6g},{by_regime[regime][2]:.6g}]"
+            for regime in regime_values
+        )
+    elif kind == "nonzero_failure_count":
+        selected = values
+        if "scope_field" in rule:
+            selected = [
+                row
+                for row in values
+                if str(row[str(rule["scope_field"])]) == str(rule["scope_value"])
+            ]
+            if len(selected) != 1:
+                raise ValueError(
+                    f"evidence {spec['evidence_id']} lacks one declared failure-count scope"
+                )
+        counts = [float(row[str(rule["field"])]) for row in selected]
+        direction = "contradicts" if sum(counts) > 0 else "null_control"
+        statistic = f"total_failures={sum(counts):.6g}"
+    else:
+        raise ValueError(
+            f"evidence {spec['evidence_id']} has unknown direction rule {kind!r}"
+        )
+    configured = spec.get("direction")
+    if configured is not None and str(configured) != direction:
+        raise ValueError(
+            f"evidence {spec['evidence_id']} configured direction {configured!r} "
+            f"does not match derived direction {direction!r}"
+        )
+    return direction, f"config.direction_rule:{kind};{statistic}"
+
+
 def _evidence_rows(
     specs: list[dict[str, Any]], repository: Path, *, estimand: str
 ) -> tuple[dict[str, Any], ...]:
@@ -197,6 +356,15 @@ def _evidence_rows(
         uncertainty_unit, uncertainty_unit_source = _uncertainty_unit(
             spec, fields, values, repository=repository
         )
+        direction, direction_source = _derive_direction(spec, values)
+        direction_rule = spec.get(
+            "direction_rule",
+            {
+                "kind": "interpretive",
+                "value": direction,
+                "basis": "upstream result interpretation; not used by the headline gate",
+            },
+        )
         rows.append(
             {
                 "evidence_id": spec["evidence_id"],
@@ -211,7 +379,11 @@ def _evidence_rows(
                     values, sort_keys=True, separators=(",", ":")
                 ),
                 "method_family": spec["method_family"],
-                "direction": spec["direction"],
+                "direction": direction,
+                "direction_rule": json.dumps(
+                    direction_rule, sort_keys=True, separators=(",", ":")
+                ),
+                "direction_source": direction_source,
                 "estimand": estimand,
                 "outcome": outcome,
                 "outcome_source": outcome_source,
