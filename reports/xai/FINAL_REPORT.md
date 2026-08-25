@@ -356,7 +356,7 @@ corrected outputs.
 
 Tests were written before implementation. The first focused run failed in six
 intended places while the synthesis validators were stubs. The final focused
-suite passes 31 tests, including a cyclic toy ledger with a known relevant
+suite passes 35 tests, including a cyclic toy ledger with a known relevant
 feature and an explicit null control, exact source-row reproduction for all 64
 evidence records, artifact hashes, numerical headline pins, and full manifest
 resolution. A real pilot-run test checks finalization and `--no-publish`, and
@@ -365,7 +365,7 @@ traceable grouping unit. Fixture tests also require every evidence artifact to
 have a manifest pin and require claim alignment/conjunct mappings to cover the
 exact linked evidence set.
 
-Ten deliberate mutations were each confirmed to turn the suite red and were
+Thirteen deliberate mutations were each confirmed to turn the suite red and were
 then reverted:
 
 1. made the claim gate read candidate-level `direction` instead of per-claim
@@ -396,23 +396,30 @@ then reverted:
 10. disabled the minimum-gain threshold that makes the S08 zonal probe control
     contradict the encoding hypothesis;
     `test_direction_is_derived_from_declared_source_rule` failed.
+11. disabled the disjoint-regime-interval check for the spread/error
+    association;
+    `test_direction_is_derived_from_declared_source_rule` failed;
+12. suppressed the nonzero common-mode-failure count;
+    `test_direction_is_derived_from_declared_source_rule` failed;
+13. disabled the configured-versus-derived direction mismatch guard;
+    `test_configured_direction_must_match_derived_direction` failed.
 
 The earlier production round also turned red when the physical-intervention
 guard and reproducibility-index manifest hash check were bypassed. The third
 automated review found items 4 and 5 before those tests existed, the fourth
-found items 6 and 7, the fifth found items 8 and 9, and the sixth found item 10;
-all seven exact mutations are now covered rather than being omitted from this
-record.
+found items 6 and 7, the fifth found items 8 and 9, the sixth found item 10, and
+the seventh found items 11–13; all ten exact mutations are now covered rather
+than being omitted from this record.
 
 Final local commands and outcomes:
 
 ```text
 .venv-xai/bin/python -m pytest tests/xai/test_synthesis.py \
   tests/xai/test_synthesis_script.py tests/xai/test_synthesis_artifacts.py -q
-31 passed
+35 passed
 
 source .venv-xai/bin/activate && make check
-347 passed
+351 passed
 ```
 
 ## Interpretation limits

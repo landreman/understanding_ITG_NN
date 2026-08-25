@@ -154,6 +154,51 @@ def test_interval_without_grouping_unit_is_rejected(tmp_path: Path) -> None:
             [{"aipw_resolved_fold_count": "0"}],
             "unresolved",
         ),
+        (
+            {
+                "kind": "positive_association_with_disjoint_regime_intervals",
+                "field": "spearman",
+                "lower_field": "lower",
+                "upper_field": "upper",
+                "regime_field": "regime",
+                "regime_values": ["near_floor", "unstable"],
+            },
+            [
+                {
+                    "regime": "near_floor",
+                    "spearman": "0.8",
+                    "lower": "0.7",
+                    "upper": "0.9",
+                },
+                {
+                    "regime": "unstable",
+                    "spearman": "0.5",
+                    "lower": "0.4",
+                    "upper": "0.6",
+                },
+            ],
+            "regime-dependent",
+        ),
+        (
+            {
+                "kind": "nonzero_failure_count",
+                "field": "count",
+                "scope_field": "regime",
+                "scope_value": "all",
+            },
+            [{"regime": "all", "count": "8"}, {"regime": "unstable", "count": "6"}],
+            "contradicts",
+        ),
+        (
+            {
+                "kind": "nonzero_failure_count",
+                "field": "count",
+                "scope_field": "regime",
+                "scope_value": "all",
+            },
+            [{"regime": "all", "count": "0"}, {"regime": "unstable", "count": "0"}],
+            "null_control",
+        ),
     ],
 )
 def test_direction_is_derived_from_declared_source_rule(
@@ -165,3 +210,14 @@ def test_direction_is_derived_from_declared_source_rule(
     )
     assert direction == expected
     assert "direction_rule" in source
+
+
+def test_configured_direction_must_match_derived_direction() -> None:
+    module = _load_script()
+    spec = {
+        "evidence_id": "mismatch",
+        "direction": "supports",
+        "direction_rule": {"kind": "nonzero_failure_count", "field": "count"},
+    }
+    with pytest.raises(ValueError, match="does not match derived direction"):
+        module._derive_direction(spec, [{"count": "1"}])

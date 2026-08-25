@@ -223,6 +223,8 @@ def test_qualifying_cross_step_evidence_does_not_inflate_corroborating_steps() -
     assert validated["corroborating_source_artifact_count"] == 1
     assert validated["corroborating_source_artifacts"] == "toy.csv"
     assert validated["corroborating_evidence_ids"] == "one;two"
+    assert validated["evidence_source_count"] == 3
+    assert validated["machine_readable_sources"] == "qualifier.csv;toy.csv"
 
 
 def test_corroborating_families_remain_separate_across_claim_conjuncts() -> None:
