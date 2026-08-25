@@ -1,0 +1,13 @@
+regime,category,count,fraction
+all,high_spread_low_error,240,0.24
+all,high_spread_high_error,76,0.076
+all,common_mode_failure,8,0.008
+all,unanimous_success,676,0.676
+stable_or_near_floor,high_spread_low_error,21,0.0875
+stable_or_near_floor,high_spread_high_error,13,0.05416666666666667
+stable_or_near_floor,common_mode_failure,2,0.008333333333333333
+stable_or_near_floor,unanimous_success,204,0.85
+unstable,high_spread_low_error,219,0.2881578947368421
+unstable,high_spread_high_error,63,0.08289473684210526
+unstable,common_mode_failure,6,0.007894736842105263
+unstable,unanimous_success,472,0.6210526315789474

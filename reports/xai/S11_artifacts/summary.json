@@ -1,0 +1,44 @@
+{
+  "canonical_function": "invariant_tilde_f",
+  "common_mode_failure_fraction": 0.008,
+  "common_mode_failure_rows": 8,
+  "crossfit_r2_repeat_sensitivity": {
+    "ensemble_absolute_error": {
+      "lower": 0.05583301585947688,
+      "median": 0.09479385947902136,
+      "upper": 0.11310917893700936
+    },
+    "ensemble_spread": {
+      "lower": 0.38464305697721335,
+      "median": 0.4127800252347613,
+      "upper": 0.4281733105030619
+    }
+  },
+  "deferred": [
+    "task 3 detailed case-study narratives",
+    "task 4 opposing-strategy cancellation analysis"
+  ],
+  "ensemble_absolute_error_median_native": 0.09421759843826294,
+  "ensemble_spread_median_native": 0.10492064721806652,
+  "estimand": "native max(log Q, -2)",
+  "fraction_error_exceeds_spread": 0.449,
+  "high_spread_high_error_rows": 76,
+  "members": 100,
+  "model_spread_interpretation": "member dispersion, not a confidence interval",
+  "perturbation_validity": {
+    "independent_channel_shifts": "deliberately_off_manifold_diagnostic",
+    "random_joint_shift": "exact_symmetry"
+  },
+  "residual_feature_selection": "none_frozen_before_residual_analysis",
+  "rows": 1000,
+  "run_id": "disagreement-all100-panel1000",
+  "spread_error_pearson": 0.6520737143019956,
+  "spread_error_spearman": 0.7614159519844477,
+  "stable_or_near_floor_rows": 240,
+  "step": "S11",
+  "support_reference": {
+    "fit_rows": 384,
+    "heldout_rows": 128
+  },
+  "unstable_rows": 760
+}

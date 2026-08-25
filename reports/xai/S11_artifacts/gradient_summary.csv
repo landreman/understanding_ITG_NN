@@ -1,0 +1,253 @@
+outcome,member_id,regime,channel,sample_count,signed_mean_robust_scaled_gradient,mean_absolute_robust_scaled_gradient,signs_retained,estimand,gradient_identity
+ensemble_spread,all_members,all,0,1000,-9.949324491753613e-05,0.0005173320648806632,True,"native max(log Q, -2)",direct_autograd
+ensemble_spread,all_members,all,1,1000,-0.00020528526615021437,0.0019427778510179936,True,"native max(log Q, -2)",direct_autograd
+ensemble_spread,all_members,all,2,1000,4.5993448287508085e-05,0.0008698998029820483,True,"native max(log Q, -2)",direct_autograd
+ensemble_spread,all_members,all,3,1000,-4.026339851549107e-05,0.001667900669734598,True,"native max(log Q, -2)",direct_autograd
+ensemble_spread,all_members,all,4,1000,-0.0001877385276899611,0.0013200948300367684,True,"native max(log Q, -2)",direct_autograd
+ensemble_spread,all_members,all,5,1000,-2.0049784421710063e-05,0.001029342515167335,True,"native max(log Q, -2)",direct_autograd
+ensemble_spread,all_members,all,6,1000,5.7017151934143285e-05,0.0009557199452051144,True,"native max(log Q, -2)",direct_autograd
+ensemble_spread,all_members,stable_or_near_floor,0,240,-1.0273183966136109e-05,0.00030227773766847903,True,"native max(log Q, -2)",direct_autograd
+ensemble_spread,all_members,stable_or_near_floor,1,240,0.0007540741217884226,0.001224534417969119,True,"native max(log Q, -2)",direct_autograd
+ensemble_spread,all_members,stable_or_near_floor,2,240,0.00023860145112295726,0.0004978091324211481,True,"native max(log Q, -2)",direct_autograd
+ensemble_spread,all_members,stable_or_near_floor,3,240,9.642656852125626e-05,0.001161420855735502,True,"native max(log Q, -2)",direct_autograd
+ensemble_spread,all_members,stable_or_near_floor,4,240,-0.00041003278373717917,0.0006959525024541913,True,"native max(log Q, -2)",direct_autograd
+ensemble_spread,all_members,stable_or_near_floor,5,240,-5.8141330192641246e-05,0.0005651655312399802,True,"native max(log Q, -2)",direct_autograd
+ensemble_spread,all_members,stable_or_near_floor,6,240,0.00017734004298603878,0.0005315860940011935,True,"native max(log Q, -2)",direct_autograd
+ensemble_spread,all_members,unstable,0,760,-0.00012766800100745193,0.0005852439576845108,True,"native max(log Q, -2)",direct_autograd
+ensemble_spread,all_members,unstable,1,760,-0.000508240862341363,0.002169591566717639,True,"native max(log Q, -2)",direct_autograd
+ensemble_spread,all_members,unstable,2,760,-1.4830131555265352e-05,0.0009874021200012798,True,"native max(log Q, -2)",direct_autograd
+ensemble_spread,all_members,unstable,3,760,-8.34286512639376e-05,0.0018278416636290495,True,"native max(log Q, -2)",direct_autograd
+ensemble_spread,all_members,unstable,4,760,-0.00011754034156978697,0.0015171924071681088,True,"native max(log Q, -2)",direct_autograd
+ensemble_spread,all_members,unstable,5,760,-8.02087523088969e-06,0.0011759247206180785,True,"native max(log Q, -2)",direct_autograd
+ensemble_spread,all_members,unstable,6,760,1.9020449496702596e-05,0.0010896569508484577,True,"native max(log Q, -2)",direct_autograd
+ensemble_mean_prediction,mean_top_gradient_members,all,0,128,-0.00040201993369313863,0.002157466626973798,True,"native max(log Q, -2)",direct_autograd
+ensemble_mean_prediction,mean_top_gradient_members,all,1,128,0.006158125833961453,0.009582721913581699,True,"native max(log Q, -2)",direct_autograd
+ensemble_mean_prediction,mean_top_gradient_members,all,2,128,0.002237297251331103,0.0037100344832230823,True,"native max(log Q, -2)",direct_autograd
+ensemble_mean_prediction,mean_top_gradient_members,all,3,128,-0.0006452350574492263,0.007236808124102435,True,"native max(log Q, -2)",direct_autograd
+ensemble_mean_prediction,mean_top_gradient_members,all,4,128,-0.004399849013480463,0.005858482992538317,True,"native max(log Q, -2)",direct_autograd
+ensemble_mean_prediction,mean_top_gradient_members,all,5,128,0.00021721121862654398,0.0036565121077586087,True,"native max(log Q, -2)",direct_autograd
+ensemble_mean_prediction,mean_top_gradient_members,all,6,128,0.0033588173913516872,0.00447120391153545,True,"native max(log Q, -2)",direct_autograd
+ensemble_mean_prediction,mean_top_gradient_members,stable_or_near_floor,0,31,5.1931120821879406e-05,0.000309395480762421,True,"native max(log Q, -2)",direct_autograd
+ensemble_mean_prediction,mean_top_gradient_members,stable_or_near_floor,1,31,0.00187649777687521,0.0021012086385591485,True,"native max(log Q, -2)",direct_autograd
+ensemble_mean_prediction,mean_top_gradient_members,stable_or_near_floor,2,31,0.0006490520026015542,0.000772194601239208,True,"native max(log Q, -2)",direct_autograd
+ensemble_mean_prediction,mean_top_gradient_members,stable_or_near_floor,3,31,-0.00014358086287246695,0.0013715315318433285,True,"native max(log Q, -2)",direct_autograd
+ensemble_mean_prediction,mean_top_gradient_members,stable_or_near_floor,4,31,-0.00076089992811732,0.0010294070775814107,True,"native max(log Q, -2)",direct_autograd
+ensemble_mean_prediction,mean_top_gradient_members,stable_or_near_floor,5,31,3.003668697240505e-05,0.0006328075377296345,True,"native max(log Q, -2)",direct_autograd
+ensemble_mean_prediction,mean_top_gradient_members,stable_or_near_floor,6,31,9.618544047633936e-05,0.0005238320732755915,True,"native max(log Q, -2)",direct_autograd
+ensemble_mean_prediction,mean_top_gradient_members,unstable,0,97,-0.0005470970748268042,0.0027480873025671248,True,"native max(log Q, -2)",direct_autograd
+ensemble_mean_prediction,mean_top_gradient_members,unstable,1,97,0.007526481192411695,0.011973721001475505,True,"native max(log Q, -2)",direct_autograd
+ensemble_mean_prediction,mean_top_gradient_members,unstable,2,97,0.0027448807844302372,0.004648931765094218,True,"native max(log Q, -2)",direct_autograd
+ensemble_mean_prediction,mean_top_gradient_members,unstable,3,97,-0.0008055575320046856,0.009111277962865654,True,"native max(log Q, -2)",direct_autograd
+ensemble_mean_prediction,mean_top_gradient_members,unstable,4,97,-0.0055628121232356945,0.007401795913813205,True,"native max(log Q, -2)",direct_autograd
+ensemble_mean_prediction,mean_top_gradient_members,unstable,5,97,0.0002770298833819904,0.004622850681685394,True,"native max(log Q, -2)",direct_autograd
+ensemble_mean_prediction,mean_top_gradient_members,unstable,6,97,0.004401514200394325,0.0057327351175772605,True,"native max(log Q, -2)",direct_autograd
+member_residual,2864601_0.437,all,0,128,-0.0006468926835506528,0.003734373328370101,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.437,all,1,128,0.004585887647997581,0.011424050788034655,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.437,all,2,128,0.0016116015686008466,0.004984612484405705,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.437,all,3,128,0.004484376707959053,0.011445169817353761,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.437,all,4,128,-0.0027255302051591847,0.006624736593199107,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.437,all,5,128,-0.0017623750951492921,0.006243776152366182,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.437,all,6,128,0.00439598722937572,0.0076193347268933885,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.437,stable_or_near_floor,0,31,5.183779839063843e-05,0.0005741873645039902,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.437,stable_or_near_floor,1,31,0.0016354611978854478,0.002262382358272036,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.437,stable_or_near_floor,2,31,0.0004941818848506672,0.0007833828132086909,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.437,stable_or_near_floor,3,31,0.00021936700140895728,0.0015745308265435417,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.437,stable_or_near_floor,4,31,-0.0005726533019108553,0.0010255662197518175,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.437,stable_or_near_floor,5,31,-0.0003370859153251368,0.001096190140306797,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.437,stable_or_near_floor,6,31,6.303206594509743e-05,0.0009545212942230455,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.437,unstable,0,97,-0.000870198301490653,0.00474432966733762,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.437,unstable,1,97,0.005528807441332387,0.01435200667795879,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.437,unstable,2,97,0.001968715075778739,0.006327273513344957,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.437,unstable,3,97,0.0058474210471657845,0.014599703927818883,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.437,unstable,4,97,-0.0034135630299086507,0.008414162176465765,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.437,unstable,5,97,-0.0022178798845776306,0.007888880960343923,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.437,unstable,6,97,0.005780746096039116,0.009749326648674634,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.371,all,0,128,-0.0005061720305887371,0.0037408717884197962,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.371,all,1,128,0.006421303626882455,0.014231873017773178,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.371,all,2,128,0.001774948722757811,0.006956753115199746,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.371,all,3,128,-0.006282059627488447,0.012034033544616844,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.371,all,4,128,-0.0040132944126951,0.012458895568377518,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.371,all,5,128,0.0037006978007980084,0.009084220005188125,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.371,all,6,128,0.0038418518214955754,0.009062507506835335,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.371,stable_or_near_floor,0,31,2.168690700129071e-05,0.0005547169736348013,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.371,stable_or_near_floor,1,31,0.001226533534980638,0.0020640814577500967,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.371,stable_or_near_floor,2,31,0.00029267004294756925,0.0010104226306019445,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.371,stable_or_near_floor,3,31,-0.0005552596715556212,0.0015406752827932288,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.371,stable_or_near_floor,4,31,-0.0007328249720465319,0.0020358797710699995,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.371,stable_or_near_floor,5,31,0.0004037309305790876,0.001257921778529054,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.371,stable_or_near_floor,6,31,6.759617759708928e-05,0.0010752409271844025,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.371,unstable,0,97,-0.0006748692168288492,0.004759127450876857,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.371,unstable,1,97,0.008081487883057261,0.01812054867097643,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.371,unstable,2,97,0.00224866665135696,0.008857126775225849,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.371,unstable,3,97,-0.008112274046394816,0.01538758103035429,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.371,unstable,4,97,-0.005061691862799282,0.015789962472671674,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.371,unstable,5,97,0.004754367625300961,0.011585408098244116,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.371,unstable,6,97,0.005048057233463133,0.011615139094146456,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.409,all,0,128,-0.00019786723319639674,0.0034021086817904787,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.409,all,1,128,0.006523014866291139,0.01160627476486549,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.409,all,2,128,0.0032742427148873855,0.005870542412591088,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.409,all,3,128,0.0030662208401009035,0.009979432450510714,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.409,all,4,128,-0.004637477805487545,0.008468648295601604,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.409,all,5,128,-0.0033915819716243273,0.007607391325747628,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.409,all,6,128,0.002579650849004208,0.0065828444679106824,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.409,stable_or_near_floor,0,31,7.382754577925413e-06,0.0006718377589689803,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.409,stable_or_near_floor,1,31,0.0020381573873637193,0.002843557280325404,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.409,stable_or_near_floor,2,31,0.0008394763252779885,0.0013483188265128415,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.409,stable_or_near_floor,3,31,0.0009708536962843635,0.002252609038167111,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.409,stable_or_near_floor,4,31,-0.0009637048916227519,0.001866741932347996,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.409,stable_or_near_floor,5,31,-0.0005321957719178424,0.0016633246029798723,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.409,stable_or_near_floor,6,31,0.00022301214345604606,0.0012994342429326338,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.409,unstable,0,97,-0.00026346259011396356,0.004274669492176731,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.409,unstable,1,97,0.007956319833783407,0.014406730868172114,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.409,unstable,2,97,0.004052363932185233,0.007315789125667642,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.409,unstable,3,97,0.003735874257196911,0.01244882962352774,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.409,unstable,4,97,-0.005811570180021655,0.010578535896229046,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.409,unstable,5,97,-0.004305406427200627,0.009507041515498148,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.409,unstable,6,97,0.003332803425004136,0.008271357014037688,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.386,all,0,128,-0.00038217372964609986,0.004025072412250908,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.386,all,1,128,0.0062503564151528785,0.012560243409817063,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.386,all,2,128,0.002351248284079926,0.006302382254673358,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.386,all,3,128,-0.00627588823815266,0.011427662413397113,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.386,all,4,128,-0.0036035745751030403,0.0067404144964022875,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.386,all,5,128,0.002475106016235997,0.006596907327530748,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.386,all,6,128,0.0029072758647223705,0.006202337183500895,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.386,stable_or_near_floor,0,31,0.00010838869259440905,0.000901189911123615,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.386,stable_or_near_floor,1,31,0.0025117344908340334,0.0031011656009761203,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.386,stable_or_near_floor,2,31,0.0008178612519719977,0.0014142599053171062,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.386,stable_or_near_floor,3,31,-0.0024627119464230747,0.0030473439313986354,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.386,stable_or_near_floor,4,31,-0.0006179874756499158,0.0013814425153496894,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.386,stable_or_near_floor,5,31,0.0009107543980524884,0.0016075510055556716,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.386,stable_or_near_floor,6,31,-0.00013507183268926675,0.0012306428394968838,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.386,unstable,0,97,-0.0005389514109806954,0.005023426613642105,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.386,unstable,1,97,0.0074451737311723035,0.015583247658003346,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.386,unstable,2,97,0.0028412998098051407,0.007864565685910924,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.386,unstable,3,97,-0.007494532207674486,0.01410590852620075,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.386,unstable,4,97,-0.004557731276990121,0.008453075644986107,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.386,unstable,5,97,0.002975053440603922,0.008191443884038247,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.386,unstable,6,97,0.003879572551524028,0.007791229190347536,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.355,all,0,128,-0.00042076395018567905,0.0036898468729392765,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.355,all,1,128,0.006264433209506911,0.012218721025560007,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.355,all,2,128,0.0019363455822793973,0.004659315133081672,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.355,all,3,128,-0.002261038657190496,0.010276943894677653,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.355,all,4,128,-0.005347593013604016,0.010890636653823582,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.355,all,5,128,0.0018744122489247215,0.006996556723758461,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.355,all,6,128,0.0031321232797940943,0.006393287894998154,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.355,stable_or_near_floor,0,31,2.238332678843839e-05,0.0005603461887450835,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.355,stable_or_near_floor,1,31,0.001896631738984533,0.002423049975811166,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.355,stable_or_near_floor,2,31,0.0006108511921998662,0.0008203467407705215,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.355,stable_or_near_floor,3,31,-0.0004155640843118438,0.0019863846464986483,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.355,stable_or_near_floor,4,31,-0.000964440606636937,0.00179068865059293,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.355,stable_or_near_floor,5,31,0.0001656742449704816,0.001139113288838057,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.355,stable_or_near_floor,6,31,-0.00010574196127807948,0.0010925343453671655,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.355,unstable,0,97,-0.0005623883376722526,0.004689996576135358,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.355,unstable,1,97,0.007660328524828494,0.015349296309500361,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.355,unstable,2,97,0.0023599571914800724,0.005886201938871833,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.355,unstable,3,97,-0.0028508295000692404,0.012926504066776097,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.355,unstable,4,97,-0.0067483942983048335,0.013798867458979775,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.355,unstable,5,97,0.0024205037759616435,0.00886852318234127,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.355,unstable,6,97,0.004166904954775922,0.008087343153127646,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.449,all,0,128,-0.0003070077790331774,0.003602452552589058,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.449,all,1,128,0.005734432003488045,0.011183879003804117,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.449,all,2,128,0.002214769305651502,0.005292424763141553,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.449,all,3,128,0.0014064480426357912,0.00949654771826438,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.449,all,4,128,-0.005201939993523491,0.00834306006085458,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.449,all,5,128,-0.0010945671410803287,0.005525635606971539,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.449,all,6,128,0.002752094507998159,0.005151007956627964,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.449,stable_or_near_floor,0,31,0.0001354892958817409,0.0006577175298681522,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.449,stable_or_near_floor,1,31,0.0016990452273089453,0.0022711624205656996,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.449,stable_or_near_floor,2,31,0.0005653344665935074,0.0009040503271281674,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.449,stable_or_near_floor,3,31,0.0005467879765196361,0.0019533935770455623,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.449,stable_or_near_floor,4,31,-0.0009164975496004616,0.0014750578687246997,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.449,stable_or_near_floor,5,31,-0.00038939640748070247,0.0010376735416233263,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.449,stable_or_near_floor,6,31,3.238549580863449e-05,0.0007971293474047105,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.449,unstable,0,97,-0.0004484243699853678,0.004543553436139037,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.449,unstable,1,97,0.007024091694844252,0.014032272963395778,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.449,unstable,2,97,0.002741908274834985,0.006694894943723149,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.449,unstable,3,97,0.0016811847647966243,0.011907246464427094,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.449,unstable,4,97,-0.006571514382818479,0.010537988596483716,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.449,unstable,5,97,-0.0013199309837771164,0.006959932761876638,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.449,unstable,6,97,0.0036212798624092437,0.006542453697719933,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.340,all,0,128,-0.00035011020794864744,0.004126708809732179,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.340,all,1,128,0.0062434966094288115,0.013138298579704917,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.340,all,2,128,0.002113995260405606,0.004863563215822909,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.340,all,3,128,0.0010516290825000995,0.010397838369113307,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.340,all,4,128,-0.004315237229534672,0.008190467519585689,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.340,all,5,128,-0.0003477447383832628,0.007467366072185233,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.340,all,6,128,0.0027254095344010944,0.007111753170306167,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.340,stable_or_near_floor,0,31,0.00010608594610723159,0.0006074733308858528,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.340,stable_or_near_floor,1,31,0.0013563511198854074,0.001891721302964031,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.340,stable_or_near_floor,2,31,0.00026698018719562266,0.0007175656467060698,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.340,stable_or_near_floor,3,31,9.087923601455331e-05,0.0017151955560477075,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.340,stable_or_near_floor,4,31,-0.000607339816021356,0.001290563276746937,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.340,stable_or_near_floor,5,31,-0.00010091988159903942,0.0011754935130535423,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.340,stable_or_near_floor,6,31,0.00023073678601284655,0.0011232885400598875,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.340,unstable,0,97,-0.0004959048551211447,0.005251412931837705,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.340,unstable,1,97,0.007805367848355054,0.016732565544436542,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.340,unstable,2,97,0.002704278428132508,0.006188572748221075,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.340,unstable,3,97,0.0013586728478717685,0.01317270359803118,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.340,unstable,4,97,-0.005500235371997691,0.010395591555956834,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.340,unstable,5,97,-0.0004266269091081176,0.009478170704485051,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.340,unstable,6,97,0.0035226760828550707,0.009025592382034358,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.296,all,0,128,-0.00044705322596629184,0.00320861389827254,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.296,all,1,128,0.005687728814489045,0.011091208869958444,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.296,all,2,128,0.0019536836082408903,0.006206121008871843,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.296,all,3,128,0.00046850118711045627,0.011388011496978706,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.296,all,4,128,-0.003062246860475544,0.008327085498327008,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.296,all,5,128,0.0011242387635270685,0.006734348861808748,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.296,all,6,128,0.003966589684178835,0.007329390992005966,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.296,stable_or_near_floor,0,31,3.41503401601011e-05,0.0006361498228719482,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.296,stable_or_near_floor,1,31,0.001997753697527114,0.0025495652901763475,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.296,stable_or_near_floor,2,31,0.0009353864648076297,0.0015253408841622484,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.296,stable_or_near_floor,3,31,0.00034112318525104343,0.002188611457383579,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.296,stable_or_near_floor,4,31,-0.00038409794034491854,0.0015250226937521443,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.296,stable_or_near_floor,5,31,9.37143514154502e-05,0.0012797240127603595,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.296,stable_or_near_floor,6,31,0.000396825907911076,0.001294389630837434,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.296,unstable,0,97,-0.0006008399326664792,0.004030741592472729,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.296,unstable,1,97,0.0068669992126933746,0.01382101248823932,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.296,unstable,2,97,0.0022791187777917252,0.0077020404301707856,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.296,unstable,3,97,0.0005092096206943924,0.01432802594262251,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.296,unstable,4,97,-0.003918150123610073,0.010500940621438566,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.296,unstable,5,97,0.0014535816168823278,0.008477579483669574,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.296,unstable,6,97,0.005107442025047912,0.009258102767224776,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.270,all,0,128,-0.0003856566389278951,0.0035484556107853883,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.270,all,1,128,0.006296201862594674,0.011409198850277483,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.270,all,2,128,0.00251187593421586,0.0050808586046084325,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.270,all,3,128,0.006185950750729942,0.010695377884525818,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.270,all,4,128,-0.004975464553955559,0.008938627576816993,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.270,all,5,128,-0.0017966922885475434,0.00659000000592034,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.270,all,6,128,0.0034157969082233355,0.006841055256986246,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.270,stable_or_near_floor,0,31,0.00010636523454805526,0.0006376418254716809,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.270,stable_or_near_floor,1,31,0.0018086606473871139,0.0026306931046398844,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.270,stable_or_near_floor,2,31,0.0006119937854479824,0.0011512200406189482,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.270,stable_or_near_floor,3,31,0.0015030119320102039,0.002454683407702815,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.270,stable_or_near_floor,4,31,-0.0008131205570110746,0.002117642601500953,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.270,stable_or_near_floor,5,31,-0.0003485332999326691,0.0014260989131499146,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.270,stable_or_near_floor,6,31,0.00013989747745968831,0.001517460989265896,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.270,unstable,0,97,-0.000542900742822271,0.004478715686504202,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.270,unstable,1,97,0.007730364519001213,0.014214700686512179,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.270,unstable,2,97,0.0031190547652653875,0.006336722475574143,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.270,unstable,3,97,0.0076825600639290345,0.01332900189258265,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.270,unstable,4,97,-0.006305698202463591,0.011118529991608717,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.270,unstable,5,97,-0.0022595059859399254,0.00824031891185728,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.270,unstable,6,97,0.004462733839704501,0.008542410126051513,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.352,all,0,128,-0.00037650185788780914,0.0036074060906608,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.352,all,1,128,0.007574403283782994,0.01397745602453655,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.352,all,2,128,0.0026302615321918046,0.0062929781583134095,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.352,all,3,128,-0.008296490662696904,0.012246330012620725,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.352,all,4,128,-0.006116131485266481,0.010711711168153564,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.352,all,5,128,0.001390618591564399,0.00763233049932472,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.352,all,6,128,0.0038713942343234845,0.008136540030545565,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.352,stable_or_near_floor,0,31,-7.445908783103675e-05,0.0006065175872457181,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.352,stable_or_near_floor,1,31,0.0025946487265951466,0.003337782919176004,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.352,stable_or_near_floor,2,31,0.0010557844247227107,0.001388426933989702,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.352,stable_or_near_floor,3,31,-0.0016742959539228876,0.0022229074221360927,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.352,stable_or_near_floor,4,31,-0.0010363321703283966,0.0016923239072554543,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.352,stable_or_near_floor,5,31,0.0004346242209619326,0.0013164576894026032,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.352,stable_or_near_floor,6,31,4.918214454026175e-05,0.0011111095625980772,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.352,unstable,0,97,-0.0004730309905863653,0.004566452931958405,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.352,unstable,1,97,0.009165871235049212,0.01737776392418786,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.352,unstable,2,97,0.003133444937671618,0.007860412054746758,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.352,unstable,3,97,-0.010412862167562827,0.015449691871435405,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.352,unstable,4,97,-0.007739572503442568,0.01359419575668801,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.352,unstable,5,97,0.0016961425656744655,0.009650805314866838,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX
+member_residual,2864601_0.352,unstable,6,97,0.005092925933120185,0.010381780695559714,True,"native max(log Q, -2)",d(member residual)/dX = d(member native prediction)/dX

@@ -1,0 +1,3 @@
+outcome,shift_points,map_count,median_map_rms_error,max_absolute_error,reference_map_rms,status
+ensemble_spread_gradient,17,64,7.1683823321677664e-09,1.5944242477416992e-06,0.004832630045711994,equivariant_to_float32_roundoff
+member_residual_gradient_top10,17,640,2.775025320644886e-09,2.384185791015625e-07,0.0600709430873394,equivariant_to_float32_roundoff
