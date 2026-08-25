@@ -760,7 +760,8 @@
           "sign_agreement",
           "estimand",
           "validity_tag",
-          "feature_claims_permitted"
+          "feature_claims_permitted",
+          "estimator_backend"
         ],
         "source_step": "S06b",
         "summary": "A radial-drift-related channel is often largest along the qualified low-pass path.",
@@ -2556,17 +2557,17 @@
     "sha256": "9d8fa52f93f2782ad9948a38bf46943c0cd6df78cd08b94a006dad4e06c1c8ad"
   },
   "device": "cpu",
-  "git_commit": "63659c1ea8610b112cefc4ecfd92cdf2392e9395",
+  "git_commit": "8cee4a0420697f5d6d1abfb6eef9b2010d76fdc0",
   "git_dirty": true,
   "git_tracked_dirty": true,
-  "git_tree": "689f1b9a40cd9bd69716953eee2a563420348f33",
+  "git_tree": "47d4cb74acd81f05cdd45db6c8c9293b97fee498",
   "gradient_set": "synthesis of S01 registered fixed and varied panels",
   "gx_outputs_computed": false,
   "member_ids": [],
   "model_outputs_computed": false,
   "output_hashes": {
     "claim_register.csv": "1fe39f80ffdcaf5243c2ce72894dc6f24f56087aaef6b67f672355196128897d",
-    "evidence_ledger.csv": "2fbc07779ecb86cd56527c3443941c7a1281bc472bb619b66401dd8744e3ff0c",
+    "evidence_ledger.csv": "b967d9930d2c96ae4d6f1eb1f718bed904d5f3d03e1ff1244d23c655f235d228",
     "evidence_matrix.csv": "00b84e2207b8b802d6e85e12f891b0689127c78a15217e1392ed8a5051ddf8b9",
     "next_experiments.csv": "276440d37dabae79b9fa2fb76c977dbbb4787361cf7ea7b372eda427ebd61b11",
     "reproducibility_index.csv": "99fe30a815033598f7be0d04e2c0986596f11168cc5ac32abb4a3a9155e705ad",
@@ -2707,5 +2708,5 @@
       }
     }
   },
-  "wall_time_seconds": 1.0880929580016527
+  "wall_time_seconds": 0.8868902499962132
 }
