@@ -66,15 +66,20 @@ The resulting order is:
    adjusted contrast, but that adjusted interval resolves in only two of seven
    fold assignments. Its residual gain separately resolves in five of seven.
    Severe imbalance (3.747) and overlap 0.246 still preclude a causal sign.
+   Its second-place score counts the matched and registered adjusted intervals
+   once each; their common positive point sign is descriptive, not another point.
 3. **Localized peak and $f_{\rm stab}$ (tied) — observational-physical.** The
    localized peak has strong raw and matched association but unresolved adjusted
    and registered-fold residual contrasts, severe imbalance (4.151), and overlap
    0.232. $f_{\rm stab}$ adds
    information beyond the weaker $f_Q$ baseline, but that residual point is not
    comparable because $f_{\rm stab}$ is already inside the full paper-selected
-   baseline. It therefore receives no full-baseline residual point. Both score
-   1 after sign agreement is credited only when the adjusted interval resolves;
-   the CSV uses candidate name only for deterministic display order.
+   baseline. It therefore receives no full-baseline residual point and is not
+   eligible as a competing GX arm. Its adjusted interval resolves in **4/7**
+   fold assignments, more often than bad-curvature's **2/7**; it is excluded
+   because it is already in the baseline, not because that adjusted check is
+   weaker. The peak and $f_{\rm stab}$ both score 1; the CSV uses candidate name
+   only for deterministic display order.
 
 This physical ranking differs from upstream model stability. S12 found member
 bootstrap recurrence of **0.27–0.60** for geodesic/compression, versus
@@ -107,7 +112,7 @@ Because this panel contains exactly one tube per equilibrium, grouping by
 `equilibrium_files` is a forward-compatible guarantee rather than a numerical
 correction here; the grouped and row-level resamples coincide on these rows.
 
-The registered run is `physical-validation-panel1000`. It took **102.09 s** on
+The registered run is `physical-validation-panel1000`. It took **111.29 s** on
 CPU. The committed [manifest](S13_artifacts/manifest.json) records seed
 20260825, all 1,000 parent row IDs, source hashes, exact command, package
 versions, output hashes, dataset SHA-256
@@ -145,9 +150,10 @@ bootstrap draws of complete `equilibrium_files`. All, stable/near-floor, and
 unstable strata are separate. The fixed panel has only 23 near-floor rows, so
 that stratum is retained in the artifact but not used for a headline claim.
 
-The artifacts contain 267 nominal 95% intervals: 72 associations, 72 matched
-effects, 32 AIPW sensitivities, 28 AIPW fold-assignment checks, 42 registered
-residual comparisons, and 21 residual fold-assignment checks. They are not
+The artifacts contain 295 nominal 95% intervals: 72 associations, 72 matched
+effects, 32 AIPW sensitivities, 28 AIPW fold-assignment checks, 28 alternate-
+bootstrap checks on those folds, 42 registered residual comparisons, and 21
+residual fold-assignment checks. They are not
 adjusted for multiple comparisons, and the geodesic headline was selected from
 the tested fixed-panel candidates. The secondary tables are therefore
 exploratory; an isolated interval excluding zero should not be read as a new
@@ -216,6 +222,13 @@ every assignment. The ranking CSV therefore records both the
 registered result and the fraction across assignments; second place for
 bad-curvature depends on the registered adjusted criterion, even though its
 separate residual evidence resolves more often.
+
+As a resampling-noise control, every fold's interval was recomputed with a
+different bootstrap seed. The resolution counts remain exactly **7/7, 0/7,
+2/7, and 4/7** for geodesic, localized peak, bad-curvature, and $f_{\rm stab}$.
+Thus the fold sensitivity is caused by which equilibria train each fitted model,
+not by the finite bootstrap draws. Both seeds and both intervals are columns in
+the fold artifact.
 
 “Doubly robust” does not mean immune to confounding. It means the estimator can
 remain consistent if either its treatment-assignment model or its outcome model
@@ -396,7 +409,7 @@ or bootstrap resolution. The final full check passed **316 tests**.
   32 AIPW sensitivity rows with overlap disclosed.
 - [aipw_fold_sensitivity.csv](S13_artifacts/aipw_fold_sensitivity.csv): 28
   all-row native-output AIPW results over seven fold assignments, with the
-  bootstrap seed held fixed.
+  bootstrap seed held fixed, plus a second-seed interval for every row.
 - [residual_validation.csv](S13_artifacts/residual_validation.csv): 42 fixed/
   varied, baseline/candidate, regime-specific cross-fitted results.
 - [residual_fold_sensitivity.csv](S13_artifacts/residual_fold_sensitivity.csv):
@@ -412,7 +425,8 @@ or bootstrap resolution. The final full check passed **316 tests**.
 - [natural_experiment_atlas.png](S13_artifacts/natural_experiment_atlas.png),
   [summary.json](S13_artifacts/summary.json), and
   [manifest.json](S13_artifacts/manifest.json): visual summary, registered
-  headlines, and provenance.
+  headlines, and provenance. Both atlas panels show interval bars, so the two
+  unresolved residual gains are not presented as an ordered result.
 
 ## Reviewer reproduction
 

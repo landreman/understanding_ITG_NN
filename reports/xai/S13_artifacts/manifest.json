@@ -124,7 +124,7 @@
       6
     ],
     "run_id": "physical-validation-panel1000",
-    "script_sha256": "4f88f7e2a16f9e2c3eaa7bf9f18a4c45f54dc8685f223c616fd5c8e44024f129",
+    "script_sha256": "0b65dce5c0b689e92df8bb6e9db1774702d720e19cd78175a39e2294c4d5d290",
     "seed": 20260825,
     "stable_threshold_log_Q": -1.9,
     "step": "S13"
@@ -137,10 +137,10 @@
   },
   "device": "cpu",
   "feature_table_version": "S12-v1",
-  "git_commit": "efd7542a5aaa48d9b3b695f19168eb71708f18de",
+  "git_commit": "9e3155a2e62ac553027a08a537b0ca81b76afeea",
   "git_dirty": true,
   "git_tracked_dirty": true,
-  "git_tree": "82dc7905484c01e095f88a71c9e104db9153ac48",
+  "git_tree": "f998348a73758bda8961bcef8a6c71d013e55f6c",
   "gradient_set": "fixed and varied S01 interpretation panel",
   "member_ids": [
     "2864601_0.437",
@@ -149,8 +149,8 @@
   ],
   "model_outputs_computed": false,
   "output_hashes": {
-    "aipw_fold_sensitivity.csv": "13c85d97c0395026e84349875a30490a7bdf7a6ac0ec9a73daedea428646dc26",
-    "candidate_ranking.csv": "3a48e7c847b62754b29e691d0400e1d6caa264444e19607fc7dcf55c64332fed",
+    "aipw_fold_sensitivity.csv": "68c6baf83874c5ebf0ecae97f532145bceb97ea1031de9befc0a47d928544a68",
+    "candidate_ranking.csv": "798ea0a6ee25ed7a4226e1cc7cdcc839c30201fbe7654c525ebc808f1a321ddc",
     "contradictory_cases.csv": "894d48036abf4e9ed5e1e4a1b3e4306f9b5a904510a7e8a4573a317097b694a4",
     "doubly_robust_sensitivity.csv": "05444275ff81f97ceb5fe48024bae58e8467cd90a4dd1f693f593ea54ea0249c",
     "fixed_associations.csv": "a3ff0d01fb144c4f1f36ed5cb30befb99850140b38fa2c021b4cdc26672bd09d",
@@ -158,10 +158,10 @@
     "match_distance_sensitivity.csv": "64dcf43f62c2cfe038dacb1902fd4288bc98ca6c573b91e44db9bc6c0ff797a6",
     "matched_effects.csv": "caf2d37a9b1ec1d09a162edf1ac1ea996f75b7a5666d05bba24d1675a3122aeb",
     "matched_pairs.csv": "66601d1320a369991fef46a9ee4a41cfa615dc36b6b24f0c737418aa8473ebd1",
-    "natural_experiment_atlas.png": "c4dc63cafd9a3397f2c7c84746e268826f4b2a6c7cab8487e1cbec84436d248d",
+    "natural_experiment_atlas.png": "5829bfe3c400d2bb54482e6f12ddb1c1a759571555670830a31d211ff96fe799",
     "residual_fold_sensitivity.csv": "82d9c454dc8ccb1fc7a54c425ca259f65ab6214f929d00be753ed1ea131b8a09",
     "residual_validation.csv": "80fdf29d393d5db984eb8dc323af55b182e075c80c0222811143a2a4dec3e9ea",
-    "summary.json": "7aa921128c750666ff338520b031e9f3aaf57d1afaa6516f0a9162f9da8807af"
+    "summary.json": "d78aad6386773f483afddd06bd314e332f588f4d48048cfee4585625efee482c"
   },
   "package_versions": {
     "captum": "0.9.0",
@@ -1187,5 +1187,5 @@
   ],
   "seed": 20260825,
   "split_unit": "equilibrium_files",
-  "wall_time_seconds": 102.09342299999844
+  "wall_time_seconds": 111.29336691599747
 }

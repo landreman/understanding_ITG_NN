@@ -631,7 +631,6 @@ def _candidate_ranking(
         point_same_sign = np.sign(matched["mean_high_minus_low"]) == np.sign(
             aipw["aipw_high_minus_low"]
         )
-        resolved_sign_agreement = bool(aipw_resolved and point_same_sign)
         balance_acceptable = (
             matched["max_abs_nuisance_smd_after"] <= balance_threshold
         )
@@ -681,7 +680,6 @@ def _candidate_ranking(
         evidence_score = (
             int(matched_resolved)
             + int(aipw_resolved)
-            + int(resolved_sign_agreement)
             + int(residual_gain_resolved)
             + int(balance_acceptable)
             + int(overlap_acceptable)
@@ -689,7 +687,7 @@ def _candidate_ranking(
         if (
             matched_resolved
             and aipw_resolved
-            and resolved_sign_agreement
+            and point_same_sign
             and residual_gain_resolved
             and balance_acceptable
             and overlap_acceptable
@@ -711,8 +709,15 @@ def _candidate_ranking(
                 "aipw_native_ci95_lower": aipw["ci95_lower"],
                 "aipw_native_ci95_upper": aipw["ci95_upper"],
                 "matched_aipw_point_same_sign": bool(point_same_sign),
-                "resolved_effect_sign_agreement": resolved_sign_agreement,
                 "aipw_registered_fold_resolved": bool(aipw_resolved),
+                "aipw_resolved_fold_count": (
+                    ""
+                    if not aipw_fold_rows
+                    else int(sum(bool(row["aipw_resolved"]) for row in aipw_fold_rows))
+                ),
+                "aipw_fold_assignments": (
+                    "" if not aipw_fold_rows else len(aipw_fold_rows)
+                ),
                 "aipw_resolved_fold_fraction": aipw_resolved_fold_fraction,
                 "aipw_all_fold_assignments_resolved": (
                     aipw_all_fold_assignments_resolved
@@ -731,6 +736,12 @@ def _candidate_ranking(
                     else residual_for_ranking["baseline"]
                 ),
                 "ranking_residual_comparable": residual_comparable,
+                "gx_arm_eligible": residual_comparable,
+                "gx_arm_exclusion_reason": (
+                    "none"
+                    if residual_comparable
+                    else "candidate_already_in_paper_selected_baseline"
+                ),
                 "ranking_residual_mse_improvement": residual_gain,
                 "ranking_residual_mse_improvement_ci95_lower": (
                     ""
@@ -753,6 +764,29 @@ def _candidate_ranking(
                 "remaining_confounding_visible": True,
                 "causal_claim_permitted": False,
             }
+        )
+    fold_summaries = {
+        str(row["candidate"]): (
+            "not swept"
+            if row["aipw_fold_assignments"] == ""
+            else f'{row["aipw_resolved_fold_count"]}/{row["aipw_fold_assignments"]}'
+        )
+        for row in rows
+    }
+    bad_summary = fold_summaries.get("bad_curvature_compression", "not swept")
+    f_stab_summary = fold_summaries.get("f_stab", "not swept")
+    for row in rows:
+        candidate = str(row["candidate"])
+        eligibility = (
+            "eligible for the competing GX arm"
+            if bool(row["gx_arm_eligible"])
+            else "excluded from the GX arms because it is already in the paper baseline"
+        )
+        row["ranking_rationale"] = (
+            "Score counts matched, registered-fold AIPW, comparable registered-fold "
+            "residual, balance, and overlap checks once each; point-sign agreement is "
+            f"descriptive only. AIPW fold resolution: candidate {fold_summaries[candidate]}, "
+            f"bad-curvature {bad_summary}, f_stab {f_stab_summary}; {eligibility}."
         )
     ranked = sorted(rows, key=lambda row: (-int(row["rank_score"]), row["candidate"]))
     for row in ranked:
@@ -890,11 +924,19 @@ def _aipw_fold_sensitivity_rows(
                 seed=fold_seed,
                 propensity_clip=float(resolved["propensity_clip"]),
             )
+            bootstrap_seed_used = bootstrap_seed
             point, lower, upper = grouped_bootstrap_interval(
                 result.influence,
                 groups[mask],
                 replicates=replicates,
-                seed=bootstrap_seed,
+                seed=bootstrap_seed_used,
+            )
+            alternate_bootstrap_seed = bootstrap_seed + 10000 + int(seed_offset)
+            _, alternate_lower, alternate_upper = grouped_bootstrap_interval(
+                result.influence,
+                groups[mask],
+                replicates=replicates,
+                seed=alternate_bootstrap_seed,
             )
             rows.append(
                 {
@@ -904,11 +946,17 @@ def _aipw_fold_sensitivity_rows(
                     "tail_rows": int(mask.sum()),
                     "fold_seed_offset": int(seed_offset),
                     "fold_seed": fold_seed,
-                    "bootstrap_seed_held_fixed": bootstrap_seed,
+                    "bootstrap_seed_held_fixed": bootstrap_seed_used,
+                    "alternate_bootstrap_seed": alternate_bootstrap_seed,
                     "aipw_high_minus_low": point,
                     "ci95_lower": lower,
                     "ci95_upper": upper,
                     "aipw_resolved": lower * upper > 0,
+                    "alternate_bootstrap_ci95_lower": alternate_lower,
+                    "alternate_bootstrap_ci95_upper": alternate_upper,
+                    "alternate_bootstrap_resolved": (
+                        alternate_lower * alternate_upper > 0
+                    ),
                     "overlap_fraction": result.overlap_fraction,
                     "propensity_clip": resolved["propensity_clip"],
                     "split_unit": result.split_unit,
@@ -1091,10 +1139,14 @@ def _gx_spec(
     design: dict[str, Any],
     separability: dict[str, dict[str, float]] | None = None,
 ) -> dict[str, Any]:
-    selected = ranking[:2]
+    directions = int(design["candidate_directions"])
+    eligible = [row for row in ranking if bool(row.get("gx_arm_eligible", True))]
+    if len(eligible) < directions:
+        raise ValueError("not enough GX-arm-eligible candidates for registered design")
+    selected = eligible[:directions]
     standard_runs = (
         int(design["anchor_equilibria"])
-        * int(design["candidate_directions"])
+        * directions
         * int(design["signed_steps_per_direction"])
         * len(design["drive_points"])
     )
@@ -1236,13 +1288,22 @@ def _plot(path: Path, ranking: list[dict[str, Any]], residuals: list[dict[str, A
         and row["baseline"] == "paper_selected"
         and row["regime"] == "all"
     ]
+    residual_point = np.asarray([float(row["mse_improvement"]) for row in selected])
+    residual_low = np.asarray(
+        [float(row["mse_improvement_ci95_lower"]) for row in selected]
+    )
+    residual_high = np.asarray(
+        [float(row["mse_improvement_ci95_upper"]) for row in selected]
+    )
     axes[1].barh(
         [str(row["candidate"]) for row in selected],
-        [float(row["mse_improvement"]) for row in selected],
+        residual_point,
+        xerr=np.vstack((residual_point - residual_low, residual_high - residual_point)),
+        capsize=3,
     )
     axes[1].axvline(0, color="black", lw=0.8)
     axes[1].set_xlabel("out-of-fold MSE improvement (native units squared)")
-    axes[1].set_title("Added value beyond paper-selected features (all rows)")
+    axes[1].set_title("Residual MSE gain beyond paper baseline")
     figure.tight_layout()
     figure.savefig(path, dpi=160)
     plt.close(figure)

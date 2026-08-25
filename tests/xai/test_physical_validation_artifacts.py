@@ -152,7 +152,9 @@ def test_fold_and_match_distance_sensitivities_are_published() -> None:
         selected = [row for row in aipw_folds if row["candidate"] == candidate]
         assert len(selected) == 7
         assert sum(row["aipw_resolved"] == "True" for row in selected) == expected
+        assert sum(row["alternate_bootstrap_resolved"] == "True" for row in selected) == expected
         assert len({row["bootstrap_seed_held_fixed"] for row in selected}) == 1
+        assert len({row["alternate_bootstrap_seed"] for row in selected}) == 7
         registered = _one(selected, fold_seed_offset="0")
         headline = _one(
             _rows("doubly_robust_sensitivity.csv"),
@@ -214,13 +216,20 @@ def test_claim_grades_keep_balance_overlap_and_causality_limits_visible() -> Non
         "not_applicable_candidate_in_baseline"
     )
     assert f_stab["ranking_residual_comparable"] == "False"
+    assert f_stab["gx_arm_eligible"] == "False"
+    assert f_stab["aipw_resolved_fold_count"] == "4"
+    assert "bad-curvature 2/7" in f_stab["ranking_rationale"]
     localized = _one(csv_ranking, candidate="f_Q_integrand_w25_peak")
     assert f_stab["evidence_rank"] == localized["evidence_rank"] == "3"
     assert f_stab["rank_tied"] == localized["rank_tied"] == "True"
     bad_curvature = _one(csv_ranking, candidate="bad_curvature_compression")
+    assert bad_curvature["rank_score"] == "2"
     assert float(bad_curvature["aipw_resolved_fold_fraction"]) == pytest.approx(2 / 7)
     assert bad_curvature["aipw_registered_fold_resolved"] == "True"
     assert bad_curvature["aipw_all_fold_assignments_resolved"] == "False"
+    assert "f_stab 4/7" in bad_curvature["ranking_rationale"]
+    geodesic = _one(csv_ranking, candidate="geodesic_curvature_compression")
+    assert geodesic["rank_score"] == "3"
 
 
 def test_pairs_are_equilibrium_disjoint_and_contradictions_are_balanced() -> None:

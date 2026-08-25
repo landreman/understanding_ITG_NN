@@ -44,6 +44,11 @@ def test_parser_exposes_registered_step_interface() -> None:
 def test_gx_spec_is_proposal_only_and_budget_arithmetic_is_explicit() -> None:
     module = _load_script()
     ranking = [
+        {
+            "candidate": "already_in_baseline",
+            "matched_native_effect": 0.9,
+            "gx_arm_eligible": False,
+        },
         {"candidate": "localized", "matched_native_effect": 0.4},
         {"candidate": "geodesic", "matched_native_effect": -0.2},
     ]
@@ -138,6 +143,7 @@ def test_candidate_ranking_uses_paper_residual_when_available() -> None:
     assert ranking["ranking_residual_baseline"] == "paper_selected"
     assert not ranking["ranking_residual_gain_resolved"]
     assert ranking["claim_grade"] == "observational-physical"
+    assert ranking["rank_score"] == 4
 
 
 def test_candidate_ranking_uses_registered_balance_and_overlap_gates() -> None:
@@ -238,7 +244,7 @@ def test_candidate_inside_paper_baseline_gets_no_incomparable_residual_point() -
     assert not row["ranking_residual_gain_resolved"]
     assert row["rank_score"] == 1
     assert row["matched_aipw_point_same_sign"]
-    assert not row["resolved_effect_sign_agreement"]
+    assert not row["gx_arm_eligible"]
 
 
 def test_physical_outcomes_keep_native_clipping_and_panel_identity(tmp_path: Path) -> None:

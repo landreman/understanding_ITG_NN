@@ -97,7 +97,9 @@ fold membership, it resolves in **2/7** assignments and its point estimate
 spans **+0.080 to +0.862**. The localized peak resolves 0/7, $f_{\rm stab}$
 4/7, and geodesic/compression 7/7. Thus the geodesic adjusted result is robust
 to this check, whereas bad-curvature's barely positive registered interval is
-not.
+not. Repeating every interval with a different bootstrap seed leaves all four
+resolution counts unchanged, so this variation comes from fold membership,
+not resampling noise.
 
 Matching has a parallel warning. The candidate/heat-flux difference grows with
 leftover nuisance distance (rank correlations **0.71–0.79**). In the closest
@@ -167,11 +169,15 @@ Bad-curvature/compression ranks second because it has the strongest raw
 correlation and a resolved registered-fold common-scale adjusted contrast,
 although that interval resolves in only 2/7 fold assignments. Its separate
 gain beyond the paper baseline resolves in five assignments. The localized
-peak and $f_{\rm stab}$ tie
-behind them. $f_{\rm stab}$ is
+peak and $f_{\rm stab}$ tie behind them. $f_{\rm stab}$ is
 already part of the full paper baseline, so its gain against the weaker
 $f_Q$-only baseline is published but does not receive a comparable ranking
-point; candidate name is used only to display the tie deterministically.
+point. Its adjusted interval actually resolves in **4/7** assignments, more often than
+bad-curvature's **2/7**; it is excluded from the proposed GX arms because it is
+already in the baseline, not because its adjusted check is weaker. The common
+positive point sign is descriptive and is not counted as a second adjusted-
+evidence point. Candidate name is used only to display the remaining tie
+deterministically.
 
 This physical ranking is deliberately not the same as upstream network
 recurrence. In S12, geodesic/compression recurred in only **0.27–0.60** of
