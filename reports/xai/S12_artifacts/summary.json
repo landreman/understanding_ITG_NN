@@ -1,5 +1,6 @@
 {
   "bootstrap": {
+    "fidelity_replicates": 2000,
     "replicates": 30,
     "unit": "equilibrium_files"
   },
@@ -30,6 +31,48 @@
   "mode": "production",
   "model": "ExplainableBoostingRegressor",
   "model_version": "interpret-core==0.7.8",
+  "nested_subset_r2": {
+    "2864601_0.371": {
+      "all_17_main_effects": 0.7999208517858546,
+      "all_17_registered_interactions": 0.8560790733151917,
+      "baseline_trio": 0.7798499388000959,
+      "baseline_trio_aLT_logfQ_interaction": 0.8090869939747405,
+      "drives_only": 0.5998320080895534,
+      "paper_five": 0.7944045381733716
+    },
+    "2864601_0.409": {
+      "all_17_main_effects": 0.8068992753535185,
+      "all_17_registered_interactions": 0.8635806956843547,
+      "baseline_trio": 0.7840000250940323,
+      "baseline_trio_aLT_logfQ_interaction": 0.8105627686058374,
+      "drives_only": 0.612378626712956,
+      "paper_five": 0.8021931346752623
+    },
+    "2864601_0.437": {
+      "all_17_main_effects": 0.8045705205178704,
+      "all_17_registered_interactions": 0.8603164016682042,
+      "baseline_trio": 0.7813829881343224,
+      "baseline_trio_aLT_logfQ_interaction": 0.8116346669820639,
+      "drives_only": 0.6060248349783237,
+      "paper_five": 0.8019637390733814
+    },
+    "GX_true_target": {
+      "all_17_main_effects": 0.7797930659365856,
+      "all_17_registered_interactions": 0.8391667615053762,
+      "baseline_trio": 0.7638968156608664,
+      "baseline_trio_aLT_logfQ_interaction": 0.7906359782266998,
+      "drives_only": 0.5839166113828869,
+      "paper_five": 0.7783116732284419
+    },
+    "stored_validation_top_member_mean": {
+      "all_17_main_effects": 0.8065660694999017,
+      "all_17_registered_interactions": 0.8631588309984835,
+      "baseline_trio": 0.7867686399141406,
+      "baseline_trio_aLT_logfQ_interaction": 0.8115190648670243,
+      "drives_only": 0.6033978339419456,
+      "paper_five": 0.805464033833429
+    }
+  },
   "registered_interaction_count": 5,
   "run_id": "distillation-top3-panel1000",
   "step": "S12",

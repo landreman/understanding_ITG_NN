@@ -67,8 +67,7 @@ def invariant_feature_table(
     geodesic_trace = np.abs(geodesic) * grad_x / bmag
     dimensionless = values / scales.reshape(1, 1, 7)
     derivative = 48.0 * (
-        np.roll(dimensionless, -1, axis=1)
-        - np.roll(dimensionless, 1, axis=1)
+        np.roll(dimensionless, -1, axis=1) - np.roll(dimensionless, 1, axis=1)
     )
     roughness = np.sqrt(np.mean(np.square(derivative), axis=(1, 2)))
     colocation = np.mean(bad_compression_trace, axis=1)
@@ -98,21 +97,91 @@ def invariant_feature_table(
     columns = (
         ("a_over_LT", a_lt, "drive", "a/L_T"),
         ("a_over_Ln", a_ln, "drive", "a/L_n"),
-        ("log_f_Q", invariant["log_f_Q"], "paper", "log mean((H(cvdrift)+0.2)|grad x|^3/B)"),
-        ("f_stab", invariant["f_stab"], "paper", "mean((H(gbdrift)+0.4)|grad x|/sqrt(B))"),
-        ("log_FSA_grad_x", invariant["log_FSA_grad_x"], "paper", "log flux-surface-average(|grad x|)"),
-        ("bad_curvature_compression", np.var(paper_bad_trace, axis=1), "paper/S05/S08", "variance(H(cvdrift)|grad x|^2/B)"),
-        ("paper_bad_curvature_feature_mean_square", np.mean(np.square(paper_bad_trace), axis=1), "paper", "mean-square(H(cvdrift)|grad x|^2/B)"),
-        ("geodesic_curvature_abs_mean", np.mean(np.abs(geodesic), axis=1), "paper/S05/S08", "mean(abs(radial drift / geodesic curvature))"),
-        ("geodesic_curvature_compression", np.mean(geodesic_trace, axis=1), "paper/S05", "mean(abs(geodesic curvature)|grad x|/B)"),
-        ("parallel_roughness_iqr_scaled", roughness, "S05", "RMS_z,channel(d/dz(channel/IQR_channel))"),
+        (
+            "log_f_Q",
+            invariant["log_f_Q"],
+            "paper",
+            "log mean((H(cvdrift)+0.2)|grad x|^3/B)",
+        ),
+        (
+            "f_stab",
+            invariant["f_stab"],
+            "paper",
+            "mean((H(gbdrift)+0.4)|grad x|/sqrt(B))",
+        ),
+        (
+            "log_FSA_grad_x",
+            invariant["log_FSA_grad_x"],
+            "paper",
+            "log flux-surface-average(|grad x|)",
+        ),
+        (
+            "bad_curvature_compression",
+            np.var(paper_bad_trace, axis=1),
+            "paper/S05/S08",
+            "variance(H(cvdrift)|grad x|^2/B)",
+        ),
+        (
+            "paper_bad_curvature_feature_mean_square",
+            np.mean(np.square(paper_bad_trace), axis=1),
+            "paper",
+            "mean-square(H(cvdrift)|grad x|^2/B)",
+        ),
+        (
+            "geodesic_curvature_abs_mean",
+            np.mean(np.abs(geodesic), axis=1),
+            "paper/S05/S08",
+            "mean(abs(radial drift / geodesic curvature))",
+        ),
+        (
+            "geodesic_curvature_compression",
+            np.mean(geodesic_trace, axis=1),
+            "paper/S05",
+            "mean(abs(geodesic curvature)|grad x|/B)",
+        ),
+        (
+            "parallel_roughness_iqr_scaled",
+            roughness,
+            "S05",
+            "RMS_z,channel(d/dz(channel/IQR_channel))",
+        ),
         ("cross_channel_colocation", colocation, "S09", "mean(H(cvdrift)|grad x|^3/B)"),
-        ("bmag_parallel_expected_k", expected_k(bmag), "paper/S05", "expected non-DC Fourier mode of B"),
-        ("compression_parallel_expected_k", expected_k(grad_x), "paper/S05", "expected non-DC Fourier mode of |grad x|"),
-        ("curvature_parallel_expected_k", expected_k(curvature), "paper/S05", "expected non-DC Fourier mode of cvdrift"),
-        ("local_shear_abs_mean", np.mean(np.abs(local_shear), axis=1), "paper/S05", "mean(abs(d/dz(gds21/gds22)))"),
-        ("f_Q_integrand_w25_peak", np.max(circular_mean((bad + 0.2) * grad_x**3 / bmag, 25), axis=1), "S05", "max_z circular-mean_25(f_Q integrand)"),
-        ("geodesic_abs_w25_peak", np.max(circular_mean(np.abs(geodesic), 25), axis=1), "S05", "max_z circular-mean_25(abs(geodesic curvature))"),
+        (
+            "bmag_parallel_expected_k",
+            expected_k(bmag),
+            "paper/S05",
+            "expected non-DC Fourier mode of B",
+        ),
+        (
+            "compression_parallel_expected_k",
+            expected_k(grad_x),
+            "paper/S05",
+            "expected non-DC Fourier mode of |grad x|",
+        ),
+        (
+            "curvature_parallel_expected_k",
+            expected_k(curvature),
+            "paper/S05",
+            "expected non-DC Fourier mode of cvdrift",
+        ),
+        (
+            "local_shear_abs_mean",
+            np.mean(np.abs(local_shear), axis=1),
+            "paper/S05",
+            "mean(abs(d/dz(gds21/gds22)))",
+        ),
+        (
+            "f_Q_integrand_w25_peak",
+            np.max(circular_mean((bad + 0.2) * grad_x**3 / bmag, 25), axis=1),
+            "S05",
+            "max_z circular-mean_25(f_Q integrand)",
+        ),
+        (
+            "geodesic_abs_w25_peak",
+            np.max(circular_mean(np.abs(geodesic), 25), axis=1),
+            "S05",
+            "max_z circular-mean_25(abs(geodesic curvature))",
+        ),
     )
     matrix = np.column_stack([column for _, column, _, _ in columns])
     if np.any(~np.isfinite(matrix)):
@@ -185,8 +254,10 @@ def _main_importance(estimator: Any, feature_count: int) -> np.ndarray:
 
 def _r2(target: np.ndarray, prediction: np.ndarray) -> float:
     denominator = float(np.sum(np.square(target - target.mean())))
-    return float("nan") if denominator <= 0 else 1.0 - float(
-        np.sum(np.square(target - prediction)) / denominator
+    return (
+        float("nan")
+        if denominator <= 0
+        else 1.0 - float(np.sum(np.square(target - prediction)) / denominator)
     )
 
 
@@ -210,7 +281,10 @@ def grouped_ebm_crossfit(
         raise ValueError("features, target, names, and groups must align")
     if np.any(~np.isfinite(x)) or np.any(~np.isfinite(y)):
         raise ValueError("features and target must be finite")
-    if any(left == right or min(left, right) < 0 or max(left, right) >= x.shape[1] for left, right in interaction_pairs):
+    if any(
+        left == right or min(left, right) < 0 or max(left, right) >= x.shape[1]
+        for left, right in interaction_pairs
+    ):
         raise ValueError("interaction indices must name two distinct input features")
     make_estimator = estimator_factory or _default_estimator_factory
     fold = grouped_folds(group_values, folds, seed)
@@ -271,14 +345,12 @@ def grouped_term_recurrence(
     if replicates < 1 or top_k < 1 or top_k > x.shape[1]:
         raise ValueError("replicates and top_k must be positive and valid")
     make_estimator = estimator_factory or _default_estimator_factory
-    unique = np.unique(group_values)
-    positions = {group: np.flatnonzero(group_values == group) for group in unique}
-    rng = np.random.default_rng(seed)
+    bootstrap_positions = grouped_bootstrap_positions(
+        group_values, replicates=replicates, seed=seed
+    )
     selected = np.zeros((replicates, x.shape[1]), dtype=bool)
     importances = np.empty((replicates, x.shape[1]), dtype=np.float64)
-    for replicate in range(replicates):
-        chosen = rng.choice(unique, len(unique), replace=True)
-        sampled = np.concatenate([positions[group] for group in chosen])
+    for replicate, sampled in enumerate(bootstrap_positions):
         estimator = make_estimator(seed=seed + replicate, interactions=())
         estimator.fit(x[sampled], y[sampled])
         importance = _main_importance(estimator, x.shape[1])
@@ -296,6 +368,93 @@ def grouped_term_recurrence(
         }
         for index, name in enumerate(names)
     )
+
+
+def grouped_bootstrap_positions(
+    groups: np.ndarray, *, replicates: int, seed: int
+) -> tuple[np.ndarray, ...]:
+    """Draw row positions by resampling complete equilibrium groups."""
+
+    group_values = np.asarray(groups)
+    if group_values.ndim != 1 or replicates < 1:
+        raise ValueError("groups must be one-dimensional and replicates positive")
+    unique = np.unique(group_values)
+    if len(unique) == 0:
+        raise ValueError("at least one equilibrium group is required")
+    positions = {group: np.flatnonzero(group_values == group) for group in unique}
+    rng = np.random.default_rng(seed)
+    return tuple(
+        np.concatenate(
+            [
+                positions[group]
+                for group in rng.choice(unique, len(unique), replace=True)
+            ]
+        )
+        for _ in range(replicates)
+    )
+
+
+def grouped_r2_interval(
+    target: np.ndarray,
+    prediction: np.ndarray,
+    groups: np.ndarray,
+    *,
+    replicates: int,
+    seed: int,
+) -> tuple[float, float, float]:
+    """Return point R² and a whole-equilibrium percentile-bootstrap interval."""
+
+    y = np.asarray(target, dtype=np.float64)
+    p = np.asarray(prediction, dtype=np.float64)
+    group_values = np.asarray(groups)
+    if y.ndim != 1 or p.shape != y.shape or group_values.shape != y.shape:
+        raise ValueError("target, prediction, and groups must be aligned vectors")
+    draws = np.asarray(
+        [
+            _r2(y[position], p[position])
+            for position in grouped_bootstrap_positions(
+                group_values, replicates=replicates, seed=seed
+            )
+        ]
+    )
+    lower, upper = np.quantile(draws, (0.025, 0.975))
+    return _r2(y, p), float(lower), float(upper)
+
+
+def grouped_r2_difference_interval(
+    target: np.ndarray,
+    candidate: np.ndarray,
+    baseline: np.ndarray,
+    groups: np.ndarray,
+    *,
+    replicates: int,
+    seed: int,
+) -> tuple[float, float, float]:
+    """Return a paired candidate-minus-baseline R² gain and grouped interval."""
+
+    y = np.asarray(target, dtype=np.float64)
+    candidate_prediction = np.asarray(candidate, dtype=np.float64)
+    baseline_prediction = np.asarray(baseline, dtype=np.float64)
+    group_values = np.asarray(groups)
+    if (
+        y.ndim != 1
+        or candidate_prediction.shape != y.shape
+        or baseline_prediction.shape != y.shape
+        or group_values.shape != y.shape
+    ):
+        raise ValueError("target, predictions, and groups must be aligned vectors")
+    draws = np.asarray(
+        [
+            _r2(y[position], candidate_prediction[position])
+            - _r2(y[position], baseline_prediction[position])
+            for position in grouped_bootstrap_positions(
+                group_values, replicates=replicates, seed=seed
+            )
+        ]
+    )
+    point = _r2(y, candidate_prediction) - _r2(y, baseline_prediction)
+    lower, upper = np.quantile(draws, (0.025, 0.975))
+    return point, float(lower), float(upper)
 
 
 def expression_pareto_frontier(
@@ -318,7 +477,9 @@ def expression_pareto_frontier(
 def expression_recurrence(
     bootstrap_expressions: Sequence[Sequence[str]],
 ) -> tuple[dict[str, Any], ...]:
-    draws = [set(str(expression) for expression in draw) for draw in bootstrap_expressions]
+    draws = [
+        set(str(expression) for expression in draw) for draw in bootstrap_expressions
+    ]
     if not draws:
         raise ValueError("at least one bootstrap expression set is required")
     expressions = sorted(set().union(*draws))

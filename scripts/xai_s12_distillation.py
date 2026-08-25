@@ -26,6 +26,8 @@ from itg_nn.xai.artifacts import RunArtifacts, sha256_file
 from itg_nn.xai.distillation import (
     DistillationResult,
     grouped_ebm_crossfit,
+    grouped_r2_difference_interval,
+    grouped_r2_interval,
     grouped_term_recurrence,
     invariant_feature_table,
 )
@@ -107,11 +109,15 @@ def _channel_scales(path: Path) -> np.ndarray:
     ordered = sorted(rows, key=lambda row: int(row["channel"]))
     scales = np.asarray([float(row["iqr"]) for row in ordered], dtype=np.float64)
     if scales.shape != (7,) or np.any(scales <= 0):
-        raise RuntimeError("S01 channel scale artifact must provide seven positive IQRs")
+        raise RuntimeError(
+            "S01 channel scale artifact must provide seven positive IQRs"
+        )
     return scales
 
 
-def _metadata(dataset: Path, rows: np.ndarray) -> tuple[np.ndarray, tuple[str, ...], np.ndarray]:
+def _metadata(
+    dataset: Path, rows: np.ndarray
+) -> tuple[np.ndarray, tuple[str, ...], np.ndarray]:
     with h5py.File(dataset, "r") as handle:
         scalar_names = tuple(_decode(handle["scalar_features"][:]))
         scalars = _h5_take(handle["scalar_feature_matrix"], rows).astype(np.float64)
@@ -170,8 +176,10 @@ def _r2(target: np.ndarray, prediction: np.ndarray, mask: np.ndarray) -> float:
     y = target[mask]
     p = prediction[mask]
     denominator = float(np.sum(np.square(y - y.mean())))
-    return float("nan") if denominator <= 0 else 1.0 - float(
-        np.sum(np.square(y - p)) / denominator
+    return (
+        float("nan")
+        if denominator <= 0
+        else 1.0 - float(np.sum(np.square(y - p)) / denominator)
     )
 
 
@@ -181,6 +189,10 @@ def _fidelity_rows(
     target: np.ndarray,
     result: DistillationResult,
     stable: np.ndarray,
+    *,
+    groups: np.ndarray | None = None,
+    bootstrap_replicates: int = 0,
+    bootstrap_seed: int = 0,
 ) -> list[dict[str, Any]]:
     rows = []
     for regime, mask in (
@@ -189,25 +201,75 @@ def _fidelity_rows(
         ("unstable", ~stable),
     ):
         residual = result.prediction[mask] - target[mask]
-        rows.append(
-            {
-                "target_kind": target_kind,
-                "target_id": target_id,
-                "regime": regime,
-                "rows": int(mask.sum()),
-                "held_out_r2": _r2(target, result.prediction, mask),
-                "held_out_mse": float(np.mean(np.square(residual))),
-                "bias_formula_minus_target": float(np.mean(residual)),
-                "residual_std": float(np.std(residual)),
-                "split_unit": "equilibrium_files",
-                "model": "ExplainableBoostingRegressor",
-                "model_version": "interpret-core==0.7.8",
-                "estimand": NATIVE_ESTIMAND,
-                "canonical_function": CANONICAL_FUNCTION,
-                "validity_tag": OBSERVED,
-            }
-        )
+        row = {
+            "target_kind": target_kind,
+            "target_id": target_id,
+            "regime": regime,
+            "rows": int(mask.sum()),
+            "held_out_r2": _r2(target, result.prediction, mask),
+            "held_out_mse": float(np.mean(np.square(residual))),
+            "bias_formula_minus_target": float(np.mean(residual)),
+            "residual_std": float(np.std(residual)),
+            "split_unit": "equilibrium_files",
+            "model": "ExplainableBoostingRegressor",
+            "model_version": "interpret-core==0.7.8",
+            "estimand": NATIVE_ESTIMAND,
+            "canonical_function": CANONICAL_FUNCTION,
+            "validity_tag": OBSERVED,
+            "held_out_r2_ci95_lower": "",
+            "held_out_r2_ci95_upper": "",
+            "fidelity_bootstrap_replicates": "",
+            "fidelity_bootstrap_unit": "",
+        }
+        if regime == "all" and bootstrap_replicates:
+            if groups is None:
+                raise ValueError("groups are required for fidelity intervals")
+            _, lower, upper = grouped_r2_interval(
+                target,
+                result.prediction,
+                groups,
+                replicates=bootstrap_replicates,
+                seed=bootstrap_seed,
+            )
+            row.update(
+                {
+                    "held_out_r2_ci95_lower": lower,
+                    "held_out_r2_ci95_upper": upper,
+                    "fidelity_bootstrap_replicates": bootstrap_replicates,
+                    "fidelity_bootstrap_unit": "equilibrium_files",
+                }
+            )
+        rows.append(row)
     return rows
+
+
+def _nested_subset_spec(
+    spec: dict[str, Any],
+    feature_names: tuple[str, ...],
+    registered_interactions: list[tuple[str, str]],
+) -> tuple[np.ndarray, tuple[str, ...], tuple[tuple[int, int], ...]]:
+    names = feature_names if spec["features"] == "all" else tuple(spec["features"])
+    missing = set(names) - set(feature_names)
+    if missing:
+        raise ValueError(
+            f"nested feature set contains unknown features: {sorted(missing)}"
+        )
+    interaction_names = (
+        registered_interactions
+        if spec["interactions"] == "registered"
+        else [tuple(pair) for pair in spec["interactions"]]
+    )
+    if any(
+        left not in names or right not in names for left, right in interaction_names
+    ):
+        raise ValueError("nested interactions must refer to features in their subset")
+    positions = np.asarray(
+        [feature_names.index(name) for name in names], dtype=np.int64
+    )
+    interaction_indices = tuple(
+        (names.index(left), names.index(right)) for left, right in interaction_names
+    )
+    return positions, names, interaction_indices
 
 
 def _importance_rows(
@@ -312,8 +374,12 @@ def _global_effect_rows(
     return rows
 
 
-def _plot_effects(path: Path, effects: list[dict[str, Any]], target_ids: list[str]) -> None:
-    figure, axes = plt.subplots(len(target_ids), 2, figsize=(12, 3.5 * len(target_ids)), squeeze=False)
+def _plot_effects(
+    path: Path, effects: list[dict[str, Any]], target_ids: list[str]
+) -> None:
+    figure, axes = plt.subplots(
+        len(target_ids), 2, figsize=(12, 3.5 * len(target_ids)), squeeze=False
+    )
     for row_index, target_id in enumerate(target_ids):
         selected = [
             row
@@ -351,26 +417,35 @@ def run(args: argparse.Namespace) -> Path:
         else (repository / resolved["published_dir"]).resolve()
     )
     if args.resume and (output_dir / "manifest.json").is_file():
-        manifest = json.loads((output_dir / "manifest.json").read_text(encoding="utf-8"))
-        if (
-            manifest["dataset"]["sha256"] != sha256_file(dataset)
-            or manifest["checkpoint"]["sha256"] != sha256_file(checkpoint)
-        ):
+        manifest = json.loads(
+            (output_dir / "manifest.json").read_text(encoding="utf-8")
+        )
+        if manifest["dataset"]["sha256"] != sha256_file(dataset) or manifest[
+            "checkpoint"
+        ]["sha256"] != sha256_file(checkpoint):
             raise RuntimeError("resume input fingerprint changed")
         return output_dir
 
     set_deterministic_seed(int(resolved["seed"]))
-    registry = json.loads((repository / resolved["cohorts"]).read_text(encoding="utf-8"))
+    registry = json.loads(
+        (repository / resolved["cohorts"]).read_text(encoding="utf-8")
+    )
     row_ids = np.asarray(
-        registry["interpretation_panel"]["varied_row_ids"][: int(resolved["panel_varied_rows"])],
+        registry["interpretation_panel"]["varied_row_ids"][
+            : int(resolved["panel_varied_rows"])
+        ],
         dtype=np.int64,
     )
-    panel = load_hdf5_rows(dataset, row_ids, gradient_set="varied", include_targets=True)
+    panel = load_hdf5_rows(
+        dataset, row_ids, gradient_set="varied", include_targets=True
+    )
     if panel.actual_log_heat_flux is None:
         raise RuntimeError("true clipped-log targets were not loaded")
     scalars, scalar_names, groups = _metadata(dataset, row_ids)
     if len(np.unique(groups)) != len(row_ids):
-        raise RuntimeError("registered panel must contain one tube per equilibrium_files")
+        raise RuntimeError(
+            "registered panel must contain one tube per equilibrium_files"
+        )
     feature_table = invariant_feature_table(
         panel.geometry.numpy(),
         scalars,
@@ -391,7 +466,9 @@ def run(args: argparse.Namespace) -> Path:
 
     ensemble = load_ensemble(checkpoint, device=str(resolved["device"]))
     member_ids = list(
-        registry["member_cohorts"]["stored_validation_top_10"][: int(resolved["members"])]
+        registry["member_cohorts"]["stored_validation_top_10"][
+            : int(resolved["members"])
+        ]
     )
     member_index = {member: index for index, member in enumerate(ensemble.member_ids)}
     member_predictions: dict[str, np.ndarray] = {}
@@ -428,32 +505,54 @@ def run(args: argparse.Namespace) -> Path:
     )
 
     artifacts = RunArtifacts(output_dir)
-    artifacts.write_text("feature_registry.csv", _csv_text(list(feature_table.definitions)))
+    artifacts.write_text(
+        "feature_registry.csv", _csv_text(list(feature_table.definitions))
+    )
     fidelity_rows: list[dict[str, Any]] = []
     importance_rows: list[dict[str, Any]] = []
     residual_rows: list[dict[str, Any]] = []
     effect_rows: list[dict[str, Any]] = []
     recurrence_rows: list[dict[str, Any]] = []
+    primary_results: dict[tuple[str, str], DistillationResult] = {}
+    primary_target_seeds: dict[tuple[str, str], int] = {}
 
     targets = [*bottleneck_targets, *primary_targets]
     for target_number, (target_kind, target_id, target) in enumerate(targets):
+        target_seed = int(resolved["seed"]) + target_number * 100
         result = grouped_ebm_crossfit(
             feature_table.values,
             target,
             groups,
             feature_names=feature_names,
             folds=int(resolved["outer_folds"]),
-            seed=int(resolved["seed"]) + target_number * 100,
+            seed=target_seed,
             interactions=interaction_indices,
             estimator_factory=make_estimator,
         )
-        fidelity_rows.extend(_fidelity_rows(target_kind, target_id, target, result, stable))
+        fidelity_rows.extend(
+            _fidelity_rows(
+                target_kind,
+                target_id,
+                target,
+                result,
+                stable,
+                groups=groups,
+                bootstrap_replicates=(
+                    int(resolved["fidelity_bootstrap_replicates"])
+                    if target_kind != "bottleneck_unit"
+                    else 0
+                ),
+                bootstrap_seed=int(resolved["seed"]) + 70000 + target_number,
+            )
+        )
         importance_rows.extend(
             _importance_rows(
                 target_kind, target_id, result, int(resolved["top_k_features"])
             )
         )
         if target_kind != "bottleneck_unit":
+            primary_results[(target_kind, target_id)] = result
+            primary_target_seeds[(target_kind, target_id)] = target_seed
             for position, row_id in enumerate(row_ids):
                 residual_rows.append(
                     {
@@ -490,25 +589,115 @@ def run(args: argparse.Namespace) -> Path:
                 interactions=interaction_indices,
             )
             final_estimator.fit(feature_table.values, target)
-            effect_rows.extend(_global_effect_rows(target_kind, target_id, final_estimator))
+            effect_rows.extend(
+                _global_effect_rows(target_kind, target_id, final_estimator)
+            )
         print(
             f"{target_number + 1}/{len(targets)} {target_kind} {target_id} "
             f"R2={result.held_out_r2:.4f}",
             flush=True,
         )
 
+    subset_rows: list[dict[str, Any]] = []
+    subset_summary: dict[str, dict[str, float]] = {}
+    fidelity_replicates = int(resolved["fidelity_bootstrap_replicates"])
+    for target_number, (target_kind, target_id, target) in enumerate(primary_targets):
+        key = (target_kind, target_id)
+        predictions: dict[str, np.ndarray] = {}
+        subset_metadata: dict[str, tuple[int, int]] = {}
+        for subset_number, spec in enumerate(resolved["nested_feature_sets"]):
+            positions, names, subset_interactions = _nested_subset_spec(
+                spec, feature_names, interaction_names
+            )
+            if spec["name"] == "all_17_registered_interactions":
+                result = primary_results[key]
+            else:
+                result = grouped_ebm_crossfit(
+                    feature_table.values[:, positions],
+                    target,
+                    groups,
+                    feature_names=names,
+                    folds=int(resolved["outer_folds"]),
+                    seed=primary_target_seeds[key],
+                    interactions=subset_interactions,
+                    estimator_factory=_factory(resolved, names),
+                )
+            predictions[spec["name"]] = result.prediction
+            subset_metadata[spec["name"]] = (len(names), len(subset_interactions))
+            print(
+                f"subset {target_number + 1}/{len(primary_targets)} "
+                f"{target_id} {spec['name']} R2={result.held_out_r2:.4f}",
+                flush=True,
+            )
+        baseline = predictions["baseline_trio"]
+        subset_summary[target_id] = {}
+        for subset_number, spec in enumerate(resolved["nested_feature_sets"]):
+            name = spec["name"]
+            point, lower, upper = grouped_r2_interval(
+                target,
+                predictions[name],
+                groups,
+                replicates=fidelity_replicates,
+                seed=int(resolved["seed"])
+                + 80000
+                + target_number * 100
+                + subset_number,
+            )
+            gain, gain_lower, gain_upper = grouped_r2_difference_interval(
+                target,
+                predictions[name],
+                baseline,
+                groups,
+                replicates=fidelity_replicates,
+                seed=int(resolved["seed"])
+                + 85000
+                + target_number * 100
+                + subset_number,
+            )
+            feature_count, interaction_count = subset_metadata[name]
+            subset_rows.append(
+                {
+                    "target_kind": target_kind,
+                    "target_id": target_id,
+                    "concept_set": name,
+                    "feature_count": feature_count,
+                    "registered_interaction_count": interaction_count,
+                    "held_out_r2": point,
+                    "held_out_r2_ci95_lower": lower,
+                    "held_out_r2_ci95_upper": upper,
+                    "gain_over_baseline_trio": gain,
+                    "gain_ci95_lower": gain_lower,
+                    "gain_ci95_upper": gain_upper,
+                    "bootstrap_replicates": fidelity_replicates,
+                    "bootstrap_unit": "equilibrium_files",
+                    "split_unit": "equilibrium_files",
+                    "model": "ExplainableBoostingRegressor",
+                    "model_version": "interpret-core==0.7.8",
+                    "estimand": NATIVE_ESTIMAND,
+                    "validity_tag": OBSERVED,
+                }
+            )
+            subset_summary[target_id][name] = point
+
     artifacts.write_text("fidelity.csv", _csv_text(fidelity_rows))
+    artifacts.write_text("subset_fidelity.csv", _csv_text(subset_rows))
     artifacts.write_text("term_importance.csv", _csv_text(importance_rows))
     artifacts.write_text("term_recurrence.csv", _csv_text(recurrence_rows))
     artifacts.write_text("primary_residuals.csv", _csv_text(residual_rows))
     artifacts.write_text("ebm_effects.csv", _csv_text(effect_rows))
     figure = output_dir / "ebm_effects.png"
-    _plot_effects(figure, effect_rows, [target_id for _, target_id, _ in primary_targets])
+    _plot_effects(
+        figure, effect_rows, [target_id for _, target_id, _ in primary_targets]
+    )
     artifacts.register_existing(figure.name)
 
     all_fidelity = [row for row in fidelity_rows if row["regime"] == "all"]
-    member_fidelity = [row for row in all_fidelity if row["target_kind"] == "member_output"]
-    unit_fidelity = [row for row in all_fidelity if row["target_kind"] == "bottleneck_unit"]
+    member_fidelity = [
+        row for row in all_fidelity if row["target_kind"] == "member_output"
+    ]
+    unit_fidelity = [
+        row for row in all_fidelity if row["target_kind"] == "bottleneck_unit"
+    ]
     true_fidelity = next(
         row for row in all_fidelity if row["target_kind"] == "true_clipped_log_Q"
     )
@@ -542,9 +731,11 @@ def run(args: argparse.Namespace) -> Path:
             np.sum([float(row["held_out_r2"]) >= 0.8 for row in unit_fidelity])
         ),
         "true_clipped_log_Q_r2": float(true_fidelity["held_out_r2"]),
+        "nested_subset_r2": subset_summary,
         "bootstrap": {
             "unit": "equilibrium_files",
             "replicates": int(resolved["bootstrap_replicates"]),
+            "fidelity_replicates": fidelity_replicates,
         },
         "model": "ExplainableBoostingRegressor",
         "model_version": "interpret-core==0.7.8",
@@ -555,7 +746,15 @@ def run(args: argparse.Namespace) -> Path:
     resolved["distillation_module_sha256"] = sha256_file(
         repository / "itg_nn/xai/distillation.py"
     )
-    resolved["feature_registry_sha256"] = sha256_file(output_dir / "feature_registry.csv")
+    resolved["symmetry_module_sha256"] = sha256_file(
+        repository / "itg_nn/xai/symmetry.py"
+    )
+    resolved["bottleneck_module_sha256"] = sha256_file(
+        repository / "itg_nn/xai/bottleneck.py"
+    )
+    resolved["feature_registry_sha256"] = sha256_file(
+        output_dir / "feature_registry.csv"
+    )
     artifacts.finalize(
         config=resolved,
         dataset=dataset,
@@ -570,13 +769,19 @@ def run(args: argparse.Namespace) -> Path:
         extra_manifest={
             "feature_table_version": feature_table.version,
             "split_unit": "equilibrium_files",
-            "target_axes": ["bottleneck_unit", "member_output", "ensemble_mean", "true_clipped_log_Q"],
+            "target_axes": [
+                "bottleneck_unit",
+                "member_output",
+                "ensemble_mean",
+                "true_clipped_log_Q",
+            ],
         },
     )
     if published is not None:
         for name in (
             "feature_registry.csv",
             "fidelity.csv",
+            "subset_fidelity.csv",
             "term_importance.csv",
             "term_recurrence.csv",
             "primary_residuals.csv",

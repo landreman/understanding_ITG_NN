@@ -30,19 +30,30 @@ every internal unit.
 On equilibria excluded from each EBM fit, the fraction of member-output
 variation reproduced was:
 
-- 86.03% for member `2864601_0.437`;
-- 85.61% for member `2864601_0.371`; and
-- 86.36% for member `2864601_0.409`.
+- 86.03% for member `2864601_0.437` (95% interval 84.53–87.45%);
+- 85.61% for member `2864601_0.371` (84.00–87.04%); and
+- 86.36% for member `2864601_0.409` (84.86–87.74%).
 
 The three-member mean was 86.32%. Thus the result is not an artifact of averaging
 different networks together: all three individual networks are reproduced at
 nearly the same level.
 
 The same feature table predicts the true clipped logarithmic GX heat flux at
-83.92%. This is a separate question. The approximately 86% numbers say how well
-the readable model imitates the neural networks; 83.92% says how well it predicts
-the physical simulation target. Keeping those two scores separate prevents good
-imitation of a network from being mistaken for new physical validation.
+83.92% (95% interval 82.10–85.61%). These intervals come from resampling whole
+equilibria 2,000 times. Physical prediction is a separate question: the
+approximately 86% numbers say how well the readable model imitates the neural
+networks, while 83.92% says how well it predicts the simulation target. Keeping
+those two scores separate prevents good imitation of a network from being
+mistaken for new physical validation.
+
+The nested comparison shows where the approximately 86% comes from. The two
+drives alone explain 58–61% across the member, mean, and true-target fits. Adding
+the paper's $\log f_Q$ raises this to 76–79%. The other 14 geometry main effects
+add only about 2 percentage points beyond that baseline. Most of the remaining
+gain comes from the five pre-registered drive–geometry interactions: the full
+model adds 7.5–8.0 percentage points beyond the drives-plus-$\log f_Q$ baseline.
+The readable result is therefore mainly a compact drive-dependent response, not
+17 independent geometry effects.
 
 ## What seems stable
 
@@ -56,6 +67,13 @@ $f_{\rm stab}$ appeared in 83–90% of member refits. A 25-point-window summary 
 the $f_Q$ integrand appeared in 83–87%. This is replicated evidence for a
 feature family, not proof that one algebraic expression is uniquely correct;
 several of the geometric quantities are correlated.
+
+That correlation creates one apparent paradox. $\log f_Q$ adds 17–18 percentage
+points when it is introduced after the two drives, yet it almost never appears
+among the full model's five most important main effects. Its correlated
+descendants and interaction terms divide the credit once all are present. Low
+importance recurrence in the full model therefore does not erase the clear
+nested-model evidence that $\log f_Q$ is predictive.
 
 Only five two-feature interactions were allowed. The largest fitted interaction
 surface for all three members combined density gradient with bad-curvature/
@@ -105,9 +123,10 @@ formula or symbolic stability claim is made here.
 ## Bottom line
 
 Three independently fitted top networks share a readable, cyclic-invariant
-approximation with about 86% fidelity. The most stable vocabulary contains the
-two drives, $f_{\rm stab}$, and a windowed bad-curvature/compression quantity
-related to $f_Q$. That is a strong model-mechanistic result: it describes common
-behavior learned by the networks. It is not yet a physical causal law, and the
-weak fit to many individual bottleneck units shows exactly where the simple
-description remains incomplete.
+approximation with about 86% fidelity. The nested result says the main compact
+story is the two drives, $\log f_Q$, and a few drive-dependent geometry
+interactions; recurrence also supports $f_{\rm stab}$ and a windowed
+bad-curvature/compression quantity related to $f_Q$. That is a strong
+model-mechanistic result: it describes common behavior learned by the networks.
+It is not yet a physical causal law, and the weak fit to many individual
+bottleneck units shows exactly where the simple description remains incomplete.

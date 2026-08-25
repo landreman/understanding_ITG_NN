@@ -11,12 +11,13 @@
   "config": {
     "batch_size": 64,
     "bootstrap_replicates": 30,
+    "bottleneck_module_sha256": "322d6088b6f4ca34a8741a461ce1fe73c9442fe006de15b7144ce1685ab3ba71",
     "channel_scales": "reports/xai/S01_artifacts/channel_robust_scales.csv",
     "checkpoint": "models/cyclic_ensemble_pre2.pt",
     "cohorts": "reports/xai/S01_artifacts/cohorts.json",
     "dataset": "/Users/mattland/20260523-01-files_for_Kosmos_interpreting_neural_networks/20250102-01_GX_stellarator_dataset.h5",
     "device": "cpu",
-    "distillation_module_sha256": "c9a116c119e26071efa516530a1f30a15e1975a0fcd4dac72b79ab9f2ddc3f03",
+    "distillation_module_sha256": "e6bc83ef490caacf66508cb60bebbb0d5339ed3645249646e6725ed3a161097b",
     "ebm_learning_rate": 0.03,
     "ebm_max_bins": 128,
     "ebm_max_interaction_bins": 32,
@@ -25,14 +26,70 @@
     "ebm_outer_bags": 4,
     "feature_registry_sha256": "0889c932b7561000510016bd1031de98f0e9744c6772bfe2a7b17c1c76499819",
     "feature_table_version": "S12-v1",
+    "fidelity_bootstrap_replicates": 2000,
     "members": 3,
     "mode": "production",
+    "nested_feature_sets": [
+      {
+        "features": [
+          "a_over_LT",
+          "a_over_Ln"
+        ],
+        "interactions": [],
+        "name": "drives_only"
+      },
+      {
+        "features": [
+          "a_over_LT",
+          "a_over_Ln",
+          "log_f_Q"
+        ],
+        "interactions": [],
+        "name": "baseline_trio"
+      },
+      {
+        "features": [
+          "a_over_LT",
+          "a_over_Ln",
+          "log_f_Q",
+          "f_stab",
+          "log_FSA_grad_x"
+        ],
+        "interactions": [],
+        "name": "paper_five"
+      },
+      {
+        "features": "all",
+        "interactions": [],
+        "name": "all_17_main_effects"
+      },
+      {
+        "features": "all",
+        "interactions": "registered",
+        "name": "all_17_registered_interactions"
+      },
+      {
+        "features": [
+          "a_over_LT",
+          "a_over_Ln",
+          "log_f_Q"
+        ],
+        "interactions": [
+          [
+            "a_over_LT",
+            "log_f_Q"
+          ]
+        ],
+        "name": "baseline_trio_aLT_logfQ_interaction"
+      }
+    ],
     "outer_folds": 5,
     "panel_varied_rows": 1000,
     "pilot": {
       "bootstrap_replicates": 5,
       "ebm_max_rounds": 100,
       "ebm_outer_bags": 2,
+      "fidelity_bootstrap_replicates": 100,
       "members": 1,
       "outer_folds": 3,
       "panel_varied_rows": 96,
@@ -62,7 +119,7 @@
       ]
     ],
     "run_id": "distillation-top3-panel1000",
-    "script_sha256": "1f22e06d0ac4367c6df0609333a90cc8704b9192c12c697c0a377059d3ec265a",
+    "script_sha256": "7aee5a50cb0a6d56d191da5630493d9bae02cbf4280d77da6d67a4029013cb41",
     "seed": 20260824,
     "split_unit": "equilibrium_files",
     "stable_threshold_log_Q": -1.9,
@@ -74,6 +131,7 @@
       "requested_pysr_version": "1.5.10",
       "status": "deferred_toolchain_incompatible"
     },
+    "symmetry_module_sha256": "a7d2de1e07ae1fb71fc048fd9445d0e836f2946514e29ad7caacc307786cb645",
     "top_k_features": 5
   },
   "dataset": {
@@ -84,10 +142,10 @@
   },
   "device": "cpu",
   "feature_table_version": "S12-v1",
-  "git_commit": "37a928f0f5606e9714622b4b836e278c46f9f27a",
+  "git_commit": "bc128e66ae51bc105d5c90ede66aa777cc21d084",
   "git_dirty": true,
   "git_tracked_dirty": true,
-  "git_tree": "3837de7fd11385634ffb4b494feed8f6bb66606e",
+  "git_tree": "d0a9dd28c4124426ff7c0c6028e3f6e92be96ad6",
   "gradient_set": "varied frozen S01 interpretation panel",
   "member_ids": [
     "2864601_0.437",
@@ -98,9 +156,10 @@
     "ebm_effects.csv": "99c215577cff1962adbad553dc3330692d0fd70508c205e96385e8b549183cd9",
     "ebm_effects.png": "26a82568e93a16f3ce68d6d553c61131b8762332564635444d3bfcdf24f7adbe",
     "feature_registry.csv": "0889c932b7561000510016bd1031de98f0e9744c6772bfe2a7b17c1c76499819",
-    "fidelity.csv": "57ba89b2b32efd1a72f8a11de85264aa4f4df396ccd598818de03c5317bd2237",
+    "fidelity.csv": "4ed64e2f7ea6fc7e37e968e3bdaf93b9e75704580998528297dc2da1017826e0",
     "primary_residuals.csv": "02c75d5428e4e1160516baf817f739612b33b782d08ef4bc83b3614f0c4d091f",
-    "summary.json": "f201fd8f6038402bcb93fcaa26403e90b23b0cf0f0f23f8a445cb584f147a344",
+    "subset_fidelity.csv": "9471635c8eda5e49cc1a7969e3ec79f78ec75321bf2c70d9b1b751c1b1de4e85",
+    "summary.json": "f5ab60367bdf617ad396c81dd3e6c2a023a10c4b51b0d676966752e3c4bb3ad4",
     "term_importance.csv": "ce4f5a5ee987fd12c04b69063f0061799852184d990286d02dbc1f0853f0fc74",
     "term_recurrence.csv": "583875734c020e62cba3943e8bab50568a550b966bba97aa29e07db396cd1401"
   },
@@ -1127,5 +1186,5 @@
     "ensemble_mean",
     "true_clipped_log_Q"
   ],
-  "wall_time_seconds": 257.33355799999845
+  "wall_time_seconds": 342.96736299999975
 }

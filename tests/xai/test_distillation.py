@@ -1,12 +1,16 @@
 from __future__ import annotations
 
 import numpy as np
+import pytest
 
 from itg_nn.xai.distillation import (
+    _main_importance,
     expression_pareto_frontier,
     expression_recurrence,
+    grouped_bootstrap_positions,
     grouped_ebm_crossfit,
     grouped_folds,
+    grouped_r2_interval,
     grouped_term_recurrence,
     invariant_feature_table,
 )
@@ -21,7 +25,9 @@ class LinearToyEstimator:
 
     def fit(self, values: np.ndarray, target: np.ndarray):
         design = [np.ones(len(values)), *values.T]
-        design.extend(values[:, left] * values[:, right] for left, right in self.interactions)
+        design.extend(
+            values[:, left] * values[:, right] for left, right in self.interactions
+        )
         matrix = np.column_stack(design)
         self.coefficient = np.linalg.lstsq(matrix, target, rcond=None)[0]
         self.feature_importances_ = np.abs(self.coefficient[1 : values.shape[1] + 1])
@@ -29,7 +35,9 @@ class LinearToyEstimator:
 
     def predict(self, values: np.ndarray) -> np.ndarray:
         design = [np.ones(len(values)), *values.T]
-        design.extend(values[:, left] * values[:, right] for left, right in self.interactions)
+        design.extend(
+            values[:, left] * values[:, right] for left, right in self.interactions
+        )
         return np.column_stack(design) @ self.coefficient
 
 
@@ -49,7 +57,9 @@ def _cyclic_geometry(rows: int = 24) -> tuple[np.ndarray, np.ndarray, np.ndarray
     geometry[:, :, 4] = 1.0
     geometry[:, :, 5] = 0.1 * np.sin(3 * z[None, :])
     geometry[:, :, 6] = (1.0 + 0.1 * amplitude[:, None] * np.maximum(np.cos(z), 0)) ** 2
-    scalar = np.column_stack((np.ones(rows), np.linspace(-1, 1, rows), np.full(rows, 5.0)))
+    scalar = np.column_stack(
+        (np.ones(rows), np.linspace(-1, 1, rows), np.full(rows, 5.0))
+    )
     return geometry, scalar, amplitude
 
 
@@ -168,6 +178,71 @@ def test_bootstrap_recurrence_resamples_equilibria_and_retains_null() -> None:
     assert recurrence["signal"] == 1.0
     assert recurrence["null"] == 0.0
     assert {row["bootstrap_unit"] for row in first} == {"equilibrium_files"}
+
+
+def test_recurrence_fits_are_unions_of_complete_equilibrium_blocks() -> None:
+    groups = np.repeat(np.arange(12), 2)
+    features = np.column_stack((groups, np.tile([0.0, 1.0], 12)))
+    target = features[:, 0] + 0.1 * features[:, 1]
+    fitted: list[np.ndarray] = []
+
+    class RecordingEstimator(LinearToyEstimator):
+        def fit(self, values: np.ndarray, target: np.ndarray):
+            fitted.append(values.copy())
+            return super().fit(values, target)
+
+    def factory(*, seed: int, interactions=()):
+        return RecordingEstimator(seed=seed, interactions=interactions)
+
+    grouped_term_recurrence(
+        features,
+        target,
+        groups,
+        feature_names=("group", "tube_within_group"),
+        replicates=20,
+        seed=7,
+        top_k=1,
+        estimator_factory=factory,
+    )
+    assert len(fitted) == 20
+    for sample in fitted:
+        for group in np.unique(sample[:, 0]):
+            selected = sample[sample[:, 0] == group, 1]
+            assert np.count_nonzero(selected == 0) == np.count_nonzero(selected == 1)
+
+
+def test_grouped_r2_interval_resamples_complete_equilibria_deterministically() -> None:
+    groups = np.asarray(["a", "a", "b", "c", "c", "d"])
+    positions = grouped_bootstrap_positions(groups, replicates=10, seed=19)
+    for position in positions:
+        assert np.count_nonzero(position == 0) == np.count_nonzero(position == 1)
+        assert np.count_nonzero(position == 3) == np.count_nonzero(position == 4)
+    target = np.arange(6.0)
+    prediction = target + np.asarray([0.1, -0.1, 0.2, -0.2, 0.1, 0.0])
+    first = grouped_r2_interval(target, prediction, groups, replicates=50, seed=31)
+    second = grouped_r2_interval(target, prediction, groups, replicates=50, seed=31)
+    assert first == second
+    assert first[1] <= first[0] <= first[2]
+
+
+def test_interpret_main_effect_order_matches_feature_order_when_available() -> None:
+    pytest.importorskip("interpret")
+    from interpret.glassbox import ExplainableBoostingRegressor
+
+    rng = np.random.default_rng(8)
+    features = rng.normal(size=(40, 3))
+    target = features[:, 0] - 0.5 * features[:, 1]
+    estimator = ExplainableBoostingRegressor(
+        feature_names=["first", "second", "null"],
+        interactions=[(0, 1)],
+        max_rounds=20,
+        outer_bags=1,
+        inner_bags=0,
+        random_state=3,
+        n_jobs=1,
+    ).fit(features, target)
+    assert estimator.term_names_[:3] == ["first", "second", "null"]
+    assert len(_main_importance(estimator, 3)) == 3
 
 
 def test_symbolic_pareto_and_recurrence_keep_negative_controls_visible() -> None:

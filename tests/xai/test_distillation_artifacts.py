@@ -49,6 +49,12 @@ def test_s12_manifest_pins_inputs_sources_packages_and_outputs() -> None:
     assert manifest["config"]["distillation_module_sha256"] == _sha256(
         ROOT / "itg_nn/xai/distillation.py"
     )
+    assert manifest["config"]["symmetry_module_sha256"] == _sha256(
+        ROOT / "itg_nn/xai/symmetry.py"
+    )
+    assert manifest["config"]["bottleneck_module_sha256"] == _sha256(
+        ROOT / "itg_nn/xai/bottleneck.py"
+    )
 
 
 def test_s12_primary_fidelity_recomputes_from_signed_row_artifact() -> None:
@@ -62,17 +68,26 @@ def test_s12_primary_fidelity_recomputes_from_signed_row_artifact() -> None:
     assert len(all_fidelity) == 5
     for key, expected in all_fidelity.items():
         selected = [
-            row
-            for row in residuals
-            if (row["target_kind"], row["target_id"]) == key
+            row for row in residuals if (row["target_kind"], row["target_id"]) == key
         ]
         assert len(selected) == 1000
         assert len({row["equilibrium_file"] for row in selected}) == 1000
         target = np.asarray([float(row["target_native_value"]) for row in selected])
         prediction = np.asarray([float(row["ebm_oof_prediction"]) for row in selected])
-        np.testing.assert_allclose(_r2(target, prediction), float(expected["held_out_r2"]))
+        np.testing.assert_allclose(
+            _r2(target, prediction), float(expected["held_out_r2"])
+        )
+        assert (
+            float(expected["held_out_r2_ci95_lower"])
+            <= float(expected["held_out_r2"])
+            <= float(expected["held_out_r2_ci95_upper"])
+        )
+        assert expected["fidelity_bootstrap_replicates"] == "2000"
+        assert expected["fidelity_bootstrap_unit"] == "equilibrium_files"
         assert {row["split_unit"] for row in selected} == {"equilibrium_files"}
-        assert np.sum([row["stable_or_near_floor"] == "True" for row in selected]) == 240
+        assert (
+            np.sum([row["stable_or_near_floor"] == "True" for row in selected]) == 240
+        )
 
 
 def test_s12_unit_attrition_and_feature_stability_are_not_hidden() -> None:
@@ -90,13 +105,47 @@ def test_s12_unit_attrition_and_feature_stability_are_not_hidden() -> None:
     recurrence = _rows("term_recurrence.csv")
     assert len(recurrence) == 5 * 17
     drives = [
-        row
-        for row in recurrence
-        if row["feature_name"] in {"a_over_LT", "a_over_Ln"}
+        row for row in recurrence if row["feature_name"] in {"a_over_LT", "a_over_Ln"}
     ]
     assert len(drives) == 10
     assert {float(row["top_k_recurrence"]) for row in drives} == {1.0}
     assert {row["bootstrap_unit"] for row in recurrence} == {"equilibrium_files"}
+    log_f_q = [row for row in recurrence if row["feature_name"] == "log_f_Q"]
+    assert len(log_f_q) == 5
+    assert max(float(row["top_k_recurrence"]) for row in log_f_q) <= 1 / 30
+
+
+def test_s12_nested_subset_fidelity_quantifies_incremental_concepts() -> None:
+    rows = _rows("subset_fidelity.csv")
+    assert len(rows) == 5 * 6
+    assert {row["concept_set"] for row in rows} == {
+        "drives_only",
+        "baseline_trio",
+        "paper_five",
+        "all_17_main_effects",
+        "all_17_registered_interactions",
+        "baseline_trio_aLT_logfQ_interaction",
+    }
+    for row in rows:
+        assert row["bootstrap_unit"] == "equilibrium_files"
+        assert row["split_unit"] == "equilibrium_files"
+        assert (
+            float(row["held_out_r2_ci95_lower"])
+            <= float(row["held_out_r2"])
+            <= float(row["held_out_r2_ci95_upper"])
+        )
+    top = {
+        row["concept_set"]: row for row in rows if row["target_id"] == "2864601_0.437"
+    }
+    np.testing.assert_allclose(
+        float(top["baseline_trio"]["held_out_r2"]), 0.7813829881343224
+    )
+    np.testing.assert_allclose(
+        float(top["all_17_registered_interactions"]["held_out_r2"]),
+        0.8603164016682042,
+    )
+    assert float(top["all_17_main_effects"]["gain_over_baseline_trio"]) < 0.025
+    assert float(top["all_17_registered_interactions"]["gain_ci95_lower"]) > 0.06
 
 
 def test_s12_registry_effects_regimes_and_pysr_deferral_are_explicit() -> None:
@@ -106,7 +155,9 @@ def test_s12_registry_effects_regimes_and_pysr_deferral_are_explicit() -> None:
     assert {row["validity_tag"] for row in registry} == {"observed-comparison"}
     effects = _rows("ebm_effects.csv")
     interactions = {
-        row["term_name"] for row in effects if row["term_kind"] == "pairwise_interaction"
+        row["term_name"]
+        for row in effects
+        if row["term_kind"] == "pairwise_interaction"
     }
     assert interactions == {
         "a_over_LT & log_f_Q",

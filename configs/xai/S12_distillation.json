@@ -17,7 +17,16 @@
   "ebm_learning_rate": 0.03,
   "ebm_min_samples_leaf": 3,
   "bootstrap_replicates": 30,
+  "fidelity_bootstrap_replicates": 2000,
   "top_k_features": 5,
+  "nested_feature_sets": [
+    {"name": "drives_only", "features": ["a_over_LT", "a_over_Ln"], "interactions": []},
+    {"name": "baseline_trio", "features": ["a_over_LT", "a_over_Ln", "log_f_Q"], "interactions": []},
+    {"name": "paper_five", "features": ["a_over_LT", "a_over_Ln", "log_f_Q", "f_stab", "log_FSA_grad_x"], "interactions": []},
+    {"name": "all_17_main_effects", "features": "all", "interactions": []},
+    {"name": "all_17_registered_interactions", "features": "all", "interactions": "registered"},
+    {"name": "baseline_trio_aLT_logfQ_interaction", "features": ["a_over_LT", "a_over_Ln", "log_f_Q"], "interactions": [["a_over_LT", "log_f_Q"]]}
+  ],
   "registered_interactions": [
     ["a_over_LT", "log_f_Q"],
     ["a_over_LT", "bad_curvature_compression"],
@@ -44,6 +53,7 @@
     "outer_folds": 3,
     "ebm_max_rounds": 100,
     "ebm_outer_bags": 2,
-    "bootstrap_replicates": 5
+    "bootstrap_replicates": 5,
+    "fidelity_bootstrap_replicates": 100
   }
 }
