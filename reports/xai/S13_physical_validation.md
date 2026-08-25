@@ -80,7 +80,7 @@ the varied panel has 240 and 760. Fixed rows use the physical drive
 $(3,0.9)$, never the legacy off-manifold marker. S12-v1 supplies the invariant
 feature formulas and S01 supplies the seven robust channel IQR scales.
 
-The registered run is `physical-validation-panel1000`. It took **53.23 s** on
+The registered run is `physical-validation-panel1000`. It took **73.58 s** on
 CPU. The committed [manifest](S13_artifacts/manifest.json) records seed
 20260825, all 1,000 parent row IDs, source hashes, exact command, package
 versions, output hashes, dataset SHA-256

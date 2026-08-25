@@ -6,7 +6,6 @@ from dataclasses import dataclass
 from typing import Callable
 
 import numpy as np
-from scipy.stats import rankdata
 
 from .distillation import grouped_folds
 
@@ -49,6 +48,25 @@ class AIPWResult:
     overlap_fraction: float
     split_unit: str = "equilibrium_files"
     validity_tag: str = "observed-comparison"
+
+
+def _average_ranks(values: np.ndarray) -> np.ndarray:
+    """Return stable one-based average ranks without an optional dependency."""
+
+    array = np.asarray(values, dtype=np.float64)
+    if array.ndim != 1:
+        raise ValueError("rank input must be one-dimensional")
+    order = np.argsort(array, kind="mergesort")
+    sorted_values = array[order]
+    ranks = np.empty(len(array), dtype=np.float64)
+    start = 0
+    while start < len(array):
+        stop = start + 1
+        while stop < len(array) and sorted_values[stop] == sorted_values[start]:
+            stop += 1
+        ranks[order[start:stop]] = 0.5 * (start + 1 + stop)
+        start = stop
+    return ranks
 
 
 def equilibrium_grouped_matches(
@@ -300,8 +318,8 @@ def residual_rank_association(
         raise ValueError("candidate, residual, and groups must be aligned vectors")
 
     def spearman(selected: np.ndarray) -> float:
-        left = rankdata(selected[:, 0], method="average")
-        right = rankdata(selected[:, 1], method="average")
+        left = _average_ranks(selected[:, 0])
+        right = _average_ranks(selected[:, 1])
         if np.std(left) <= np.finfo(float).eps or np.std(right) <= np.finfo(float).eps:
             return 0.0
         return float(np.corrcoef(left, right)[0, 1])

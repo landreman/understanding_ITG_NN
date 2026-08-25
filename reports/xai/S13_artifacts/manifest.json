@@ -82,7 +82,7 @@
         "log_FSA_grad_x"
       ]
     },
-    "physical_validation_module_sha256": "ab7262eae845953dc8d695785e468255fe40fa06acdf134bb643c128a3fe8d2a",
+    "physical_validation_module_sha256": "e2b40241b9322f56f706151ba02c893ca8ed45c1ea0192772b8d43514c25f3d9",
     "pilot": {
       "bootstrap_replicates": 50,
       "crossfit_folds": 3,
@@ -108,10 +108,10 @@
   },
   "device": "cpu",
   "feature_table_version": "S12-v1",
-  "git_commit": "d8c16852b7a5165379c8e911eaf88765e578ca70",
+  "git_commit": "d852cd7916773c6b563ccd0bc494b59419726894",
   "git_dirty": true,
-  "git_tracked_dirty": false,
-  "git_tree": "c44b12319eebe2d0726847c4c54d0f97445ccaa9",
+  "git_tracked_dirty": true,
+  "git_tree": "9da5c489b261e91a6082847eaaf82a894beae2f0",
   "gradient_set": "fixed and varied S01 interpretation panel",
   "member_ids": [
     "2864601_0.437",
@@ -1155,5 +1155,5 @@
   ],
   "seed": 20260825,
   "split_unit": "equilibrium_files",
-  "wall_time_seconds": 53.22729574999539
+  "wall_time_seconds": 73.57517962499696
 }
