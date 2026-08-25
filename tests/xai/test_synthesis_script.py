@@ -108,6 +108,11 @@ def test_interval_without_grouping_unit_is_rejected(tmp_path: Path) -> None:
             "regime-dependent",
         ),
         (
+            {"kind": "tcav_pass_fraction", "field": "use_claim_permitted"},
+            [{"use_claim_permitted": "False"}] * 15,
+            "contradicts",
+        ),
+        (
             {
                 "kind": "probe_vs_permutation",
                 "encoded_field": "encoded_r2",

@@ -68,8 +68,9 @@ The project contains five objects that must not be conflated:
 Input-attribution, hidden-state, cross-member, and distillation claims below
 primarily concern individual $\tilde f_m$ functions. S11's spread concerns the
 population of all 100 $\tilde f_m$. S13 concerns observed GX and performs no
-network inference. Spatial comparisons retain the original-$f_m$ result beside
-the invariant result where applicable. The
+network inference. The ledger carries the invariant-$\tilde f_m$ spatial result;
+the corresponding original-$f_m$ alignments in the S07 source artifact are more
+null still and are not counted as separate evidence. The
 [evidence ledger](S14_artifacts/evidence_ledger.csv) records `function_scope`,
 the native claim `estimand`, the specifically measured `outcome`, cohort,
 regime, validity tag, uncertainty grouping unit, and intervention status for
@@ -365,7 +366,7 @@ traceable grouping unit. Fixture tests also require every evidence artifact to
 have a manifest pin and require claim alignment/conjunct mappings to cover the
 exact linked evidence set.
 
-Thirteen deliberate mutations were each confirmed to turn the suite red and were
+Fourteen deliberate mutations were each confirmed to turn the suite red and were
 then reverted:
 
 1. made the claim gate read candidate-level `direction` instead of per-claim
@@ -403,12 +404,15 @@ then reverted:
     `test_direction_is_derived_from_declared_source_rule` failed;
 13. disabled the configured-versus-derived direction mismatch guard;
     `test_configured_direction_must_match_derived_direction` failed.
+14. classified an all-false S08 zonal hidden-use null control as mixed instead of
+    contradictory; `test_direction_is_derived_from_declared_source_rule` failed.
 
 The earlier production round also turned red when the physical-intervention
 guard and reproducibility-index manifest hash check were bypassed. The third
 automated review found items 4 and 5 before those tests existed, the fourth
-found items 6 and 7, the fifth found items 8 and 9, the sixth found item 10, and
-the seventh found items 11–13; all ten exact mutations are now covered rather
+found items 6 and 7, the fifth found items 8 and 9, the sixth found item 10, the
+seventh found items 11–13, and the eighth found item 14; all fourteen exact
+mutations are now covered rather
 than being omitted from this record.
 
 Final local commands and outcomes:
@@ -416,10 +420,10 @@ Final local commands and outcomes:
 ```text
 .venv-xai/bin/python -m pytest tests/xai/test_synthesis.py \
   tests/xai/test_synthesis_script.py tests/xai/test_synthesis_artifacts.py -q
-35 passed
+36 passed
 
 source .venv-xai/bin/activate && make check
-351 passed
+352 passed
 ```
 
 ## Interpretation limits

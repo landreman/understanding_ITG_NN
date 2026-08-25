@@ -197,6 +197,7 @@ def test_headline_numbers_and_contradictions_are_pinned() -> None:
         "E08_LOCAL_QZ_ENCODING": "mixed",
         "E08_LOCAL_QZ_USE": "regime-dependent",
         "E08_ZONAL_ENCODING_NULL": "contradicts",
+        "E08_ZONAL_USE_NULL": "contradicts",
         "E11_COMMON_MODE_FAILURE": "contradicts",
         "E11_SPREAD_ERROR_ASSOCIATION": "regime-dependent",
         "E12_BAD_RECURRENCE": "mixed",
