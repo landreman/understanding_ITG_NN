@@ -128,6 +128,25 @@ def test_interval_without_grouping_unit_is_rejected(tmp_path: Path) -> None:
         ),
         (
             {
+                "kind": "probe_vs_permutation",
+                "encoded_field": "encoded_r2",
+                "stable_field": "encoded_r2_stable_or_near_floor",
+                "unstable_field": "encoded_r2_unstable",
+                "control_field": "permuted_r2",
+                "minimum_gain": 0.1,
+            },
+            [
+                {
+                    "encoded_r2": "0.05",
+                    "encoded_r2_stable_or_near_floor": "-0.2",
+                    "encoded_r2_unstable": "-0.3",
+                    "permuted_r2": "0.0",
+                }
+            ],
+            "contradicts",
+        ),
+        (
+            {
                 "kind": "resolved_fold_count",
                 "field": "aipw_resolved_fold_count",
                 "total": 7,

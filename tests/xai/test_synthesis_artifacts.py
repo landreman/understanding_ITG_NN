@@ -196,6 +196,7 @@ def test_headline_numbers_and_contradictions_are_pinned() -> None:
         "E08_GEO_USE": "regime-dependent",
         "E08_LOCAL_QZ_ENCODING": "mixed",
         "E08_LOCAL_QZ_USE": "regime-dependent",
+        "E08_ZONAL_ENCODING_NULL": "contradicts",
         "E11_COMMON_MODE_FAILURE": "contradicts",
         "E11_SPREAD_ERROR_ASSOCIATION": "regime-dependent",
         "E12_BAD_RECURRENCE": "mixed",
@@ -209,6 +210,10 @@ def test_headline_numbers_and_contradictions_are_pinned() -> None:
         row = _one(evidence, evidence_id=evidence_id)
         assert row["direction"] == direction
         assert row["direction_source"].startswith("config.direction_rule:")
+    assert {
+        _one(evidence, evidence_id=evidence_id)["direction"]
+        for evidence_id in ("E03_JOINT_SHIFT_EXACT_CONTROL", "E03_HIGH_BAND_CONTROL")
+    } == {"null_control"}
     local_qz_use = values("E08_LOCAL_QZ_USE")
     assert len(local_qz_use) == 15
     assert sum(row["use_claim_permitted"] == "True" for row in local_qz_use) == 7
