@@ -23,7 +23,7 @@ observed comparisons, not causal effects.
 The cross-fitted augmented inverse-probability weighting sensitivity analysis
 (AIPW: it combines an outcome model with a model of which rows enter the high
 candidate tail) reaches the same all-row sign for every candidate, but overlap
-is only **0.228–0.478**, below the registered 0.8 requirement. Its most important
+is only **0.232–0.478**, below the registered 0.8 requirement. Its most important
 contradiction is the localized $f_Q$ peak: the both-unstable matched contrast is
 **+1.544 [1.402, 1.693]**, while the adjusted unstable-tail contrast is
 **-1.091 [-1.424, -0.806]**. This sign reversal under a confounding adjustment
@@ -80,7 +80,7 @@ the varied panel has 240 and 760. Fixed rows use the physical drive
 $(3,0.9)$, never the legacy off-manifold marker. S12-v1 supplies the invariant
 feature formulas and S01 supplies the seven robust channel IQR scales.
 
-The registered run is `physical-validation-panel1000`. It took **73.58 s** on
+The registered run is `physical-validation-panel1000`. It took **78.07 s** on
 CPU. The committed [manifest](S13_artifacts/manifest.json) records seed
 20260825, all 1,000 parent row IDs, source hashes, exact command, package
 versions, output hashes, dataset SHA-256
@@ -152,7 +152,8 @@ holds out complete `equilibrium_files`; within each training fold, logistic
 regression predicts tail assignment and ridge regressions predict each potential
 outcome. Propensities are clipped at 0.05 only after the overlap fraction is
 recorded. Intervals resample complete equilibria from the cross-fitted influence
-values.
+values. Every artifact row records the production code path
+`in_repo_logistic_irls_plus_ridge`; there is no optional scikit-learn branch.
 
 “Doubly robust” does not mean immune to confounding. It means the estimator can
 remain consistent if either its treatment-assignment model or its outcome model
@@ -242,7 +243,7 @@ continuation, not agreement with the observational expectation.
 | PLAN criterion | Verdict | Number or artifact |
 | --- | --- | --- |
 | “claims are graded as model-mechanistic, observational-physical, or intervention-ready” | **Pass.** | [candidate_ranking.csv](S13_artifacts/candidate_ranking.csv) grades all four candidates `observational-physical`; no candidate is `intervention-ready`. Earlier network evidence remains model-mechanistic and the prospective intervention is separately marked proposal-only. |
-| “confounding and invalid perturbations remain visible” | **Pass.** | Post-match maximum imbalance is 1.068–4.151 against a 0.5 gate; AIPW overlap is 0.228–0.478 against 0.8; every natural comparison is tagged `observed-comparison`, every row has `causal_claim_permitted=False`, and `summary.json` records `invalid_perturbations_used=false`. The GX spec requires recomputed VMEC equilibria and is not executed. |
+| “confounding and invalid perturbations remain visible” | **Pass.** | Post-match maximum imbalance is 1.068–4.151 against a 0.5 gate; AIPW overlap is 0.232–0.478 against 0.8; every natural comparison is tagged `observed-comparison`, every row has `causal_claim_permitted=False`, and `summary.json` records `invalid_perturbations_used=false`. The GX spec requires recomputed VMEC equilibria and is not executed. |
 
 The MVD is complete: task 1 covers fixed-gradient $Q$, $Q(z)$, `Q_stds`, zonal
 magnitude, matching, and AIPW sensitivity; task 3 covers residuals beyond both
@@ -332,11 +333,11 @@ with `load_review_slice_index().slice_rows(parent_rows)` before loading.
   cross-check the ranking against its source rows, pair uniqueness, 40 balanced
   contradictions, claim flags, budget arithmetic, and every manifest hash.
 - The exact geodesic rows are matched **1.3168418645 [1.1499375294,
-  1.5023806914]**, AIPW **0.7713531585 [0.5276320327, 1.0128633179]**, and
+  1.5023806914]**, AIPW **0.7716516129 [0.5279196206, 1.0130847739]**, and
   paper-baseline MSE improvement **0.0188012346 [0.0061692239,
   0.0325162110]**.
 - The localized unstable sign contradiction is fully committed: matched
-  **+1.5441856155** versus adjusted **-1.0905590116**.
+  **+1.5441856155** versus adjusted **-1.0899487909**.
 
 ### Not checkable off the researcher's machine, and why
 

@@ -77,7 +77,7 @@ assumptions; it does not protect against missing confounders or lack of
 comparable rows.
 
 Comparable high/low rows were scarce. The fraction with acceptable overlap was
-only **0.228–0.478**, below the required 0.8. The adjusted numbers are therefore
+only **0.232–0.478**, below the required 0.8. The adjusted numbers are therefore
 sensitivity warnings rather than reliable effect estimates.
 
 The clearest warning concerns the localized $f_Q$ peak. Among unstable matched

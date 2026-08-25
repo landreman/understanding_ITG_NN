@@ -124,6 +124,7 @@ def test_aipw_recovers_adjusted_observed_contrast_and_is_deterministic() -> None
     np.testing.assert_array_equal(first.fold, second.fold)
     assert abs(first.estimate - 1.25) < 0.15
     assert first.overlap_fraction > 0.9
+    assert first.method == "in_repo_logistic_irls_plus_ridge"
     for fold in np.unique(first.fold):
         assert set(groups[first.fold == fold]).isdisjoint(groups[first.fold != fold])
 

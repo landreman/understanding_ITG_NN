@@ -1,9 +1,9 @@
 {
   "candidate_ranking": [
     {
-      "aipw_native_ci95_lower": 0.5276320327094529,
-      "aipw_native_ci95_upper": 1.0128633179286004,
-      "aipw_native_effect": 0.7713531584679154,
+      "aipw_native_ci95_lower": 0.5279196205513662,
+      "aipw_native_ci95_upper": 1.0130847739496638,
+      "aipw_native_effect": 0.7716516129033653,
       "aipw_overlap_fraction": 0.478,
       "balance_acceptable": false,
       "balance_threshold": 0.5,
@@ -28,10 +28,10 @@
       "remaining_confounding_visible": true
     },
     {
-      "aipw_native_ci95_lower": 0.7899454377004397,
-      "aipw_native_ci95_upper": 1.441844398703588,
-      "aipw_native_effect": 1.077055641325634,
-      "aipw_overlap_fraction": 0.228,
+      "aipw_native_ci95_lower": 0.7899581537919191,
+      "aipw_native_ci95_upper": 1.4418570882662047,
+      "aipw_native_effect": 1.07704576703367,
+      "aipw_overlap_fraction": 0.232,
       "balance_acceptable": false,
       "balance_threshold": 0.5,
       "candidate": "f_Q_integrand_w25_peak",
@@ -55,9 +55,9 @@
       "remaining_confounding_visible": true
     },
     {
-      "aipw_native_ci95_lower": -0.10186065756146019,
-      "aipw_native_ci95_upper": 0.37949335412662677,
-      "aipw_native_effect": 0.16901302614009364,
+      "aipw_native_ci95_lower": -0.10187244232834555,
+      "aipw_native_ci95_upper": 0.3796461045321807,
+      "aipw_native_effect": 0.16901503548402275,
       "aipw_overlap_fraction": 0.446,
       "balance_acceptable": false,
       "balance_threshold": 0.5,
@@ -82,9 +82,9 @@
       "remaining_confounding_visible": true
     },
     {
-      "aipw_native_ci95_lower": -0.01803187277019563,
-      "aipw_native_ci95_upper": 0.46990480941980123,
-      "aipw_native_effect": 0.19002402695649587,
+      "aipw_native_ci95_lower": -0.018504633153292507,
+      "aipw_native_ci95_upper": 0.4587721659577025,
+      "aipw_native_effect": 0.1852084593456713,
       "aipw_overlap_fraction": 0.246,
       "balance_acceptable": false,
       "balance_threshold": 0.5,

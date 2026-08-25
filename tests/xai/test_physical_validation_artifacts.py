@@ -68,9 +68,10 @@ def test_headline_observed_contrasts_and_confounds_are_pinned() -> None:
         regime="all",
     )
     assert float(geodesic_adjusted["aipw_high_minus_low"]) == pytest.approx(
-        0.7713531584679154
+        0.7716516129033653
     )
     assert float(geodesic_adjusted["overlap_fraction"]) == pytest.approx(0.478)
+    assert geodesic_adjusted["method"] == "in_repo_logistic_irls_plus_ridge"
 
     localized_match = _one(
         matched,
@@ -86,7 +87,7 @@ def test_headline_observed_contrasts_and_confounds_are_pinned() -> None:
     )
     assert float(localized_match["mean_high_minus_low"]) > 0
     assert float(localized_adjusted["aipw_high_minus_low"]) == pytest.approx(
-        -1.0905590116003545
+        -1.0899487909048
     )
     assert float(localized_adjusted["ci95_upper"]) < 0
 

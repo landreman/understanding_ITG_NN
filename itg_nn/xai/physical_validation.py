@@ -48,6 +48,7 @@ class AIPWResult:
     overlap_fraction: float
     split_unit: str = "equilibrium_files"
     validity_tag: str = "observed-comparison"
+    method: str = "in_repo_logistic_irls_plus_ridge"
 
 
 def _average_ranks(values: np.ndarray) -> np.ndarray:
@@ -213,10 +214,6 @@ def cross_fitted_aipw(
 ) -> AIPWResult:
     """Estimate an adjusted observed high/low contrast with grouped cross-fitting."""
 
-    from sklearn.linear_model import LogisticRegression, Ridge
-    from sklearn.pipeline import make_pipeline
-    from sklearn.preprocessing import StandardScaler
-
     treatment = np.asarray(treated, dtype=bool)
     y = np.asarray(outcome, dtype=np.float64)
     x = np.asarray(nuisance, dtype=np.float64)
@@ -231,24 +228,69 @@ def cross_fitted_aipw(
     propensity = np.empty(len(y), dtype=np.float64)
     mu0 = np.empty(len(y), dtype=np.float64)
     mu1 = np.empty(len(y), dtype=np.float64)
+
+    def standardized(
+        train_values: np.ndarray, test_values: np.ndarray
+    ) -> tuple[np.ndarray, np.ndarray]:
+        center = np.mean(train_values, axis=0)
+        scale = np.std(train_values, axis=0)
+        scale = np.where(scale > np.finfo(float).eps, scale, 1.0)
+        return (train_values - center) / scale, (test_values - center) / scale
+
+    def ridge_predict(
+        train_values: np.ndarray,
+        train_outcome: np.ndarray,
+        test_values: np.ndarray,
+    ) -> np.ndarray:
+        train_scaled, test_scaled = standardized(train_values, test_values)
+        design = np.column_stack((np.ones(len(train_scaled)), train_scaled))
+        penalty = np.eye(design.shape[1], dtype=np.float64)
+        penalty[0, 0] = 0.0
+        coefficient = np.linalg.solve(
+            design.T @ design + penalty, design.T @ train_outcome
+        )
+        return np.column_stack((np.ones(len(test_scaled)), test_scaled)) @ coefficient
+
+    def logistic_predict(
+        train_values: np.ndarray,
+        train_treatment: np.ndarray,
+        test_values: np.ndarray,
+    ) -> np.ndarray:
+        train_scaled, test_scaled = standardized(train_values, test_values)
+        design = np.column_stack((np.ones(len(train_scaled)), train_scaled))
+        coefficient = np.zeros(design.shape[1], dtype=np.float64)
+        penalty = np.ones(design.shape[1], dtype=np.float64)
+        penalty[0] = 0.0
+        observed = train_treatment.astype(np.float64)
+        for _ in range(100):
+            linear = np.clip(design @ coefficient, -35.0, 35.0)
+            probability = 1.0 / (1.0 + np.exp(-linear))
+            weight = np.maximum(probability * (1.0 - probability), 1e-8)
+            gradient = design.T @ (observed - probability) - penalty * coefficient
+            hessian = (design.T * weight) @ design + np.diag(penalty)
+            update = np.linalg.solve(hessian, gradient)
+            coefficient = coefficient + update
+            if np.max(np.abs(update)) < 1e-10:
+                break
+        test_design = np.column_stack((np.ones(len(test_scaled)), test_scaled))
+        linear = np.clip(test_design @ coefficient, -35.0, 35.0)
+        return 1.0 / (1.0 + np.exp(-linear))
+
     for fold_index in range(folds):
         train = fold != fold_index
         test = ~train
         if np.unique(treatment[train]).size != 2:
             raise ValueError("each training fold must contain both treatment levels")
-        propensity_model = make_pipeline(
-            StandardScaler(),
-            LogisticRegression(C=1.0, random_state=seed + fold_index, max_iter=2000),
-        ).fit(x[train], treatment[train])
-        propensity[test] = propensity_model.predict_proba(x[test])[:, 1]
+        propensity[test] = logistic_predict(
+            x[train], treatment[train], x[test]
+        )
         for level, destination in ((False, mu0), (True, mu1)):
             selected = train & (treatment == level)
             if selected.sum() < 2:
                 raise ValueError("each treatment level needs two training rows")
-            outcome_model = make_pipeline(StandardScaler(), Ridge(alpha=1.0)).fit(
-                x[selected], y[selected]
+            destination[test] = ridge_predict(
+                x[selected], y[selected], x[test]
             )
-            destination[test] = outcome_model.predict(x[test])
     overlap = float(
         np.mean(
             (propensity >= propensity_clip)

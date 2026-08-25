@@ -414,6 +414,7 @@ def _matched_rows(
                         "propensity_clip": resolved["propensity_clip"],
                         "split_unit": result.split_unit,
                         "bootstrap_unit": "equilibrium_files",
+                        "method": result.method,
                         "validity_tag": result.validity_tag,
                         "causal_claim_permitted": False,
                     }
