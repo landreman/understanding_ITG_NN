@@ -1,0 +1,168 @@
+from __future__ import annotations
+
+import csv
+import hashlib
+import json
+from pathlib import Path
+
+import pytest
+
+
+ROOT = Path(__file__).parents[2]
+ARTIFACTS = ROOT / "reports/xai/S13_artifacts"
+
+
+def _rows(name: str) -> list[dict[str, str]]:
+    return list(csv.DictReader((ARTIFACTS / name).open(newline="", encoding="utf-8")))
+
+
+def _one(rows: list[dict[str, str]], **keys: str) -> dict[str, str]:
+    selected = [row for row in rows if all(row[key] == value for key, value in keys.items())]
+    assert len(selected) == 1
+    return selected[0]
+
+
+def test_registered_manifest_hashes_every_published_scientific_artifact() -> None:
+    manifest = json.loads((ARTIFACTS / "manifest.json").read_text(encoding="utf-8"))
+    assert manifest["config"]["run_id"] == "physical-validation-panel1000"
+    assert manifest["split_unit"] == "equilibrium_files"
+    assert manifest["model_outputs_computed"] is False
+    assert manifest["gradient_set"] == "fixed and varied S01 interpretation panel"
+    assert len(manifest["row_ids"]) == len(set(manifest["row_ids"])) == 1000
+    expected = {
+        "fixed_associations.csv",
+        "matched_pairs.csv",
+        "matched_effects.csv",
+        "doubly_robust_sensitivity.csv",
+        "residual_validation.csv",
+        "candidate_ranking.csv",
+        "contradictory_cases.csv",
+        "gx_experiment_spec.json",
+        "natural_experiment_atlas.png",
+        "summary.json",
+    }
+    assert set(manifest["output_hashes"]) == expected
+    for name, digest in manifest["output_hashes"].items():
+        assert hashlib.sha256((ARTIFACTS / name).read_bytes()).hexdigest() == digest
+
+
+def test_headline_observed_contrasts_and_confounds_are_pinned() -> None:
+    matched = _rows("matched_effects.csv")
+    adjusted = _rows("doubly_robust_sensitivity.csv")
+    geodesic = _one(
+        matched,
+        candidate="geodesic_curvature_compression",
+        outcome="target_native",
+        regime="all",
+    )
+    assert float(geodesic["mean_high_minus_low"]) == pytest.approx(1.316841864482161)
+    assert float(geodesic["ci95_lower"]) == pytest.approx(1.1499375293833307)
+    assert int(geodesic["matched_pairs"]) == 198
+    assert float(geodesic["max_abs_nuisance_smd_after"]) == pytest.approx(
+        1.068121850701722
+    )
+    geodesic_adjusted = _one(
+        adjusted,
+        candidate="geodesic_curvature_compression",
+        outcome="target_native",
+        regime="all",
+    )
+    assert float(geodesic_adjusted["aipw_high_minus_low"]) == pytest.approx(
+        0.7713531584679154
+    )
+    assert float(geodesic_adjusted["overlap_fraction"]) == pytest.approx(0.478)
+
+    localized_match = _one(
+        matched,
+        candidate="f_Q_integrand_w25_peak",
+        outcome="target_native",
+        regime="both_unstable",
+    )
+    localized_adjusted = _one(
+        adjusted,
+        candidate="f_Q_integrand_w25_peak",
+        outcome="target_native",
+        regime="unstable",
+    )
+    assert float(localized_match["mean_high_minus_low"]) > 0
+    assert float(localized_adjusted["aipw_high_minus_low"]) == pytest.approx(
+        -1.0905590116003545
+    )
+    assert float(localized_adjusted["ci95_upper"]) < 0
+
+
+def test_residual_validation_separates_fq_and_paper_baselines() -> None:
+    rows = _rows("residual_validation.csv")
+    geodesic_paper = _one(
+        rows,
+        gradient_set="fixed",
+        baseline="paper_selected",
+        candidate="geodesic_curvature_compression",
+        regime="all",
+    )
+    assert float(geodesic_paper["delta_r2"]) == pytest.approx(0.013937293296463094)
+    assert float(geodesic_paper["mse_improvement"]) == pytest.approx(
+        0.018801234591043544
+    )
+    assert float(geodesic_paper["mse_improvement_ci95_lower"]) > 0
+    localized_paper = _one(
+        rows,
+        gradient_set="fixed",
+        baseline="paper_selected",
+        candidate="f_Q_integrand_w25_peak",
+        regime="all",
+    )
+    assert float(localized_paper["mse_improvement_ci95_lower"]) < 0
+    assert float(localized_paper["mse_improvement_ci95_upper"]) > 0
+    assert {row["estimand"] for row in rows} == {"native max(log Q, -2)"}
+    assert {row["split_unit"] for row in rows} == {"equilibrium_files"}
+
+
+def test_claim_grades_keep_balance_overlap_and_causality_limits_visible() -> None:
+    summary = json.loads((ARTIFACTS / "summary.json").read_text(encoding="utf-8"))
+    assert summary["fixed_stable_or_near_floor_rows"] == 23
+    assert summary["varied_stable_or_near_floor_rows"] == 240
+    assert not summary["causal_claims_made"]
+    assert not summary["invalid_perturbations_used"]
+    ranking = summary["candidate_ranking"]
+    assert ranking[0]["candidate"] == "geodesic_curvature_compression"
+    assert {row["claim_grade"] for row in ranking} == {"observational-physical"}
+    assert not any(row["balance_acceptable"] for row in ranking)
+    assert not any(row["overlap_acceptable"] for row in ranking)
+    csv_ranking = _rows("candidate_ranking.csv")
+    assert [row["candidate"] for row in csv_ranking] == [
+        row["candidate"] for row in ranking
+    ]
+
+
+def test_pairs_are_equilibrium_disjoint_and_contradictions_are_balanced() -> None:
+    pairs = _rows("matched_pairs.csv")
+    for candidate in {row["candidate"] for row in pairs}:
+        selected = [row for row in pairs if row["candidate"] == candidate]
+        high = [row["high_equilibrium_file"] for row in selected]
+        low = [row["low_equilibrium_file"] for row in selected]
+        assert len(high) == len(set(high))
+        assert len(low) == len(set(low))
+        assert set(high).isdisjoint(low)
+        assert all(float(row["candidate_contrast"]) > 0 for row in selected)
+    contradictions = _rows("contradictory_cases.csv")
+    assert len(contradictions) == 40
+    for candidate in {row["candidate"] for row in contradictions}:
+        selected = [row for row in contradictions if row["candidate"] == candidate]
+        assert sum(row["case_type"] == "supporting" for row in selected) == 5
+        assert sum(row["case_type"] == "contradicting" for row in selected) == 5
+
+
+def test_gx_spec_is_proposal_only_with_auditable_planning_budget() -> None:
+    spec = json.loads((ARTIFACTS / "gx_experiment_spec.json").read_text(encoding="utf-8"))
+    assert spec["status"] == "proposal_only_researcher_approval_required"
+    assert [row["candidate"] for row in spec["interventions"]] == [
+        "geodesic_curvature_compression",
+        "f_Q_integrand_w25_peak",
+    ]
+    budget = spec["compute_estimate"]
+    assert budget["standard_runs"] == 24
+    assert budget["standard_node_hours"] == 12
+    assert budget["convergence_node_hours"] == 12
+    assert budget["total_perlmutter_node_hours"] == 32.5
+    assert "not a measured Perlmutter pilot" in budget["basis"]

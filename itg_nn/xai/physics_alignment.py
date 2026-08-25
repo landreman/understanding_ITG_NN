@@ -222,6 +222,11 @@ def lag_selection_permutation_null(
         )
         mean_curve = np.fft.ifft(paired_frequency.mean(axis=1), axis=1).real
         maxima[start:stop] = np.max(np.abs(mean_curve), axis=1)
+    # Accelerate's FFT can vary by one last-bit rounding operation between two
+    # identical calls in the same process.  Quantizing far below any reported
+    # or bootstrap resolution makes the seeded null bitwise reproducible while
+    # changing values by at most 5e-16.
+    maxima = np.round(maxima, decimals=15)
     return LagSelectionNull(
         max_abs_rank_correlation=maxima,
         q95=float(np.quantile(maxima, 0.95)),
