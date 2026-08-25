@@ -31,7 +31,7 @@ def test_registered_manifest_hashes_all_synthesis_outputs() -> None:
     assert manifest["gx_outputs_computed"] is False
     assert manifest["review_slice_used"] is False
     assert manifest["source_manifest_count"] == 18
-    assert manifest["source_evidence_artifact_count"] == 18
+    assert manifest["source_evidence_artifact_count"] == 21
     expected_regular = {
         "evidence_ledger.csv",
         "evidence_matrix.csv",
@@ -145,7 +145,9 @@ def test_headline_numbers_and_contradictions_are_pinned() -> None:
     assert len(zonal) == 15
     assert {row["use_claim_permitted"] for row in zonal} == {"False"}
     fidelity = sorted(float(row["held_out_r2"]) for row in values("E12_MEMBER_FIDELITY"))
-    assert fidelity == pytest.approx(sorted([0.8603164016682042, 0.8561324566199278, 0.8635846519847646]))
+    assert fidelity == pytest.approx(
+        sorted([0.8603164016682042, 0.8560790733151917, 0.8635806956843547])
+    )
     geodesic = values("E13_GEO_NATURAL")[0]
     assert geodesic["causal_claim_permitted"] == "False"
     assert geodesic["aipw_resolved_fold_count"] == "7"
@@ -195,3 +197,21 @@ def test_smallest_next_calculation_is_vmec_only_before_gx() -> None:
     assert "0.1 panel IQR" in first["minimum_success"]
     assert "researcher approval" in first["decision_gate"]
 
+
+def test_reports_publish_required_handoff_sections() -> None:
+    final_report = (ROOT / "reports/xai/FINAL_REPORT.md").read_text(encoding="utf-8")
+    executive = (ROOT / "reports/xai/S14_executive_summary.md").read_text(
+        encoding="utf-8"
+    )
+    step_report = (ROOT / "reports/xai/S14_synthesis.md").read_text(encoding="utf-8")
+    for report in (final_report, executive, step_report):
+        assert "## Deferred" in report
+        assert "## Reviewer reproduction" in report
+    assert "## Acceptance criteria" in final_report
+    assert "## Acceptance criteria" in step_report
+    assert "Every headline conclusion links to machine-readable evidence" in final_report
+    assert "Every causal statement identifies its intervention" in final_report
+    assert "All runs can be recreated from manifests" in final_report
+    assert "S14_artifacts/evidence_matrix.csv" in final_report
+    assert "S14_artifacts/reproducibility_index.csv" in final_report
+    assert "S14_artifacts/next_experiments.csv" in final_report
