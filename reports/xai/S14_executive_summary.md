@@ -131,10 +131,13 @@ The committed S14 package contains:
 - a [64-record evidence ledger](S14_artifacts/evidence_ledger.csv) with exact
   source selectors and values;
 - a [nine-headline claim register](S14_artifacts/claim_register.csv), with at
-  least two method families per claim;
+  least two explicitly claim-aligned method families per claim and the conjunct
+  each evidence item addresses;
 - an [18-run/19-record provenance index](S14_artifacts/reproducibility_index.csv),
   with manifest paths, the S03 publication verification, SHA-256 hashes, and an
-  explicit content-hash pin for every evidence artifact; and
+  explicit content-hash pin for every evidence artifact. Seventeen run
+  manifests are independently recreatable; the historical S03 phase correction
+  is pinned but lacks a recorded Git commit; and
 - a [five-item next-experiment list](S14_artifacts/next_experiments.csv).
 
 The full interpretation, limitations, commands, mutation tests, acceptance

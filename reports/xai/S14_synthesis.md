@@ -21,8 +21,10 @@ or GX outputs.
   prospective VMEC intervention are explicitly named in
   [evidence_ledger.csv](S14_artifacts/evidence_ledger.csv) and
   [next_experiments.csv](S14_artifacts/next_experiments.csv).
-- All runs can be recreated from manifests: pass for all 18 indexed upstream
-  runs; the 19th provenance row separately pins the corrected S03 publication,
+- All runs can be recreated from manifests: qualified historical failure.
+  Seventeen of 18 indexed run manifests are independently recreatable; the
+  `S03_PHASE` correction has no recorded Git commit and is honestly marked
+  false. The 19th provenance row still pins its exact corrected publication,
   and the S14 [manifest](S14_artifacts/manifest.json) recreates this synthesis.
 
 ## Deferred

@@ -124,10 +124,12 @@ Every row below is registered in the
 [claim register](S14_artifacts/claim_register.csv). Its evidence IDs resolve to
 exact CSV selectors, fields, and verbatim values in the
 [evidence ledger](S14_artifacts/evidence_ledger.csv). `Families` counts only
-claim-aligned evidence (`supports` for positive claims and `contradicts` for
-rejection claims), and every linked evidence row must belong to a candidate the
-claim explicitly names. The register separately retains all method families
-consulted, including mixed and null results.
+per-claim links marked `corroborates`; it does not read the evidence row's
+candidate-level `direction`. Every link also names the conjunct it addresses,
+so the two sides of a compound claim remain visible. Every linked evidence row
+must belong to a candidate the claim explicitly names. The register separately
+retains all method families consulted, including qualifiers, contradictions,
+context, and null results.
 
 | ID | conclusion | independent families | representative machine-readable evidence |
 |---|---|---:|---|
@@ -136,10 +138,41 @@ consulted, including mixed and null results.
 | C03 | Members share a coarse channel/representation story, not one common signed position-by-position mechanism. | 3 | member attribution agreement in [S06b](S06b_artifacts/member_agreement.csv); signed spatial null in [S07](S07_artifacts/spatial_alignment.csv); representation similarity and motifs in [S10](S10_artifacts/cohort_comparison.csv) |
 | C04 | Broad concept decoding reaches about 91% and a compact 17-feature invariant vocabulary about 86%; neither is an exact formula. | 2 | concept completeness in [S09](S09_artifacts/completeness.csv); held-out distillation and the 13/64 unit limit in [S12](S12_artifacts/fidelity.csv), with [nested subsets](S12_artifacts/subset_fidelity.csv) |
 | C05 | All four physical candidates are associated with the same native GX output; no physical causal effect has been measured. | 2 | grouped-bootstrap native-output rank correlations in [S13 associations](S13_artifacts/fixed_associations.csv); adjusted and matching checks on that same outcome in [S13 rankings](S13_artifacts/candidate_ranking.csv) |
-| C06 | Geodesic/compression is the highest-value next physical target, not a causal winner. | 4 | hidden-use evidence in [S08](S08_artifacts/tcav_use.csv); recurrence in [S12](S12_artifacts/term_recurrence.csv); native GX rank association plus adjusted/residual checks in [S13](S13_artifacts/candidate_ranking.csv) |
-| C07 | The evidence contradicts a specific learned GX zonal-flow mechanism. | 2 | hidden probe and use failures in [S08](S08_artifacts/probe_scores.csv) and [S08 use](S08_artifacts/tcav_use.csv); contextual observed association in [S07](S07_artifacts/zonal_association.csv) is retained but does not count as corroboration |
+| C06 | Geodesic/compression is the highest-value next physical target, not a causal winner. | 2 | native GX rank association plus fold-robust adjusted/residual checks in [S13](S13_artifacts/candidate_ranking.csv); member-variable hidden use and recurrence are retained as qualifiers from [S08](S08_artifacts/tcav_use.csv) and [S12](S12_artifacts/term_recurrence.csv) |
+| C07 | The evidence contradicts a specific learned GX zonal-flow mechanism. | 3 | hidden probe and use failures in [S08](S08_artifacts/probe_scores.csv) and [S08 use](S08_artifacts/tcav_use.csv); the observed association in [S07](S07_artifacts/zonal_association.csv) corroborates the distinct conjunct that the association is nonspecific |
 | C08 | Ensemble spread ranks error but is not a calibrated confidence interval or guaranteed bound. | 2 | spread/error association in [S11](S11_artifacts/spread_error_associations.csv); common-mode failure audit in [S11](S11_artifacts/failure_categories.csv) |
-| C09 | The evidence contradicts direct shared signed focus where GX transports heat along $z$. | 3 | signed spatial attribution in [S07](S07_artifacts/spatial_alignment.csv); local hidden probes and edits in [S08](S08_artifacts/probe_scores.csv) and [S08 use](S08_artifacts/tcav_use.csv) |
+| C09 | The evidence contradicts direct shared signed focus where GX transports heat along $z$. | 2 | signed density and attribution comparisons in [S07](S07_artifacts/spatial_alignment.csv); positive-but-limited local hidden probes and edits in [S08](S08_artifacts/probe_scores.csv) and [S08 use](S08_artifacts/tcav_use.csv) are qualifiers and do not count toward the rejection |
+
+### Direction-label audit after review
+
+The first review response (`8ea8982`) made evidence `direction` feed the
+headline gate and revised labels at the same time. That coupled an interpretive
+classification to acceptance. This registered run removes the coupling and
+derives every disputed label from named source fields under rules stored in the
+config and ledger. Relative to that first response, the complete revision is:
+
+| evidence record | first-response label | final candidate-level label | source-derived rule |
+|---|---|---|---|
+| `E07_FQ_QZ` | supports | mixed | negative correlation and nonzero best lag |
+| `E08_FQ_USE` | supports | regime-dependent | 12/15 complete S08 use gates pass |
+| `E08_GEO_USE` | supports | regime-dependent | 10/15 complete S08 use gates pass |
+| `E08_COLOCATION_USE` | supports | regime-dependent | 12/15 complete S08 use gates pass |
+| `E08_LOCAL_QZ_ENCODING` | contradicts | mixed | median decoding gain is positive overall/unstable but not near the floor |
+| `E08_LOCAL_QZ_USE` | contradicts | regime-dependent | 7/15 complete S08 use gates pass |
+| `E11_SPREAD_ERROR_ASSOCIATION` | supports | regime-dependent | positive stable/unstable intervals are disjoint |
+| `E11_COMMON_MODE_FAILURE` | supports | contradicts | eight all-regime common-mode failures occur |
+| `E12_BAD_RECURRENCE` | supports | mixed | all three recurrence values are below 0.5 |
+| `E12_GEO_RECURRENCE` | supports | regime-dependent | member recurrence spans 0.27–0.60 |
+| `E13_FQ_NATURAL` | supports | unresolved | adjusted effect resolves in 0/7 folds |
+| `E13_FSTAB_NATURAL` | supports | regime-dependent | adjusted effect resolves in 4/7 folds |
+| `E13_BAD_NATURAL` | supports | regime-dependent | adjusted effect resolves in 2/7 folds |
+
+`E13_GEO_NATURAL` remains `supports` because it resolves in 7/7 folds. The
+headline counts no longer depend on any of these row labels. C06 counts only the
+two S13 physical-observation families; C08 records `error-ranking utility` and
+`not a calibrated guarantee` as distinct conjuncts; and C09 counts only the two
+S07 families, with both S08 records marked as qualifiers. Thus a future label
+revision cannot silently make a headline pass.
 
 None of these nine rows is a physical causal statement—the register names that
 column `physical_causal_statement`. S03, S04, S06, and S08
@@ -199,8 +232,12 @@ For unstable rows, signed low-pass Integrated Gradients (an attribution method:
 it assigns output change along a path from a smoothed baseline) correlate with
 $Q(z)$ at **-0.0212, -0.0128, and -0.0116**, with incompatible best lags.
 Positive-only attribution appears more similar, but it discards the negative
-credit and cannot rescue a signed mechanism. Zonal magnitude passes none of the
-15 hidden-use cells and has near-zero held-out probe performance. Natural GX
+credit and cannot rescue a signed mechanism. Local $Q(z)$ concentration is
+positively but weakly decodable overall and on unstable rows, not near the
+floor, and 7/15 hidden-use cells pass; those results qualify rather than refute
+the candidate and do not establish shared signed spatial focus. Zonal magnitude
+passes none of the 15 hidden-use cells and has near-zero held-out probe
+performance. Natural GX
 association with zonal magnitude is therefore not evidence that the network has
 direct access to or uses a zonal-flow variable.
 
@@ -260,7 +297,7 @@ plus the S03 publication-verification manifest that pins the corrected ladder
 CSV by content hash.
 
 The [S14 manifest](S14_artifacts/manifest.json) records exact command, config,
-seed, Python and package versions, wall time (**0.887 s**), Git commit/tree,
+seed, Python and package versions, wall time (**0.675 s**), Git commit/tree,
 output hashes, all source hashes, and these immutable fingerprints:
 
 - external dataset SHA-256:
@@ -298,29 +335,36 @@ copied verbatim into
 [upstream_manifests](S14_artifacts/upstream_manifests/); later manifests remain
 at their original committed paths. All 19 provenance hashes resolve in the
 committed tree, and together they content-hash pin all 21 evidence artifacts.
+Seventeen of the 18 run manifests are independently recreatable. The historical
+`S03_PHASE` correction records its command and outputs but not its Git commit;
+its index row therefore says `recreates_claims = False` rather than fabricating
+provenance. The S03 publication-verification manifest independently pins those
+corrected outputs.
 
 ## Verification
 
 Tests were written before implementation. The first focused run failed in six
 intended places while the synthesis validators were stubs. The final focused
-suite passes 20 tests, including a cyclic toy ledger with a known relevant
+suite passes 26 tests, including a cyclic toy ledger with a known relevant
 feature and an explicit null control, exact source-row reproduction for all 64
 evidence records, artifact hashes, numerical headline pins, and full manifest
 resolution. A real pilot-run test checks finalization and `--no-publish`, and
 the ledger rejects unknown validity/direction labels and intervals without a
-traceable grouping unit.
+traceable grouping unit. Fixture tests also require every evidence artifact to
+have a manifest pin and require claim alignment/conjunct mappings to cover the
+exact linked evidence set.
 
 Three deliberate mutations were each confirmed to turn the suite red and were
 then reverted:
 
-1. truncated an exact two-row CSV selection to its first row;
-   `test_csv_selector_returns_every_exact_row_and_rejects_empty_selection`
+1. made the claim gate read candidate-level `direction` instead of per-claim
+   alignment; `test_headline_uses_claim_alignment_not_candidate_direction`
    failed;
-2. bypassed the validity-tag whitelist;
-   `test_invalid_validity_tag_and_direction_are_rejected` failed;
-3. weakened the headline requirement from two claim-aligned corroborating
-   method families to one;
-   `test_headline_claim_requires_two_independent_method_families` failed.
+2. classified a partial TCAV pass fraction as support instead of
+   regime-dependent; `test_direction_is_derived_from_declared_source_rule`
+   failed;
+3. disabled the error for evidence artifacts with no manifest content-hash pin;
+   `test_manifest_pin_guard_rejects_unpinned_evidence` failed.
 
 The earlier production round also turned red when the physical-intervention
 guard and reproducibility-index manifest hash check were bypassed. No attempted
@@ -331,10 +375,10 @@ Final local commands and outcomes:
 ```text
 .venv-xai/bin/python -m pytest tests/xai/test_synthesis.py \
   tests/xai/test_synthesis_script.py tests/xai/test_synthesis_artifacts.py -q
-20 passed
+26 passed
 
 source .venv-xai/bin/activate && make check
-336 passed
+342 passed
 ```
 
 ## Interpretation limits
@@ -361,7 +405,9 @@ source .venv-xai/bin/activate && make check
    two independent method families.** Pass. The
    [claim register](S14_artifacts/claim_register.csv) has nine headline rows;
    every `corroborating_method_family_count` is at least 2 after filtering by
-   claim polarity and candidate scope, and every source is a committed CSV.
+   explicit per-evidence claim alignment and candidate scope, and every source
+   is a committed CSV. The register records which conjunct each link addresses;
+   record-level direction is not an acceptance input.
    Exact source selectors and values are in the 64-row
    [evidence ledger](S14_artifacts/evidence_ledger.csv).
 2. **Every causal statement identifies its intervention.** Pass. The claim
@@ -369,12 +415,15 @@ source .venv-xai/bin/activate && make check
    intervention was executed. Every model diagnostic in the ledger records its named
    intervention and whether it ran; prospective N01 explicitly names the VMEC
    boundary-coefficient intervention and says it has not run.
-3. **All runs can be recreated from manifests.** Pass. The
-   [reproducibility index](S14_artifacts/reproducibility_index.csv) resolves and
-   SHA-256-verifies all 18 S00–S13 production/correction manifests and the S03
-   publication-verification record; every one of the 21 evidence artifacts is
-   content-hash pinned by at least one indexed record. The S14
-   [manifest](S14_artifacts/manifest.json) recreates this synthesis.
+3. **All runs can be recreated from manifests.** Qualified historical failure:
+   **17/18** indexed run manifests contain the required recreation provenance.
+   The `S03_PHASE` correction lacks a recorded Git commit, so its row is
+   explicitly `recreates_claims = False`; its exact outputs remain content-hash
+   pinned by the S03 publication-verification record. The index resolves and
+   SHA-256-verifies all 19 provenance records, every one of the 21 evidence
+   artifacts is pinned, and the S14
+   [manifest](S14_artifacts/manifest.json) recreates this synthesis. The missing
+   historical commit cannot be repaired honestly in S14.
 4. **Deliverables.** Pass. This `FINAL_REPORT.md`, the compact reproducibility
    index, the 11-candidate evidence matrix, and the five-item prioritized
    next-experiment list are committed artifacts.
@@ -405,9 +454,11 @@ future decision-gated experiments, not incomplete S14 work.
   2 contradicted, 1 unresolved**), 64 evidence records, nine headline claims,
   18 run manifests plus one publication-verification record, and five prioritized
   experiments.
-- Every evidence selector and value, every claim-to-evidence link, the minimum
-  two-family count, all negative-result cells, source and output SHA-256 hashes,
-  and immutable dataset/checkpoint fingerprints. The copied legacy manifests
+- Every evidence selector and value, every source-derived direction rule, every
+  per-claim alignment and conjunct, the minimum two-family count, all
+  negative-result cells, source and output SHA-256 hashes, and immutable
+  dataset/checkpoint fingerprints. Seventeen of 18 run manifests are marked
+  independently recreatable; the S03 phase exception is explicit. The copied legacy manifests
   themselves are checkable as committed bytes; fidelity to their ignored source
   files is only partially corroborated, as described below.
 - The headline values quoted in this report, using the evidence IDs in the

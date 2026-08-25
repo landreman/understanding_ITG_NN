@@ -21,6 +21,20 @@
         "candidate_ids": "localized_f_Q_integrand_peak;f_stab",
         "claim_id": "C01_PAPER_FEATURE_FAMILY",
         "claim_text": "The networks encode and use the paper's f_Q/f_stab feature family, although no one named scalar uniquely owns the credit.",
+        "evidence_alignment": {
+          "E04_FQ_DIRECTION_REMOVAL": "corroborates",
+          "E08_FQ_USE": "corroborates",
+          "E08_FSTAB_USE": "corroborates",
+          "E12_FQ_RECURRENCE": "corroborates",
+          "E12_FSTAB_RECURRENCE": "corroborates"
+        },
+        "evidence_conjunct": {
+          "E04_FQ_DIRECTION_REMOVAL": "model use",
+          "E08_FQ_USE": "model use",
+          "E08_FSTAB_USE": "model use",
+          "E12_FQ_RECURRENCE": "learned recurrence",
+          "E12_FSTAB_RECURRENCE": "learned recurrence"
+        },
         "evidence_ids": "E04_FQ_DIRECTION_REMOVAL;E08_FQ_USE;E08_FSTAB_USE;E12_FQ_RECURRENCE;E12_FSTAB_RECURRENCE",
         "evidence_polarity": "supports",
         "headline": true,
@@ -34,6 +48,26 @@
         "candidate_ids": "cross_channel_colocation;low_frequency_order_envelope",
         "claim_id": "C02_ORDER_AND_ALIGNMENT",
         "claim_text": "Cross-channel alignment and low-frequency spatial structure matter to the canonical members, but parallel order cannot yet be separated from the low-frequency envelope.",
+        "evidence_alignment": {
+          "E03_ALIGNMENT_PERTURBATION": "corroborates",
+          "E03_HIGH_BAND_CONTROL": "context",
+          "E03_JOINT_SHIFT_EXACT_CONTROL": "context",
+          "E03_LOW_BAND_ATTENUATION": "corroborates",
+          "E03_MID_BAND_ATTENUATION": "corroborates",
+          "E03_ORDER_PERMUTATION": "corroborates",
+          "E06_LOW_PASS_PATH": "corroborates",
+          "E08_COLOCATION_USE": "corroborates"
+        },
+        "evidence_conjunct": {
+          "E03_ALIGNMENT_PERTURBATION": "cross-channel alignment",
+          "E03_HIGH_BAND_CONTROL": "high-frequency control",
+          "E03_JOINT_SHIFT_EXACT_CONTROL": "exact symmetry control",
+          "E03_LOW_BAND_ATTENUATION": "low-frequency structure",
+          "E03_MID_BAND_ATTENUATION": "frequency response",
+          "E03_ORDER_PERMUTATION": "spatial order",
+          "E06_LOW_PASS_PATH": "low-frequency structure",
+          "E08_COLOCATION_USE": "cross-channel alignment"
+        },
         "evidence_ids": "E03_ALIGNMENT_PERTURBATION;E03_JOINT_SHIFT_EXACT_CONTROL;E03_ORDER_PERMUTATION;E03_LOW_BAND_ATTENUATION;E03_MID_BAND_ATTENUATION;E03_HIGH_BAND_CONTROL;E08_COLOCATION_USE;E06_LOW_PASS_PATH",
         "evidence_polarity": "supports",
         "headline": true,
@@ -47,6 +81,18 @@
         "candidate_ids": "coarse_channel_consensus;direct_Qz_spatial_focus;localized_f_Q_integrand_peak",
         "claim_id": "C03_COARSE_NOT_PRECISE_CONSENSUS",
         "claim_text": "Members share a coarse channel and representation-level story, not one common signed position-by-position mechanism.",
+        "evidence_alignment": {
+          "E06_CHANNEL_AGREEMENT": "corroborates",
+          "E07_ATTRIBUTION_QZ_NULL": "corroborates",
+          "E10_FQ_MOTIF": "corroborates",
+          "E10_REPRESENTATION_CONSENSUS": "corroborates"
+        },
+        "evidence_conjunct": {
+          "E06_CHANNEL_AGREEMENT": "coarse channel consensus",
+          "E07_ATTRIBUTION_QZ_NULL": "no shared signed position mechanism",
+          "E10_FQ_MOTIF": "limited recurrent motif",
+          "E10_REPRESENTATION_CONSENSUS": "representation consensus"
+        },
         "evidence_ids": "E06_CHANNEL_AGREEMENT;E10_REPRESENTATION_CONSENSUS;E07_ATTRIBUTION_QZ_NULL;E10_FQ_MOTIF",
         "evidence_polarity": "supports",
         "headline": true,
@@ -60,6 +106,18 @@
         "candidate_ids": "compact_invariant_formula",
         "claim_id": "C04_COMPACT_FORMULA",
         "claim_text": "Readable concept summaries reproduce much of member-output variance: a broad decoder reaches about 91% and a compact 17-feature invariant vocabulary reaches about 86%, but neither is an exact formula for the networks or their units.",
+        "evidence_alignment": {
+          "E09_FULL_COMPLETENESS": "corroborates",
+          "E12_BOTTLENECK_UNIT_FIDELITY": "qualifies",
+          "E12_INTERACTION_GAIN": "corroborates",
+          "E12_MEMBER_FIDELITY": "corroborates"
+        },
+        "evidence_conjunct": {
+          "E09_FULL_COMPLETENESS": "broad readable decoder",
+          "E12_BOTTLENECK_UNIT_FIDELITY": "unit-level limitation",
+          "E12_INTERACTION_GAIN": "compact interaction vocabulary",
+          "E12_MEMBER_FIDELITY": "compact member-output decoder"
+        },
         "evidence_ids": "E09_FULL_COMPLETENESS;E12_MEMBER_FIDELITY;E12_BOTTLENECK_UNIT_FIDELITY;E12_INTERACTION_GAIN",
         "evidence_polarity": "supports",
         "headline": true,
@@ -73,6 +131,26 @@
         "candidate_ids": "localized_f_Q_integrand_peak;f_stab;bad_curvature_compression;geodesic_curvature_compression",
         "claim_id": "C05_NO_PHYSICAL_CAUSAL_CANDIDATE",
         "claim_text": "All four physical candidates are observationally associated with GX output, but none is intervention-ready and no physical causal effect has been measured.",
+        "evidence_alignment": {
+          "E13_BAD_NATIVE_ASSOCIATION": "corroborates",
+          "E13_BAD_NATURAL": "corroborates",
+          "E13_FQ_NATIVE_ASSOCIATION": "corroborates",
+          "E13_FQ_NATURAL": "corroborates",
+          "E13_FSTAB_NATIVE_ASSOCIATION": "corroborates",
+          "E13_FSTAB_NATURAL": "corroborates",
+          "E13_GEO_NATIVE_ASSOCIATION": "corroborates",
+          "E13_GEO_NATURAL": "corroborates"
+        },
+        "evidence_conjunct": {
+          "E13_BAD_NATIVE_ASSOCIATION": "observational GX association",
+          "E13_BAD_NATURAL": "observational contrast and causal limit",
+          "E13_FQ_NATIVE_ASSOCIATION": "observational GX association",
+          "E13_FQ_NATURAL": "observational contrast and causal limit",
+          "E13_FSTAB_NATIVE_ASSOCIATION": "observational GX association",
+          "E13_FSTAB_NATURAL": "observational contrast and causal limit",
+          "E13_GEO_NATIVE_ASSOCIATION": "observational GX association",
+          "E13_GEO_NATURAL": "observational contrast and causal limit"
+        },
         "evidence_ids": "E13_FQ_NATIVE_ASSOCIATION;E13_FSTAB_NATIVE_ASSOCIATION;E13_BAD_NATIVE_ASSOCIATION;E13_GEO_NATIVE_ASSOCIATION;E13_FQ_NATURAL;E13_FSTAB_NATURAL;E13_BAD_NATURAL;E13_GEO_NATURAL",
         "evidence_polarity": "supports",
         "headline": true,
@@ -86,6 +164,18 @@
         "candidate_ids": "geodesic_curvature_compression",
         "claim_id": "C06_GEODESIC_NEXT_TARGET",
         "claim_text": "Geodesic-curvature/compression is the highest-value next physical target because its independent GX gain is fold-robust even though its learned recurrence is weaker than f_stab and the localized peak.",
+        "evidence_alignment": {
+          "E08_GEO_USE": "qualifies",
+          "E12_GEO_RECURRENCE": "qualifies",
+          "E13_GEO_NATIVE_ASSOCIATION": "corroborates",
+          "E13_GEO_NATURAL": "corroborates"
+        },
+        "evidence_conjunct": {
+          "E08_GEO_USE": "member-variable learned use",
+          "E12_GEO_RECURRENCE": "weaker recurrence",
+          "E13_GEO_NATIVE_ASSOCIATION": "physical GX association",
+          "E13_GEO_NATURAL": "fold-robust independent GX gain"
+        },
         "evidence_ids": "E08_GEO_USE;E12_GEO_RECURRENCE;E13_GEO_NATIVE_ASSOCIATION;E13_GEO_NATURAL",
         "evidence_polarity": "supports",
         "headline": true,
@@ -99,6 +189,16 @@
         "candidate_ids": "zonal_flow_mechanism",
         "claim_id": "C07_ZONAL_NOT_LEARNED",
         "claim_text": "The tested evidence contradicts a claim that the networks encode and use GX zonal-flow magnitude as a specific hidden mechanism.",
+        "evidence_alignment": {
+          "E07_ZONAL_NONSPECIFIC": "corroborates",
+          "E08_ZONAL_ENCODING_NULL": "corroborates",
+          "E08_ZONAL_USE_NULL": "corroborates"
+        },
+        "evidence_conjunct": {
+          "E07_ZONAL_NONSPECIFIC": "observed association is nonspecific",
+          "E08_ZONAL_ENCODING_NULL": "not encoded",
+          "E08_ZONAL_USE_NULL": "not used"
+        },
         "evidence_ids": "E08_ZONAL_ENCODING_NULL;E08_ZONAL_USE_NULL;E07_ZONAL_NONSPECIFIC",
         "evidence_polarity": "contradicts",
         "headline": true,
@@ -112,6 +212,14 @@
         "candidate_ids": "ensemble_spread_as_error_signal",
         "claim_id": "C08_SPREAD_NOT_ERROR_BAR",
         "claim_text": "Ensemble spread is a useful error-ranking diagnostic but not a calibrated confidence interval or guaranteed error bound.",
+        "evidence_alignment": {
+          "E11_COMMON_MODE_FAILURE": "corroborates",
+          "E11_SPREAD_ERROR_ASSOCIATION": "corroborates"
+        },
+        "evidence_conjunct": {
+          "E11_COMMON_MODE_FAILURE": "not a calibrated guarantee",
+          "E11_SPREAD_ERROR_ASSOCIATION": "error-ranking utility"
+        },
         "evidence_ids": "E11_SPREAD_ERROR_ASSOCIATION;E11_COMMON_MODE_FAILURE",
         "evidence_polarity": "supports",
         "headline": true,
@@ -125,6 +233,18 @@
         "candidate_ids": "direct_Qz_spatial_focus",
         "claim_id": "C09_DIRECT_QZ_FOCUS_REJECTED",
         "claim_text": "The evidence contradicts a shared signed mechanism in which the model focuses directly where GX transports heat along z.",
+        "evidence_alignment": {
+          "E07_ATTRIBUTION_QZ_NULL": "corroborates",
+          "E07_DENSITY_QZ_CONTRADICTION": "corroborates",
+          "E08_LOCAL_QZ_ENCODING": "qualifies",
+          "E08_LOCAL_QZ_USE": "qualifies"
+        },
+        "evidence_conjunct": {
+          "E07_ATTRIBUTION_QZ_NULL": "signed attribution has no shared spatial alignment",
+          "E07_DENSITY_QZ_CONTRADICTION": "selected density is lagged and anticorrelated",
+          "E08_LOCAL_QZ_ENCODING": "some local Q(z) information is available",
+          "E08_LOCAL_QZ_USE": "some off-manifold directions affect output"
+        },
         "evidence_ids": "E07_DENSITY_QZ_CONTRADICTION;E07_ATTRIBUTION_QZ_NULL;E08_LOCAL_QZ_ENCODING;E08_LOCAL_QZ_USE",
         "evidence_polarity": "contradicts",
         "headline": true,
@@ -228,6 +348,14 @@
         "candidate_id": "localized_f_Q_integrand_peak",
         "cohort": "S01 varied-gradient interpretation panel",
         "direction": "supports",
+        "direction_rule": {
+          "control_field": "permuted_r2",
+          "encoded_field": "encoded_r2",
+          "kind": "probe_vs_permutation",
+          "minimum_gain": 0.1,
+          "stable_field": "encoded_r2_stable_or_near_floor",
+          "unstable_field": "encoded_r2_unstable"
+        },
         "evidence_id": "E08_FQ_ENCODING",
         "function_scope": "invariant_tilde_f",
         "intervention": "not_interventional",
@@ -254,7 +382,11 @@
       {
         "candidate_id": "localized_f_Q_integrand_peak",
         "cohort": "S01 96-row registered hidden-intervention subset",
-        "direction": "supports",
+        "direction": "regime-dependent",
+        "direction_rule": {
+          "field": "use_claim_permitted",
+          "kind": "tcav_pass_fraction"
+        },
         "evidence_id": "E08_FQ_USE",
         "function_scope": "invariant_tilde_f",
         "intervention": "edit hidden state along matched log_f_Q concept direction",
@@ -263,8 +395,7 @@
         "method_family": "hidden_intervention",
         "regime": "pooled claim with regime checks retained",
         "selector": {
-          "concept": "log_f_Q",
-          "use_claim_permitted": "True"
+          "concept": "log_f_Q"
         },
         "source_artifact": "reports/xai/S08_artifacts/tcav_use.csv",
         "source_fields": [
@@ -276,7 +407,7 @@
           "perturbation_validity_tag"
         ],
         "source_step": "S08",
-        "summary": "The complete encoding-plus-use gate passes in most log_f_Q member/layer cells.",
+        "summary": "The complete encoding-plus-use gate passes in 12/15 log_f_Q member/layer cells.",
         "validity_tag": "deliberately_off_manifold_diagnostic"
       },
       {
@@ -310,6 +441,11 @@
         "candidate_id": "localized_f_Q_integrand_peak",
         "cohort": "S01 varied-gradient interpretation panel",
         "direction": "supports",
+        "direction_rule": {
+          "field": "top_k_recurrence",
+          "kind": "recurrence_across_members",
+          "support_threshold": 0.5
+        },
         "evidence_id": "E12_FQ_RECURRENCE",
         "function_scope": "three invariant_tilde_f member functions",
         "intervention": "not_interventional",
@@ -337,7 +473,12 @@
       {
         "candidate_id": "localized_f_Q_integrand_peak",
         "cohort": "S01 varied-gradient interpretation panel",
-        "direction": "supports",
+        "direction": "mixed",
+        "direction_rule": {
+          "correlation_field": "circular_spearman",
+          "kind": "signed_spatial_association",
+          "lag_field": "best_lag"
+        },
         "evidence_id": "E07_FQ_QZ",
         "function_scope": "invariant_tilde_f density compared with held-out GX Q(z)",
         "intervention": "not_interventional",
@@ -438,7 +579,12 @@
       {
         "candidate_id": "localized_f_Q_integrand_peak",
         "cohort": "S01 fixed-gradient comparison panel",
-        "direction": "supports",
+        "direction": "unresolved",
+        "direction_rule": {
+          "field": "aipw_resolved_fold_count",
+          "kind": "resolved_fold_count",
+          "total": 7
+        },
         "evidence_id": "E13_FQ_NATURAL",
         "function_scope": "observed GX native output",
         "intervention": "not_interventional",
@@ -504,6 +650,14 @@
         "candidate_id": "f_stab",
         "cohort": "S01 varied-gradient interpretation panel",
         "direction": "supports",
+        "direction_rule": {
+          "control_field": "permuted_r2",
+          "encoded_field": "encoded_r2",
+          "kind": "probe_vs_permutation",
+          "minimum_gain": 0.1,
+          "stable_field": "encoded_r2_stable_or_near_floor",
+          "unstable_field": "encoded_r2_unstable"
+        },
         "evidence_id": "E08_FSTAB_ENCODING",
         "function_scope": "invariant_tilde_f",
         "intervention": "not_interventional",
@@ -531,6 +685,10 @@
         "candidate_id": "f_stab",
         "cohort": "S01 96-row registered hidden-intervention subset",
         "direction": "supports",
+        "direction_rule": {
+          "field": "use_claim_permitted",
+          "kind": "tcav_pass_fraction"
+        },
         "evidence_id": "E08_FSTAB_USE",
         "function_scope": "invariant_tilde_f",
         "intervention": "edit hidden state along matched f_stab concept direction",
@@ -539,8 +697,7 @@
         "method_family": "hidden_intervention",
         "regime": "pooled claim with regime checks retained",
         "selector": {
-          "concept": "f_stab",
-          "use_claim_permitted": "True"
+          "concept": "f_stab"
         },
         "source_artifact": "reports/xai/S08_artifacts/tcav_use.csv",
         "source_fields": [
@@ -559,6 +716,11 @@
         "candidate_id": "f_stab",
         "cohort": "S01 varied-gradient interpretation panel",
         "direction": "supports",
+        "direction_rule": {
+          "field": "top_k_recurrence",
+          "kind": "recurrence_across_members",
+          "support_threshold": 0.5
+        },
         "evidence_id": "E12_FSTAB_RECURRENCE",
         "function_scope": "three invariant_tilde_f member functions",
         "intervention": "not_interventional",
@@ -675,7 +837,12 @@
       {
         "candidate_id": "f_stab",
         "cohort": "S01 fixed-gradient comparison panel",
-        "direction": "supports",
+        "direction": "regime-dependent",
+        "direction_rule": {
+          "field": "aipw_resolved_fold_count",
+          "kind": "resolved_fold_count",
+          "total": 7
+        },
         "evidence_id": "E13_FSTAB_NATURAL",
         "function_scope": "observed GX native output",
         "intervention": "not_interventional",
@@ -771,6 +938,14 @@
         "candidate_id": "bad_curvature_compression",
         "cohort": "S01 varied-gradient interpretation panel",
         "direction": "supports",
+        "direction_rule": {
+          "control_field": "permuted_r2",
+          "encoded_field": "encoded_r2",
+          "kind": "probe_vs_permutation",
+          "minimum_gain": 0.1,
+          "stable_field": "encoded_r2_stable_or_near_floor",
+          "unstable_field": "encoded_r2_unstable"
+        },
         "evidence_id": "E08_BAD_ENCODING",
         "function_scope": "invariant_tilde_f",
         "intervention": "not_interventional",
@@ -798,6 +973,10 @@
         "candidate_id": "bad_curvature_compression",
         "cohort": "S01 96-row registered hidden-intervention subset",
         "direction": "regime-dependent",
+        "direction_rule": {
+          "field": "use_claim_permitted",
+          "kind": "tcav_pass_fraction"
+        },
         "evidence_id": "E08_BAD_USE",
         "function_scope": "invariant_tilde_f",
         "intervention": "edit hidden state along matched bad-curvature concept direction",
@@ -806,8 +985,7 @@
         "method_family": "hidden_intervention",
         "regime": "pooled claim with regime checks retained",
         "selector": {
-          "concept": "bad_curvature",
-          "use_claim_permitted": "True"
+          "concept": "bad_curvature"
         },
         "source_artifact": "reports/xai/S08_artifacts/tcav_use.csv",
         "source_fields": [
@@ -819,7 +997,7 @@
           "use_claim_permitted"
         ],
         "source_step": "S08",
-        "summary": "Bad-curvature use passes many cells, with signs changing across depth and regime.",
+        "summary": "Bad-curvature use passes 7/15 cells, with signs changing across depth and regime.",
         "validity_tag": "deliberately_off_manifold_diagnostic"
       },
       {
@@ -880,7 +1058,12 @@
       {
         "candidate_id": "bad_curvature_compression",
         "cohort": "S01 varied-gradient interpretation panel",
-        "direction": "supports",
+        "direction": "mixed",
+        "direction_rule": {
+          "field": "top_k_recurrence",
+          "kind": "recurrence_across_members",
+          "support_threshold": 0.5
+        },
         "evidence_id": "E12_BAD_RECURRENCE",
         "function_scope": "three invariant_tilde_f member functions",
         "intervention": "not_interventional",
@@ -1004,7 +1187,12 @@
       {
         "candidate_id": "bad_curvature_compression",
         "cohort": "S01 fixed-gradient comparison panel",
-        "direction": "supports",
+        "direction": "regime-dependent",
+        "direction_rule": {
+          "field": "aipw_resolved_fold_count",
+          "kind": "resolved_fold_count",
+          "total": 7
+        },
         "evidence_id": "E13_BAD_NATURAL",
         "function_scope": "observed GX native output",
         "intervention": "not_interventional",
@@ -1098,6 +1286,14 @@
         "candidate_id": "geodesic_curvature_compression",
         "cohort": "S01 varied-gradient interpretation panel",
         "direction": "supports",
+        "direction_rule": {
+          "control_field": "permuted_r2",
+          "encoded_field": "encoded_r2",
+          "kind": "probe_vs_permutation",
+          "minimum_gain": 0.1,
+          "stable_field": "encoded_r2_stable_or_near_floor",
+          "unstable_field": "encoded_r2_unstable"
+        },
         "evidence_id": "E08_GEO_ENCODING",
         "function_scope": "invariant_tilde_f",
         "intervention": "not_interventional",
@@ -1124,7 +1320,11 @@
       {
         "candidate_id": "geodesic_curvature_compression",
         "cohort": "S01 96-row registered hidden-intervention subset",
-        "direction": "supports",
+        "direction": "regime-dependent",
+        "direction_rule": {
+          "field": "use_claim_permitted",
+          "kind": "tcav_pass_fraction"
+        },
         "evidence_id": "E08_GEO_USE",
         "function_scope": "invariant_tilde_f",
         "intervention": "edit hidden state along matched geodesic-curvature concept direction",
@@ -1133,8 +1333,7 @@
         "method_family": "hidden_intervention",
         "regime": "pooled claim with regime checks retained",
         "selector": {
-          "concept": "geodesic_curvature",
-          "use_claim_permitted": "True"
+          "concept": "geodesic_curvature"
         },
         "source_artifact": "reports/xai/S08_artifacts/tcav_use.csv",
         "source_fields": [
@@ -1152,7 +1351,12 @@
       {
         "candidate_id": "geodesic_curvature_compression",
         "cohort": "S01 varied-gradient interpretation panel",
-        "direction": "supports",
+        "direction": "regime-dependent",
+        "direction_rule": {
+          "field": "top_k_recurrence",
+          "kind": "recurrence_across_members",
+          "support_threshold": 0.5
+        },
         "evidence_id": "E12_GEO_RECURRENCE",
         "function_scope": "three invariant_tilde_f member functions",
         "intervention": "not_interventional",
@@ -1277,6 +1481,11 @@
         "candidate_id": "geodesic_curvature_compression",
         "cohort": "S01 fixed-gradient comparison panel",
         "direction": "supports",
+        "direction_rule": {
+          "field": "aipw_resolved_fold_count",
+          "kind": "resolved_fold_count",
+          "total": 7
+        },
         "evidence_id": "E13_GEO_NATURAL",
         "function_scope": "observed GX native output",
         "intervention": "not_interventional",
@@ -1375,6 +1584,14 @@
         "candidate_id": "cross_channel_colocation",
         "cohort": "S01 varied-gradient interpretation panel",
         "direction": "supports",
+        "direction_rule": {
+          "control_field": "permuted_r2",
+          "encoded_field": "encoded_r2",
+          "kind": "probe_vs_permutation",
+          "minimum_gain": 0.1,
+          "stable_field": "encoded_r2_stable_or_near_floor",
+          "unstable_field": "encoded_r2_unstable"
+        },
         "evidence_id": "E08_COLOCATION_ENCODING",
         "function_scope": "invariant_tilde_f",
         "intervention": "not_interventional",
@@ -1401,7 +1618,11 @@
       {
         "candidate_id": "cross_channel_colocation",
         "cohort": "S01 96-row registered hidden-intervention subset",
-        "direction": "supports",
+        "direction": "regime-dependent",
+        "direction_rule": {
+          "field": "use_claim_permitted",
+          "kind": "tcav_pass_fraction"
+        },
         "evidence_id": "E08_COLOCATION_USE",
         "function_scope": "invariant_tilde_f",
         "intervention": "edit hidden state along matched co-location direction",
@@ -1410,8 +1631,7 @@
         "method_family": "hidden_intervention",
         "regime": "pooled claim with regime checks retained",
         "selector": {
-          "concept": "cross_channel_colocation",
-          "use_claim_permitted": "True"
+          "concept": "cross_channel_colocation"
         },
         "source_artifact": "reports/xai/S08_artifacts/tcav_use.csv",
         "source_fields": [
@@ -1422,7 +1642,7 @@
           "use_claim_permitted"
         ],
         "source_step": "S08",
-        "summary": "Co-location passes the complete use gate in most cells, with depth-dependent sign.",
+        "summary": "Co-location passes the complete use gate in 12/15 cells, with depth-dependent sign.",
         "validity_tag": "deliberately_off_manifold_diagnostic"
       },
       {
@@ -1503,10 +1723,11 @@
           "top10_q10",
           "top10_q90",
           "top10_median_effect_per_robust_input_rms",
-          "robust_input_displacement_rms"
+          "robust_input_displacement_rms",
+          "robust_dose_comparison_scope"
         ],
         "source_step": "S03",
-        "summary": "Low-band attenuation has a larger output effect than joint permutation at a smaller robust dose.",
+        "summary": "Low-band attenuation has the larger raw output effect; cross-section robust doses are not treated as comparable.",
         "validity_tag": "deliberately_off_manifold_diagnostic"
       },
       {
@@ -1685,7 +1906,7 @@
       {
         "candidate_id": "direct_Qz_spatial_focus",
         "cohort": "S01 varied-gradient interpretation panel",
-        "direction": "contradicts",
+        "direction": "mixed",
         "evidence_id": "E07_ATTRIBUTION_QZ_NULL",
         "function_scope": "invariant_tilde_f",
         "intervention": "restore short-scale content along low-pass Integrated Gradients path",
@@ -1720,7 +1941,15 @@
       {
         "candidate_id": "direct_Qz_spatial_focus",
         "cohort": "S01 varied-gradient interpretation panel",
-        "direction": "contradicts",
+        "direction": "mixed",
+        "direction_rule": {
+          "control_field": "permuted_r2",
+          "encoded_field": "encoded_r2",
+          "kind": "probe_vs_permutation",
+          "minimum_gain": 0.1,
+          "stable_field": "encoded_r2_stable_or_near_floor",
+          "unstable_field": "encoded_r2_unstable"
+        },
         "evidence_id": "E08_LOCAL_QZ_ENCODING",
         "function_scope": "invariant_tilde_f hidden representations",
         "intervention": "not_interventional",
@@ -1747,7 +1976,11 @@
       {
         "candidate_id": "direct_Qz_spatial_focus",
         "cohort": "S01 96-row registered hidden-intervention subset",
-        "direction": "contradicts",
+        "direction": "regime-dependent",
+        "direction_rule": {
+          "field": "use_claim_permitted",
+          "kind": "tcav_pass_fraction"
+        },
         "evidence_id": "E08_LOCAL_QZ_USE",
         "function_scope": "invariant_tilde_f hidden states",
         "intervention": "edit hidden state along matched local-Q(z)-concentration direction",
@@ -1756,8 +1989,7 @@
         "method_family": "hidden_intervention",
         "regime": "pooled claim with regime checks retained",
         "selector": {
-          "concept": "local_Qz_concentration",
-          "use_claim_permitted": "True"
+          "concept": "local_Qz_concentration"
         },
         "source_artifact": "reports/xai/S08_artifacts/tcav_use.csv",
         "source_fields": [
@@ -1768,13 +2000,21 @@
           "use_claim_permitted"
         ],
         "source_step": "S08",
-        "summary": "Only a subset of local-Q(z) hidden directions passes the complete use gate.",
+        "summary": "Only 7/15 local-Q(z) hidden directions pass the complete use gate.",
         "validity_tag": "deliberately_off_manifold_diagnostic"
       },
       {
         "candidate_id": "zonal_flow_mechanism",
         "cohort": "S01 varied-gradient interpretation panel",
         "direction": "contradicts",
+        "direction_rule": {
+          "control_field": "permuted_r2",
+          "encoded_field": "encoded_r2",
+          "kind": "probe_vs_permutation",
+          "minimum_gain": 0.1,
+          "stable_field": "encoded_r2_stable_or_near_floor",
+          "unstable_field": "encoded_r2_unstable"
+        },
         "evidence_id": "E08_ZONAL_ENCODING_NULL",
         "function_scope": "invariant_tilde_f hidden representations",
         "intervention": "not_interventional",
@@ -1803,6 +2043,10 @@
         "candidate_id": "zonal_flow_mechanism",
         "cohort": "S01 96-row registered hidden-intervention subset",
         "direction": "contradicts",
+        "direction_rule": {
+          "field": "use_claim_permitted",
+          "kind": "tcav_pass_fraction"
+        },
         "evidence_id": "E08_ZONAL_USE_NULL",
         "function_scope": "invariant_tilde_f hidden states",
         "intervention": "edit hidden state along matched zonal-flow direction",
@@ -1934,8 +2178,6 @@
         "source_fields": [
           "target_id",
           "held_out_r2",
-          "held_out_r2_ci95_lower",
-          "held_out_r2_ci95_upper",
           "split_unit",
           "model_version",
           "estimand"
@@ -1979,7 +2221,18 @@
       {
         "candidate_id": "ensemble_spread_as_error_signal",
         "cohort": "S01 varied-gradient interpretation panel",
-        "direction": "supports",
+        "direction": "regime-dependent",
+        "direction_rule": {
+          "field": "spearman",
+          "kind": "positive_association_with_disjoint_regime_intervals",
+          "lower_field": "spearman_interval_lower",
+          "regime_field": "regime",
+          "regime_values": [
+            "stable_or_near_floor",
+            "unstable"
+          ],
+          "upper_field": "spearman_interval_upper"
+        },
         "evidence_id": "E11_SPREAD_ERROR_ASSOCIATION",
         "function_scope": "population spread of all 100 invariant_tilde_f members",
         "intervention": "not_interventional",
@@ -2009,7 +2262,13 @@
       {
         "candidate_id": "ensemble_spread_as_error_signal",
         "cohort": "S01 varied-gradient interpretation panel",
-        "direction": "supports",
+        "direction": "contradicts",
+        "direction_rule": {
+          "field": "count",
+          "kind": "nonzero_failure_count",
+          "scope_field": "regime",
+          "scope_value": "all"
+        },
         "evidence_id": "E11_COMMON_MODE_FAILURE",
         "function_scope": "all-100 ensemble mean and spread",
         "intervention": "not_interventional",
@@ -2088,10 +2347,10 @@
         "step": "S03"
       },
       {
-        "caveat": "Targeted phase-matched correction; the legacy config.run_id remains the primary run ID while the exact command/output-dir identifies phase-matched-top10-all100-varied1000-review3b. Combine with S03 primary and review3_manifest.json.",
+        "caveat": "Targeted phase-matched correction with no recorded git commit, so this row pins outputs but is not independently recreatable. The legacy config.run_id remains the primary run ID while the exact command/output-dir identifies phase-matched-top10-all100-varied1000-review3b. Combine with S03 primary and review3_manifest.json.",
         "copy_to_s14": true,
         "published_path": "reports/xai/S14_artifacts/upstream_manifests/S03_phase.json",
-        "recreates_claims": true,
+        "recreates_claims": false,
         "role": "registered_correction",
         "run_id": "ladder-top10-all100-varied1000-paired2000-reviewfix",
         "run_key": "S03_PHASE",
@@ -2557,22 +2816,22 @@
     "sha256": "9d8fa52f93f2782ad9948a38bf46943c0cd6df78cd08b94a006dad4e06c1c8ad"
   },
   "device": "cpu",
-  "git_commit": "8cee4a0420697f5d6d1abfb6eef9b2010d76fdc0",
+  "git_commit": "d99afe7942b107eba84f23e2e303dc4313fb38c9",
   "git_dirty": true,
   "git_tracked_dirty": true,
-  "git_tree": "47d4cb74acd81f05cdd45db6c8c9293b97fee498",
+  "git_tree": "f82678465ff1f2cdb1446b67967743a6c02ce247",
   "gradient_set": "synthesis of S01 registered fixed and varied panels",
   "gx_outputs_computed": false,
   "member_ids": [],
   "model_outputs_computed": false,
   "output_hashes": {
-    "claim_register.csv": "1fe39f80ffdcaf5243c2ce72894dc6f24f56087aaef6b67f672355196128897d",
-    "evidence_ledger.csv": "b967d9930d2c96ae4d6f1eb1f718bed904d5f3d03e1ff1244d23c655f235d228",
+    "claim_register.csv": "33f3fdf89dc41ce81ea3aa0ba5ca2183dcb6c33cf3e742ce589f03a25bfa9ca4",
+    "evidence_ledger.csv": "9f7a3d478993c4ba7a7cd9959a7962581608f101a2d385b0958572ae90ff48dc",
     "evidence_matrix.csv": "00b84e2207b8b802d6e85e12f891b0689127c78a15217e1392ed8a5051ddf8b9",
     "next_experiments.csv": "276440d37dabae79b9fa2fb76c977dbbb4787361cf7ea7b372eda427ebd61b11",
-    "reproducibility_index.csv": "99fe30a815033598f7be0d04e2c0986596f11168cc5ac32abb4a3a9155e705ad",
+    "reproducibility_index.csv": "80b85097df659afc077138ebc750a8dd4e78b1af65b5fd80b15a71a3bef8ae89",
     "source_hashes.json": "377a3e00c881bbb16e122c9cf0b9b6415f0b8728522abbd9cf146d3f6682dc78",
-    "summary.json": "229dcf582d1cc0f280d36dc9fb11a9e890ba0d3c45d7db81ca5690b39423dc63",
+    "summary.json": "8932e4c0a3aa97af4e524f7696ade96fa6788a9d8d4ccba2703cd6636513a52d",
     "upstream_manifest_S00.json": "b5108926fabfe46ee530115bcd89de11d0a58d25a9c7238fd2dd6d101b20f69c",
     "upstream_manifest_S01.json": "acb2da750e6418d697ddb332727bf1eb19197034d161181d240c121eb9bbfbeb",
     "upstream_manifest_S02_ORIGINAL.json": "edcba9af6047e295f1a2f49337d4f45162e408fa6219006ab65630e27533f1b1",
@@ -2708,5 +2967,5 @@
       }
     }
   },
-  "wall_time_seconds": 0.8868902499962132
+  "wall_time_seconds": 0.6753389169898583
 }

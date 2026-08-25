@@ -1,6 +1,6 @@
 {
   "all_headlines_have_two_independent_method_families": true,
-  "all_indexed_runs_recreatable_from_manifests": true,
+  "all_indexed_runs_recreatable_from_manifests": false,
   "all_physical_causal_statements_name_executed_interventions": true,
   "candidate_count": 11,
   "canonical_function": "invariant_tilde_f",
