@@ -1261,7 +1261,7 @@
     },
     {
       "candidate_id": "ensemble_spread_as_error_signal",
-      "hypothesis": "Member spread is useful for ranking likely errors but is a calibrated error bar.",
+      "hypothesis": "Member spread is useful for ranking likely errors but is not a calibrated error bar.",
       "status": "regime-dependent",
       "claim_grade": "diagnostic association; not uncertainty calibration",
       "function_scope": "population standard deviation across all 100 invariant_tilde_f members and ensemble-mean error",
