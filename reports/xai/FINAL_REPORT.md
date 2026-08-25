@@ -365,7 +365,7 @@ traceable grouping unit. Fixture tests also require every evidence artifact to
 have a manifest pin and require claim alignment/conjunct mappings to cover the
 exact linked evidence set.
 
-Seven deliberate mutations were each confirmed to turn the suite red and were
+Nine deliberate mutations were each confirmed to turn the suite red and were
 then reverted:
 
 1. made the claim gate read candidate-level `direction` instead of per-claim
@@ -387,12 +387,18 @@ then reverted:
 7. collapsed distinct claim conjuncts into one bucket when counting
    corroborating families;
    `test_corroborating_families_remain_separate_across_claim_conjuncts` failed.
+8. counted a distinct-artifact `qualifies` link in the corroborating source-
+   artifact total;
+   `test_qualifying_cross_step_evidence_does_not_inflate_corroborating_steps`
+   failed;
+9. replaced the maximum per-conjunct family count with the minimum;
+   `test_corroborating_families_remain_separate_across_claim_conjuncts` failed.
 
 The earlier production round also turned red when the physical-intervention
 guard and reproducibility-index manifest hash check were bypassed. The third
-automated review found items 4 and 5 before those tests existed, and the fourth
-found items 6 and 7; all four exact mutations are now covered rather than being
-omitted from this record.
+automated review found items 4 and 5 before those tests existed, the fourth
+found items 6 and 7, and the fifth found items 8 and 9; all six exact mutations
+are now covered rather than being omitted from this record.
 
 Final local commands and outcomes:
 

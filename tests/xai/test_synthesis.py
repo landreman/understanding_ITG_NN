@@ -191,6 +191,7 @@ def test_qualifying_cross_step_evidence_does_not_inflate_corroborating_steps() -
     two = _evidence("two", "candidate", "hidden_encoding", "hidden_probe")
     qualifier = _evidence("qualifier", "candidate", "distillation", "distillation")
     qualifier["source_step"] = "SOTHER"
+    qualifier["source_artifact"] = "qualifier.csv"
     claim = {
         "claim_id": "C1",
         "headline": True,
@@ -219,6 +220,8 @@ def test_qualifying_cross_step_evidence_does_not_inflate_corroborating_steps() -
     )[0]
     assert validated["corroborating_source_step_count"] == 1
     assert validated["corroborating_source_steps"] == "STOY"
+    assert validated["corroborating_source_artifact_count"] == 1
+    assert validated["corroborating_source_artifacts"] == "toy.csv"
 
 
 def test_corroborating_families_remain_separate_across_claim_conjuncts() -> None:
@@ -226,6 +229,7 @@ def test_corroborating_families_remain_separate_across_claim_conjuncts() -> None
         [
             _evidence("one", "candidate", "input_attribution", "gradient_path"),
             _evidence("two", "candidate", "hidden_encoding", "hidden_probe"),
+            _evidence("three", "candidate", "distillation", "distillation"),
         ]
     )
     claim = {
@@ -238,14 +242,23 @@ def test_corroborating_families_remain_separate_across_claim_conjuncts() -> None
         "evidence_polarity": "supports",
         "physical_causal_statement": False,
         "physical_intervention": "not_causal",
-        "evidence_ids": "one;two",
-        "evidence_alignment": {"one": "corroborates", "two": "corroborates"},
-        "evidence_conjunct": {"one": "first conjunct", "two": "second conjunct"},
+        "evidence_ids": "one;two;three",
+        "evidence_alignment": {
+            "one": "corroborates",
+            "two": "corroborates",
+            "three": "corroborates",
+        },
+        "evidence_conjunct": {
+            "one": "first conjunct",
+            "two": "second conjunct",
+            "three": "second conjunct",
+        },
         "limitations": "toy only",
     }
     validated = validate_claim_register([claim], evidence)[0]
-    assert validated["corroborating_method_family_count"] == 2
-    assert validated["maximum_corroborating_families_per_conjunct"] == 1
+    assert validated["corroborating_method_family_count"] == 3
+    assert validated["minimum_corroborating_families_per_conjunct"] == 1
+    assert validated["maximum_corroborating_families_per_conjunct"] == 2
 
 
 def test_claim_alignment_and_conjunct_cover_exactly_the_linked_evidence() -> None:
