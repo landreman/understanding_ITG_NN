@@ -600,6 +600,7 @@ def _candidate_ranking(
     balance_threshold: float,
     overlap_threshold: float,
     paper_baseline_features: set[str],
+    aipw_fold_sensitivity: list[dict[str, Any]] | None = None,
     residual_fold_sensitivity: list[dict[str, Any]] | None = None,
 ) -> list[dict[str, Any]]:
     rows = []
@@ -627,9 +628,10 @@ def _candidate_ranking(
         ]
         matched_resolved = matched["ci95_lower"] * matched["ci95_upper"] > 0
         aipw_resolved = aipw["ci95_lower"] * aipw["ci95_upper"] > 0
-        same_sign = np.sign(matched["mean_high_minus_low"]) == np.sign(
+        point_same_sign = np.sign(matched["mean_high_minus_low"]) == np.sign(
             aipw["aipw_high_minus_low"]
         )
+        resolved_sign_agreement = bool(aipw_resolved and point_same_sign)
         balance_acceptable = (
             matched["max_abs_nuisance_smd_after"] <= balance_threshold
         )
@@ -662,10 +664,24 @@ def _candidate_ranking(
             resolved_fold_fraction = float(
                 np.mean([bool(row["mse_improvement_resolved"]) for row in fold_rows])
             )
+        aipw_fold_rows = [
+            row
+            for row in (aipw_fold_sensitivity or [])
+            if row["candidate"] == candidate
+        ]
+        aipw_resolved_fold_fraction: float | str = ""
+        aipw_all_fold_assignments_resolved: bool | str = ""
+        if aipw_fold_rows:
+            aipw_resolved_fold_fraction = float(
+                np.mean([bool(row["aipw_resolved"]) for row in aipw_fold_rows])
+            )
+            aipw_all_fold_assignments_resolved = bool(
+                all(bool(row["aipw_resolved"]) for row in aipw_fold_rows)
+            )
         evidence_score = (
             int(matched_resolved)
             + int(aipw_resolved)
-            + int(same_sign)
+            + int(resolved_sign_agreement)
             + int(residual_gain_resolved)
             + int(balance_acceptable)
             + int(overlap_acceptable)
@@ -673,7 +689,7 @@ def _candidate_ranking(
         if (
             matched_resolved
             and aipw_resolved
-            and same_sign
+            and resolved_sign_agreement
             and residual_gain_resolved
             and balance_acceptable
             and overlap_acceptable
@@ -694,7 +710,13 @@ def _candidate_ranking(
                 "aipw_native_effect": aipw["aipw_high_minus_low"],
                 "aipw_native_ci95_lower": aipw["ci95_lower"],
                 "aipw_native_ci95_upper": aipw["ci95_upper"],
-                "matched_aipw_same_sign": bool(same_sign),
+                "matched_aipw_point_same_sign": bool(point_same_sign),
+                "resolved_effect_sign_agreement": resolved_sign_agreement,
+                "aipw_registered_fold_resolved": bool(aipw_resolved),
+                "aipw_resolved_fold_fraction": aipw_resolved_fold_fraction,
+                "aipw_all_fold_assignments_resolved": (
+                    aipw_all_fold_assignments_resolved
+                ),
                 "max_abs_nuisance_smd_after": matched[
                     "max_abs_nuisance_smd_after"
                 ],
@@ -823,6 +845,81 @@ def _linear_r2(target: np.ndarray, predictors: np.ndarray) -> float:
     residual = target - design @ coefficient
     denominator = np.sum(np.square(target - np.mean(target)))
     return 1.0 - float(np.sum(np.square(residual)) / denominator)
+
+
+def _aipw_fold_sensitivity_rows(
+    candidates: list[str],
+    feature_names: tuple[str, ...],
+    feature_values: np.ndarray,
+    scalars: np.ndarray,
+    scalar_names: tuple[str, ...],
+    groups: np.ndarray,
+    classes: np.ndarray,
+    target: np.ndarray,
+    resolved: dict[str, Any],
+) -> list[dict[str, Any]]:
+    """Repeat the registered all-row native-output AIPW check across folds."""
+
+    rows: list[dict[str, Any]] = []
+    replicates = int(resolved["bootstrap_replicates"])
+    for candidate_index, candidate in enumerate(candidates):
+        exposure = feature_values[:, feature_names.index(candidate)]
+        nuisance, _ = _nuisance_matrix(
+            list(resolved["matching_nuisance_features"]),
+            candidate,
+            feature_names,
+            feature_values,
+            scalar_names,
+            scalars,
+            classes,
+        )
+        low_cut = np.quantile(exposure, float(resolved["match_low_quantile"]))
+        high_cut = np.quantile(exposure, float(resolved["match_high_quantile"]))
+        mask = (exposure <= low_cut) | (exposure >= high_cut)
+        treated = exposure[mask] >= high_cut
+        registered_fold_seed = int(resolved["seed"]) + 2000 + 100 * candidate_index
+        bootstrap_seed = int(resolved["seed"]) + 3000 + 100 * candidate_index
+        for seed_offset in resolved["aipw_fold_seed_offsets"]:
+            fold_seed = registered_fold_seed + int(seed_offset)
+            result = cross_fitted_aipw(
+                treated,
+                target[mask],
+                nuisance[mask],
+                groups[mask],
+                folds=int(resolved["crossfit_folds"]),
+                seed=fold_seed,
+                propensity_clip=float(resolved["propensity_clip"]),
+            )
+            point, lower, upper = grouped_bootstrap_interval(
+                result.influence,
+                groups[mask],
+                replicates=replicates,
+                seed=bootstrap_seed,
+            )
+            rows.append(
+                {
+                    "candidate": candidate,
+                    "outcome": "target_native",
+                    "regime": "all",
+                    "tail_rows": int(mask.sum()),
+                    "fold_seed_offset": int(seed_offset),
+                    "fold_seed": fold_seed,
+                    "bootstrap_seed_held_fixed": bootstrap_seed,
+                    "aipw_high_minus_low": point,
+                    "ci95_lower": lower,
+                    "ci95_upper": upper,
+                    "aipw_resolved": lower * upper > 0,
+                    "overlap_fraction": result.overlap_fraction,
+                    "propensity_clip": resolved["propensity_clip"],
+                    "split_unit": result.split_unit,
+                    "bootstrap_unit": "equilibrium_files",
+                    "method": result.method,
+                    "estimand": NATIVE_ESTIMAND,
+                    "validity_tag": result.validity_tag,
+                    "causal_claim_permitted": False,
+                }
+            )
+    return rows
 
 
 def _residual_fold_sensitivity_rows(
@@ -1256,6 +1353,17 @@ def run(args: argparse.Namespace) -> Path:
         groups,
         resolved,
     )
+    aipw_fold_rows = _aipw_fold_sensitivity_rows(
+        candidates,
+        feature_names,
+        feature_tables["fixed"].values,
+        scalars,
+        scalar_names,
+        groups,
+        classes,
+        outcomes["fixed"]["target_native"],
+        resolved,
+    )
     residual_fold_rows = _residual_fold_sensitivity_rows(
         candidates,
         feature_names,
@@ -1273,6 +1381,7 @@ def run(args: argparse.Namespace) -> Path:
         balance_threshold=float(resolved["postmatch_balance_threshold"]),
         overlap_threshold=float(resolved["aipw_overlap_threshold"]),
         paper_baseline_features=set(resolved["paper_baselines"]["paper_selected"]),
+        aipw_fold_sensitivity=aipw_fold_rows,
         residual_fold_sensitivity=residual_fold_rows,
     )
     separability = _gx_separability_diagnostics(
@@ -1295,6 +1404,7 @@ def run(args: argparse.Namespace) -> Path:
         ("matched_pairs.csv", pair_rows),
         ("matched_effects.csv", effect_rows),
         ("doubly_robust_sensitivity.csv", sensitivity_rows),
+        ("aipw_fold_sensitivity.csv", aipw_fold_rows),
         ("residual_validation.csv", residual_rows),
         ("residual_fold_sensitivity.csv", residual_fold_rows),
         ("match_distance_sensitivity.csv", match_distance_rows),
@@ -1386,6 +1496,7 @@ def run(args: argparse.Namespace) -> Path:
             "matched_pairs.csv",
             "matched_effects.csv",
             "doubly_robust_sensitivity.csv",
+            "aipw_fold_sensitivity.csv",
             "residual_validation.csv",
             "residual_fold_sensitivity.csv",
             "match_distance_sensitivity.csv",

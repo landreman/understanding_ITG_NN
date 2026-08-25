@@ -37,6 +37,7 @@ def test_registered_manifest_hashes_every_published_scientific_artifact() -> Non
         "matched_pairs.csv",
         "matched_effects.csv",
         "doubly_robust_sensitivity.csv",
+        "aipw_fold_sensitivity.csv",
         "residual_validation.csv",
         "residual_fold_sensitivity.csv",
         "match_distance_sensitivity.csv",
@@ -139,6 +140,29 @@ def test_residual_validation_separates_fq_and_paper_baselines() -> None:
 
 
 def test_fold_and_match_distance_sensitivities_are_published() -> None:
+    aipw_folds = _rows("aipw_fold_sensitivity.csv")
+    assert len(aipw_folds) == 28
+    expected_aipw_resolved = {
+        "geodesic_curvature_compression": 7,
+        "f_Q_integrand_w25_peak": 0,
+        "bad_curvature_compression": 2,
+        "f_stab": 4,
+    }
+    for candidate, expected in expected_aipw_resolved.items():
+        selected = [row for row in aipw_folds if row["candidate"] == candidate]
+        assert len(selected) == 7
+        assert sum(row["aipw_resolved"] == "True" for row in selected) == expected
+        assert len({row["bootstrap_seed_held_fixed"] for row in selected}) == 1
+        registered = _one(selected, fold_seed_offset="0")
+        headline = _one(
+            _rows("doubly_robust_sensitivity.csv"),
+            candidate=candidate,
+            outcome="target_native",
+            regime="all",
+        )
+        for field in ("aipw_high_minus_low", "ci95_lower", "ci95_upper"):
+            assert float(registered[field]) == pytest.approx(float(headline[field]))
+
     folds = _rows("residual_fold_sensitivity.csv")
     assert len(folds) == 21
     expected_resolved = {
@@ -193,6 +217,10 @@ def test_claim_grades_keep_balance_overlap_and_causality_limits_visible() -> Non
     localized = _one(csv_ranking, candidate="f_Q_integrand_w25_peak")
     assert f_stab["evidence_rank"] == localized["evidence_rank"] == "3"
     assert f_stab["rank_tied"] == localized["rank_tied"] == "True"
+    bad_curvature = _one(csv_ranking, candidate="bad_curvature_compression")
+    assert float(bad_curvature["aipw_resolved_fold_fraction"]) == pytest.approx(2 / 7)
+    assert bad_curvature["aipw_registered_fold_resolved"] == "True"
+    assert bad_curvature["aipw_all_fold_assignments_resolved"] == "False"
 
 
 def test_pairs_are_equilibrium_disjoint_and_contradictions_are_balanced() -> None:

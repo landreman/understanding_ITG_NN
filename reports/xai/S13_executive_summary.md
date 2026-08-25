@@ -60,9 +60,9 @@ However, matching did not make the pairs genuinely comparable. Balance is
 measured by a standardized mean difference: a difference divided by the typical
 spread of that nuisance variable. Values below 0.5 were required before calling
 a candidate ready for intervention. The best candidate still had **1.07**;
-the others ranged from **2.19 to 4.15**. In three cases the worst imbalance
-became larger after matching because no low-candidate equilibria with genuinely
-similar nuisance geometry exist in this panel.
+the others ranged from **2.19 to 4.15**. In two cases the worst imbalance
+became larger after matching; $f_{\rm stab}$ improves from **2.32 to 2.19** and
+geodesic/compression from **1.21 to 1.07**, but neither reaches the 0.5 gate.
 
 That failure was kept visible. The precise matched differences are not causal
 effects.
@@ -76,8 +76,10 @@ robust” means one of those two fitted models may be wrong under certain
 assumptions; it does not protect against missing confounders or lack of
 comparable rows.
 
-Comparable high/low rows were scarce. The fraction with acceptable overlap was
-only **0.232–0.478**, below the required 0.8. The adjusted numbers are therefore
+Comparable high/low rows were scarce. For the four all-row native-output
+ranking comparisons, the fraction with acceptable overlap was only
+**0.232–0.478**, below the required 0.8; across all 32 adjusted rows it was
+**0.214–0.505**. The adjusted numbers are therefore
 sensitivity warnings rather than reliable effect estimates.
 
 Both potential-outcome models now use one common scale fitted on the complete
@@ -88,6 +90,14 @@ over all rows and **-0.011 [-0.161, 0.141]** among unstable rows. Scaling each
 tail separately had produced a resolved -1.09 unstable value. Its disappearance
 under common scaling shows that the apparent sign reversal came from nuisance-
 model specification, not a measured physical contradiction.
+
+The registered bad-curvature interval is also sensitive to which equilibria
+enter each training fold. Holding the bootstrap draws fixed and changing only
+fold membership, it resolves in **2/7** assignments and its point estimate
+spans **+0.080 to +0.862**. The localized peak resolves 0/7, $f_{\rm stab}$
+4/7, and geodesic/compression 7/7. Thus the geodesic adjusted result is robust
+to this check, whereas bad-curvature's barely positive registered interval is
+not.
 
 Matching has a parallel warning. The candidate/heat-flux difference grows with
 leftover nuisance distance (rank correlations **0.71–0.79**). In the closest
@@ -154,8 +164,10 @@ All four candidates reach observational-physical. None reaches
 intervention-ready. Geodesic-curvature/compression ranks first because its
 fixed-drive residual gain is largest and resolved in all seven fold assignments.
 Bad-curvature/compression ranks second because it has the strongest raw
-correlation, a resolved common-scale adjusted contrast, and resolves beyond the
-paper baseline in five assignments. The localized peak and $f_{\rm stab}$ tie
+correlation and a resolved registered-fold common-scale adjusted contrast,
+although that interval resolves in only 2/7 fold assignments. Its separate
+gain beyond the paper baseline resolves in five assignments. The localized
+peak and $f_{\rm stab}$ tie
 behind them. $f_{\rm stab}$ is
 already part of the full paper baseline, so its gain against the weaker
 $f_Q$-only baseline is published but does not receive a comparable ranking
@@ -220,8 +232,9 @@ meaningful parts of geometry space, but it also shows why observational
 correlation is not enough. The geometry quantities are too tightly linked to
 separate their effects from existing data. Geodesic-curvature/compression is the
 best next test because it adds a small, repeatable amount beyond the paper's
-selected formulas. The localized $f_Q$ peak is the essential competing test
-because it has the strongest raw support and the strongest sign contradiction.
+selected formulas. Bad-curvature/compression is the competing test selected by
+the registered ranking, while its 2/7 adjusted-fold result and strong coupling
+to global $\log f_Q$ make the VMEC separability screen especially important.
 
 No new equilibrium or GX simulation has been launched. The proposed 32.5-node-
 hour experiment remains behind the VMEC realizability check and then the

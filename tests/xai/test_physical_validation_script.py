@@ -236,7 +236,9 @@ def test_candidate_inside_paper_baseline_gets_no_incomparable_residual_point() -
     assert row["ranking_residual_baseline"] == "not_applicable_candidate_in_baseline"
     assert not row["ranking_residual_comparable"]
     assert not row["ranking_residual_gain_resolved"]
-    assert row["rank_score"] == 2
+    assert row["rank_score"] == 1
+    assert row["matched_aipw_point_same_sign"]
+    assert not row["resolved_effect_sign_agreement"]
 
 
 def test_physical_outcomes_keep_native_clipping_and_panel_identity(tmp_path: Path) -> None:

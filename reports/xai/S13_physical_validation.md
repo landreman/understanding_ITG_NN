@@ -24,16 +24,22 @@ acceptable threshold was 0.5. The candidate tails therefore occupy different
 parts of geometry space even after nearest-neighbour matching. These are
 observed comparisons, not causal effects.
 
-The cross-fitted augmented inverse-probability weighting sensitivity analysis
-(AIPW: it combines an outcome model with a model of which rows enter the high
-candidate tail) has only **0.232–0.478** overlap, below the registered 0.8
-requirement. Using one common training-fold scale for both potential-outcome
+For the registered all-row native-output comparison, the cross-fitted augmented
+inverse-probability weighting sensitivity analysis (AIPW: it combines an outcome
+model with a model of which rows enter the high candidate tail) has only
+**0.232–0.478** overlap, below the registered 0.8 requirement. Using one common
+training-fold scale for both potential-outcome
 models, geodesic/compression is **+0.559 [0.318, 0.764]** and bad-curvature/
 compression is **+0.203 [0.001, 0.476]**. The localized peak is unresolved both
 over all rows, **+0.084 [-0.145, 0.380]**, and among unstable rows, **-0.011
 [-0.161, 0.141]**. The earlier per-arm scaling produced a resolved -1.09
 unstable contrast; because that conclusion disappears under common scaling, it
 is a nuisance-model specification artifact rather than a physical sign reversal.
+Changing only which equilibria enter the five cross-fitting folds makes the
+bad-curvature interval resolve in just **2/7** assignments, with point estimates
+from **+0.080 to +0.862**. The localized peak resolves 0/7, $f_{\rm stab}$
+4/7, and geodesic/compression 7/7. Thus the marginal registered bad-curvature
+interval is fold-dependent, while the geodesic adjusted result is fold-robust.
 
 Residual validation gives the clearest positive result. Starting from a
 cross-fitted EBM using the paper-selected features
@@ -56,9 +62,10 @@ The resulting order is:
    physical associations have the same sign. Remaining imbalance is 1.068 and
    overlap 0.478, so it is not intervention-ready.
 2. **Bad-curvature/compression variance — observational-physical.** It has the
-   strongest raw correlation, a resolved common-scale adjusted contrast, and a
-   residual gain that resolves in five of seven fold assignments. Severe
-   imbalance (3.747) and overlap 0.246 still preclude a causal sign.
+   strongest raw correlation and a resolved registered-fold common-scale
+   adjusted contrast, but that adjusted interval resolves in only two of seven
+   fold assignments. Its residual gain separately resolves in five of seven.
+   Severe imbalance (3.747) and overlap 0.246 still preclude a causal sign.
 3. **Localized peak and $f_{\rm stab}$ (tied) — observational-physical.** The
    localized peak has strong raw and matched association but unresolved adjusted
    and registered-fold residual contrasts, severe imbalance (4.151), and overlap
@@ -66,7 +73,8 @@ The resulting order is:
    information beyond the weaker $f_Q$ baseline, but that residual point is not
    comparable because $f_{\rm stab}$ is already inside the full paper-selected
    baseline. It therefore receives no full-baseline residual point. Both score
-   2; the CSV uses candidate name only for deterministic display order.
+   1 after sign agreement is credited only when the adjusted interval resolves;
+   the CSV uses candidate name only for deterministic display order.
 
 This physical ranking differs from upstream model stability. S12 found member
 bootstrap recurrence of **0.27–0.60** for geodesic/compression, versus
@@ -99,7 +107,7 @@ Because this panel contains exactly one tube per equilibrium, grouping by
 `equilibrium_files` is a forward-compatible guarantee rather than a numerical
 correction here; the grouped and row-level resamples coincide on these rows.
 
-The registered run is `physical-validation-panel1000`. It took **85.83 s** on
+The registered run is `physical-validation-panel1000`. It took **102.09 s** on
 CPU. The committed [manifest](S13_artifacts/manifest.json) records seed
 20260825, all 1,000 parent row IDs, source hashes, exact command, package
 versions, output hashes, dataset SHA-256
@@ -112,9 +120,10 @@ run model inference.
 The exact production command was:
 
 ```bash
-MPLCONFIGDIR=/private/tmp/mpl-s13-final-head \
-XDG_CACHE_HOME=/private/tmp/cache-s13-final-head \
-.venv-xai/bin/python scripts/xai_s13_physical_validation.py
+.venv-xai/bin/python scripts/xai_s13_physical_validation.py \
+  --config configs/xai/S13_physical_validation.json \
+  --output-dir output/xai/S13/physical-validation-panel1000 \
+  --published-dir reports/xai/S13_artifacts
 ```
 
 The pilot command was:
@@ -136,9 +145,9 @@ bootstrap draws of complete `equilibrium_files`. All, stable/near-floor, and
 unstable strata are separate. The fixed panel has only 23 near-floor rows, so
 that stratum is retained in the artifact but not used for a headline claim.
 
-The artifacts contain 239 nominal 95% intervals: 72 associations, 72 matched
-effects, 32 AIPW sensitivities, 42 registered residual comparisons, and 21
-fold-assignment sensitivity rows. They are not
+The artifacts contain 267 nominal 95% intervals: 72 associations, 72 matched
+effects, 32 AIPW sensitivities, 28 AIPW fold-assignment checks, 42 registered
+residual comparisons, and 21 residual fold-assignment checks. They are not
 adjusted for multiple comparisons, and the geodesic headline was selected from
 the tested fixed-panel candidates. The secondary tables are therefore
 exploratory; an isolated interval excluding zero should not be read as a new
@@ -166,8 +175,9 @@ retains its candidate contrast, distance, outcome differences, and the maximum
 standardized mean difference before and after matching.
 
 There are 185–215 disjoint pairs per candidate. Matching does not repair the
-main imbalance: three candidates worsen the largest standardized difference,
-and the best, geodesic-curvature/compression, improves only from 1.206 to 1.068.
+main imbalance: two candidates worsen the largest standardized difference.
+$f_{\rm stab}$ improves from 2.321 to 2.192, while the best,
+geodesic-curvature/compression, improves only from 1.206 to 1.068.
 The balance failure is part of the result, not a reason to narrow the cohort.
 Uncertainty resamples the disjoint matched-equilibrium pairs; each pair contains
 two unique `equilibrium_files` and none is reused within a candidate analysis.
@@ -194,6 +204,18 @@ recorded. Intervals resample complete equilibria from the cross-fitted influence
 values. Every artifact row records the production code path
 `in_repo_logistic_irls_plus_common_scale_ridge`; there is no optional
 scikit-learn branch.
+
+The registered bad-curvature result is unusually close to zero and is not
+stable to fold membership. With the bootstrap draws held fixed and only the
+equilibrium fold assignment changed, its point estimate spans **+0.0799 to
++0.8620** and its interval excludes zero in **2/7** assignments. Geodesic spans
+**+0.5393 to +0.6586** and resolves 7/7; $f_{\rm stab}$ resolves 4/7 and the
+localized peak 0/7.
+[aipw_fold_sensitivity.csv](S13_artifacts/aipw_fold_sensitivity.csv) publishes
+every assignment. The ranking CSV therefore records both the
+registered result and the fraction across assignments; second place for
+bad-curvature depends on the registered adjusted criterion, even though its
+separate residual evidence resolves more often.
 
 “Doubly robust” does not mean immune to confounding. It means the estimator can
 remain consistent if either its treatment-assignment model or its outcome model
@@ -293,6 +315,8 @@ with the observational expectation.
   previously resolved negative value was not stable to outcome-model scaling.
 - $f_{\rm stab}$ and the localized peak have unresolved adjusted all-row native
   contrasts.
+- Bad-curvature/compression has a barely resolved registered adjusted contrast,
+  but it resolves in only 2/7 equilibrium fold assignments.
 - The localized peak and bad-curvature/compression do not give resolved MSE
   gains beyond the full paper-selected fixed-panel baseline under the
   registered fold assignment; across seven assignments they resolve 4/7 and
@@ -314,7 +338,7 @@ with the observational expectation.
 | PLAN criterion | Verdict | Number or artifact |
 | --- | --- | --- |
 | “claims are graded as model-mechanistic, observational-physical, or intervention-ready” | **Pass.** | [candidate_ranking.csv](S13_artifacts/candidate_ranking.csv) grades all four candidates `observational-physical`; no candidate is `intervention-ready`. Earlier network evidence remains model-mechanistic and the prospective intervention is separately marked proposal-only. |
-| “confounding and invalid perturbations remain visible” | **Pass.** | Post-match maximum imbalance is 1.068–4.151 against a 0.5 gate; AIPW overlap is 0.232–0.478 against 0.8; every natural comparison is tagged `observed-comparison`, every row has `causal_claim_permitted=False`, and `summary.json` records `invalid_perturbations_used=false`. The GX spec requires recomputed VMEC equilibria and is not executed. |
+| “confounding and invalid perturbations remain visible” | **Pass.** | Post-match maximum imbalance is 1.068–4.151 against a 0.5 gate; across all published AIPW rows overlap is 0.214–0.505 against 0.8 (0.232–0.478 for the all-row native-output ranking rows); every natural comparison is tagged `observed-comparison`, every row has `causal_claim_permitted=False`, and `summary.json` records `invalid_perturbations_used=false`. The GX spec requires recomputed VMEC equilibria and is not executed. |
 
 The MVD is complete: task 1 covers fixed-gradient $Q$, $Q(z)$, `Q_stds`, zonal
 magnitude, matching, and AIPW sensitivity; task 3 covers residuals beyond both
@@ -370,6 +394,9 @@ or bootstrap resolution. The final full check passed **316 tests**.
   effects and intervals.
 - [doubly_robust_sensitivity.csv](S13_artifacts/doubly_robust_sensitivity.csv):
   32 AIPW sensitivity rows with overlap disclosed.
+- [aipw_fold_sensitivity.csv](S13_artifacts/aipw_fold_sensitivity.csv): 28
+  all-row native-output AIPW results over seven fold assignments, with the
+  bootstrap seed held fixed.
 - [residual_validation.csv](S13_artifacts/residual_validation.csv): 42 fixed/
   varied, baseline/candidate, regime-specific cross-fitted results.
 - [residual_fold_sensitivity.csv](S13_artifacts/residual_fold_sensitivity.csv):
@@ -397,10 +424,10 @@ with `load_review_slice_index().slice_rows(parent_rows)` before loading.
 - Recompute all 17 S12-v1 invariant features from the mapped geometry and S01
   channel IQRs; fixed drives must be exactly $(3,0.9)$.
 - Recompute all fixed-panel correlations, the 185–215 deterministic matches,
-  balance diagnostics, paired outcome differences, AIPW results, and fixed/
-  varied EBM residual fits. The slice contains `Q_avgs`, `Q_avgs_vs_z`,
-  `Q_stds`, `zonal_phi2_amplitudes`, scalar nuisances, and equilibrium IDs for
-  these rows.
+  balance diagnostics, paired outcome differences, registered and fold-swept
+  AIPW results, and fixed/varied EBM residual fits. The slice contains `Q_avgs`,
+  `Q_avgs_vs_z`, `Q_stds`, `zonal_phi2_amplitudes`, scalar nuisances, and
+  equilibrium IDs for these rows.
 - `tests/xai/test_physical_validation.py` pins the cyclic analytic signal, null
   feature, native estimand, whole-equilibrium folds/bootstrap, robust-distance
   matching, and adjusted estimator. The artifact suite pins the exact geodesic
@@ -419,6 +446,8 @@ with `load_review_slice_index().slice_rows(parent_rows)` before loading.
 - The localized unstable specification warning is fully committed: matched
   **+1.5441856155** versus common-scale adjusted **-0.0111822093
   [-0.1608632187, 0.1412527438]**.
+- The adjusted fold sweep is fully committed: bad-curvature resolves 2/7 and
+  spans **+0.0798918023 to +0.8619902219**, while geodesic resolves 7/7.
 
 ### Not checkable off the researcher's machine, and why
 
