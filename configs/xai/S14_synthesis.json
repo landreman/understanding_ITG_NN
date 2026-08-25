@@ -1213,7 +1213,7 @@
       "hidden_intervention": "E08_LOCAL_QZ_USE",
       "cross_model_consensus": "not_supported",
       "distillation": "not_tested",
-      "Q_z": "E07_DENSITY_QZ_CONTRADICTION;E07_ATTRIBUTION_QZ_NULL",
+      "Q_z": "E07_DENSITY_QZ_CONTRADICTION",
       "zonal_flow": "not_applicable",
       "natural_experiment": "not_tested"
     },
