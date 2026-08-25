@@ -1,0 +1,104 @@
+{
+  "anchors": {
+    "count": 3,
+    "selection": "one typical unstable matched pair from each of three represented equilibrium classes, excluding S11 common-mode failures and extreme Q_stds"
+  },
+  "compute_estimate": {
+    "basis": "planning envelope, not a measured Perlmutter pilot: 0.5 node-hour per standard GX run and 2.0 per doubled-resolution/longer-average run; benchmark one standard and one convergence case before allocation",
+    "contingency_fraction": 0.25,
+    "convergence_node_hours": 12.0,
+    "convergence_runs": 6,
+    "standard_node_hours": 12.0,
+    "standard_runs": 24,
+    "total_perlmutter_node_hours": 32.5,
+    "vmec_search_node_hours": 2.0
+  },
+  "controls": [
+    "VMEC continuation returning to the anchor boundary (zero-step null)",
+    "candidate-orthogonal continuation with the primary invariant constrained",
+    "paired plus/minus steps of equal boundary-coefficient norm",
+    "original anchor GX rerun to measure numerical repeatability"
+  ],
+  "decision_gate": "Do not generate equilibria or launch GX until the researcher approves this intervention and budget.",
+  "decisive_effect_threshold": {
+    "interpretation": "the 24-run design must resolve both thresholds; these are prospective decision thresholds, not effects measured in S13",
+    "minimum_absolute_native_log_Q_response": 0.2,
+    "noise_requirement": "also exceed two combined Q_stds standard errors"
+  },
+  "drives": [
+    [
+      3.0,
+      0.9
+    ],
+    [
+      4.5,
+      0.9
+    ]
+  ],
+  "gx_resolution_and_convergence": [
+    "use the dataset's registered periodic flux-tube setup for the standard run",
+    "repeat all anchor controls and the largest response in each direction at doubled parallel and perpendicular resolution",
+    "double nonlinear averaging time and require the response to exceed two combined Q_stds standard errors",
+    "require sign agreement and <=20% effect-size drift between standard and convergence runs"
+  ],
+  "interventions": [
+    {
+      "candidate": "geodesic_curvature_compression",
+      "construction": "For each anchor, continue VMEC boundary coefficients in both signs while recomputing force-balanced equilibria; optimize the named invariant direction and constrain the competing candidate, log_f_Q, aspect, iota, shat, beta proxy, and nfp to their anchor tolerances. Never edit GX geometry channels independently.",
+      "expected_native_log_Q_sign": 1,
+      "observed_separability_diagnostics": {
+        "linear_r2_exposure_from_registered_nuisances": 0.5788966896178127,
+        "partial_spearman_with_native_target_given_log_f_Q": 0.3342633314830649,
+        "registered_nuisance_columns": 15,
+        "spearman_with_log_f_Q": 0.4218581178581179
+      },
+      "validity_tag": "plausibly-local"
+    },
+    {
+      "candidate": "bad_curvature_compression",
+      "construction": "For each anchor, continue VMEC boundary coefficients in both signs while recomputing force-balanced equilibria; optimize the named invariant direction and constrain the competing candidate, log_f_Q, aspect, iota, shat, beta proxy, and nfp to their anchor tolerances. Never edit GX geometry channels independently.",
+      "expected_native_log_Q_sign": 1,
+      "observed_separability_diagnostics": {
+        "linear_r2_exposure_from_registered_nuisances": 0.3440922918682018,
+        "partial_spearman_with_native_target_given_log_f_Q": 0.15920134867310115,
+        "registered_nuisance_columns": 15,
+        "spearman_with_log_f_Q": 0.9531723382801396
+      },
+      "validity_tag": "plausibly-local"
+    }
+  ],
+  "observed_candidate_separability": {
+    "bad_curvature_compression": {
+      "linear_r2_exposure_from_registered_nuisances": 0.3440922918682018,
+      "partial_spearman_with_native_target_given_log_f_Q": 0.15920134867310115,
+      "registered_nuisance_columns": 15,
+      "spearman_with_log_f_Q": 0.9531723382801396
+    },
+    "f_Q_integrand_w25_peak": {
+      "linear_r2_exposure_from_registered_nuisances": 0.9581271955876193,
+      "partial_spearman_with_native_target_given_log_f_Q": 0.15752294975084172,
+      "registered_nuisance_columns": 16,
+      "spearman_with_log_f_Q": 0.9524282444282444
+    },
+    "f_stab": {
+      "linear_r2_exposure_from_registered_nuisances": 0.7231199957043775,
+      "partial_spearman_with_native_target_given_log_f_Q": 0.03951578288731267,
+      "registered_nuisance_columns": 15,
+      "spearman_with_log_f_Q": 0.7885866205866207
+    },
+    "geodesic_curvature_compression": {
+      "linear_r2_exposure_from_registered_nuisances": 0.5788966896178127,
+      "partial_spearman_with_native_target_given_log_f_Q": 0.3342633314830649,
+      "registered_nuisance_columns": 15,
+      "spearman_with_log_f_Q": 0.4218581178581179
+    }
+  },
+  "pre_budget_feasibility_gate": {
+    "failure_action": "replace or drop a direction and return to the researcher; do not spend the proposed GX budget on an unrealizable constrained direction",
+    "maximum_each_constrained_quantity_drift_panel_iqr": 0.1,
+    "minimum_candidate_separation_panel_iqr": 0.5,
+    "procedure": "Run VMEC-only boundary-coefficient Jacobian searches at all three anchors; both signed continuations must converge to force-balanced equilibria before any GX allocation is approved.",
+    "required_before_researcher_budget_approval": true
+  },
+  "status": "proposal_only_researcher_approval_required"
+}
