@@ -388,7 +388,7 @@
       "source_step": "S06b",
       "source_artifact": "reports/xai/S06b_artifacts/channel_consensus.csv",
       "selector": {"function": "invariant_tilde_f", "method": "ig_low_pass", "gradient_set": "varied", "stratum": "unstable", "channel_name": "gbdrift0_over_shat"},
-      "source_fields": ["median_signed", "median_absolute", "sign_agreement", "estimand", "validity_tag", "feature_claims_permitted"],
+      "source_fields": ["median_signed", "median_absolute", "sign_agreement", "estimand", "validity_tag", "feature_claims_permitted", "estimator_backend"],
       "method_family": "gradient_path",
       "direction": "supports",
       "function_scope": "invariant_tilde_f",
