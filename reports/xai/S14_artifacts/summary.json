@@ -1,12 +1,11 @@
 {
-  "all_causal_statements_name_executed_interventions": true,
   "all_headlines_have_two_independent_method_families": true,
   "all_indexed_runs_recreatable_from_manifests": true,
+  "all_physical_causal_statements_name_executed_interventions": true,
   "candidate_count": 11,
   "canonical_function": "invariant_tilde_f",
-  "causal_statement_count": 0,
   "estimand": "native max(log Q, -2)",
-  "evidence_record_count": 57,
+  "evidence_record_count": 64,
   "fixed_panel_rows": 1000,
   "fixed_stable_or_near_floor_rows": 23,
   "fixed_unstable_rows": 977,
@@ -19,6 +18,7 @@
   ],
   "gx_outputs_computed": false,
   "headline_claim_count": 9,
+  "indexed_provenance_record_count": 19,
   "indexed_upstream_run_count": 18,
   "matrix_status_counts": {
     "contradicted": 2,
@@ -27,6 +27,7 @@
     "unresolved": 1
   },
   "model_outputs_computed": false,
+  "physical_causal_statement_count": 0,
   "review_slice_used_for_development_or_reporting": false,
   "run_id": "synthesis-registered-evidence-s01-s13",
   "smallest_next_calculation": {

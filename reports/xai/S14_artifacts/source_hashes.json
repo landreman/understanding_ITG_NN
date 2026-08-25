@@ -51,6 +51,10 @@
       "path": "reports/xai/S14_artifacts/upstream_manifests/S03_primary.json",
       "sha256": "6fc4edcde9a0c61df424c4fe61d0e651984997a48de8f04756fb5da77a2f52fc"
     },
+    "S03_PUBLICATION_VERIFICATION": {
+      "path": "reports/xai/S03_artifacts/review3_manifest.json",
+      "sha256": "df9b4a10aa5c68f75481096a46278b1de6d6249d2ba543ccbdcaa49643dc9951"
+    },
     "S04": {
       "path": "reports/xai/S04_artifacts/manifest.json",
       "sha256": "8a509ee7fb2c95cc655eecfb4b75b1b018f029933c0c88b97bd06c5ab2320d60"

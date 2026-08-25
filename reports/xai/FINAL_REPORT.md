@@ -260,7 +260,7 @@ plus the S03 publication-verification manifest that pins the corrected ladder
 CSV by content hash.
 
 The [S14 manifest](S14_artifacts/manifest.json) records exact command, config,
-seed, Python and package versions, wall time (**0.718 s**), Git commit/tree,
+seed, Python and package versions, wall time (**1.088 s**), Git commit/tree,
 output hashes, all source hashes, and these immutable fingerprints:
 
 - external dataset SHA-256:
