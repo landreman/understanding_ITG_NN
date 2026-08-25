@@ -320,7 +320,13 @@ with the observational expectation.
 - [Contradictory cases](S13_artifacts/contradictory_cases.csv) gives five
   supporting and five contradicting matched pairs for each candidate. The
   negative cases were selected by the same signed population rule as the
-  supporting cases and are given equal space.
+  supporting cases and are given equal space. They are not balanced on match
+  quality: computed from the committed pair table, supporting exemplars sit at
+  the **87th–94th nuisance-distance percentiles**, with 19/20 in the
+  worst-matched quartile, while contradicting exemplars sit at the **7th–32nd
+  percentiles**, with none above the 32nd. The table therefore illustrates the
+  confounding pattern—large supporting differences occur where comparison
+  quality is worst—as much as it illustrates candidate physics.
 - No candidate passes the 0.5 post-match balance threshold or the 0.8 overlap
   threshold; none is intervention-ready.
 - The localized $f_Q$ peak changes from a positive both-unstable matched

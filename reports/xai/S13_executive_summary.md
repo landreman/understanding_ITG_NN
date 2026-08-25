@@ -187,7 +187,12 @@ consistently learned signal is nevertheless real physics; it does not call that
 signal the ensemble's most stable rule.
 
 Five supporting and five contradicting matched pairs for every candidate are
-published; contradictory cases were not discarded.
+published; contradictory cases were not discarded. These examples are not
+equally well matched: the supporting rows lie at the **87th–94th percentiles**
+of nuisance distance and 19/20 are in the worst-matched quartile, whereas the
+contradicting rows lie at the **7th–32nd percentiles** and none exceeds the
+32nd. The exemplar table therefore exposes leftover confounding rather than
+providing balanced case studies of a candidate effect.
 
 ## The proposed decisive GX experiment
 
