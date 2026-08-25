@@ -131,17 +131,27 @@ must belong to a candidate the claim explicitly names. The register separately
 retains all method families consulted, including qualifiers, contradictions,
 context, and null results.
 
-| ID | conclusion | independent families | representative machine-readable evidence |
-|---|---|---:|---|
-| C01 | The networks encode and use the paper's $f_Q$/$f_{\rm stab}$ family, without one scalar uniquely owning the credit. | 2 | exact hidden-direction removal in [S04](S04_artifacts/encoded_vs_used.csv); hidden concept edits in [S08](S08_artifacts/tcav_use.csv); feature recurrence in [S12](S12_artifacts/term_recurrence.csv) |
-| C02 | Cross-channel alignment and low-frequency spatial structure matter, but order cannot yet be separated from the low-frequency envelope. | 4 | registered perturbation ladder in [S03](S03_artifacts/ladder_summary.csv); low-pass attribution in [S06b](S06b_artifacts/channel_consensus.csv); hidden co-location edits in [S08](S08_artifacts/tcav_use.csv) |
-| C03 | Members share a coarse channel/representation story, not one common signed position-by-position mechanism. | 3 | member attribution agreement in [S06b](S06b_artifacts/member_agreement.csv); signed spatial null in [S07](S07_artifacts/spatial_alignment.csv); representation similarity and motifs in [S10](S10_artifacts/cohort_comparison.csv) |
-| C04 | Broad concept decoding reaches about 91% and a compact 17-feature invariant vocabulary about 86%; neither is an exact formula. | 2 | concept completeness in [S09](S09_artifacts/completeness.csv); held-out distillation and the 13/64 unit limit in [S12](S12_artifacts/fidelity.csv), with [nested subsets](S12_artifacts/subset_fidelity.csv) |
-| C05 | All four physical candidates are associated with the same native GX output; no physical causal effect has been measured. | 2 | grouped-bootstrap native-output rank correlations in [S13 associations](S13_artifacts/fixed_associations.csv); adjusted and matching checks on that same outcome in [S13 rankings](S13_artifacts/candidate_ranking.csv) |
-| C06 | Geodesic/compression is the highest-value next physical target, not a causal winner. | 2 | native GX rank association plus fold-robust adjusted/residual checks in [S13](S13_artifacts/candidate_ranking.csv); member-variable hidden use and recurrence are retained as qualifiers from [S08](S08_artifacts/tcav_use.csv) and [S12](S12_artifacts/term_recurrence.csv) |
-| C07 | The evidence contradicts a specific learned GX zonal-flow mechanism. | 3 | hidden probe and use failures in [S08](S08_artifacts/probe_scores.csv) and [S08 use](S08_artifacts/tcav_use.csv); the observed association in [S07](S07_artifacts/zonal_association.csv) corroborates the distinct conjunct that the association is nonspecific |
-| C08 | Ensemble spread ranks error but is not a calibrated confidence interval or guaranteed bound. | 2 | spread/error association in [S11](S11_artifacts/spread_error_associations.csv); common-mode failure audit in [S11](S11_artifacts/failure_categories.csv) |
-| C09 | The evidence contradicts direct shared signed focus where GX transports heat along $z$. | 2 | signed density and attribution comparisons in [S07](S07_artifacts/spatial_alignment.csv); positive-but-limited local hidden probes and edits in [S08](S08_artifacts/probe_scores.csv) and [S08 use](S08_artifacts/tcav_use.csv) are qualifiers and do not count toward the rejection |
+| ID | conclusion | claim-aligned families | source steps | max families on one conjunct | representative machine-readable evidence |
+|---|---|---:|---:|---:|---|
+| C01 | The networks encode and use the paper's $f_Q$/$f_{\rm stab}$ family, without one scalar uniquely owning the credit. | 2 | 3 | 1 | exact hidden-direction removal in [S04](S04_artifacts/encoded_vs_used.csv); hidden concept edits in [S08](S08_artifacts/tcav_use.csv); feature recurrence in [S12](S12_artifacts/term_recurrence.csv) |
+| C02 | Cross-channel alignment and low-frequency spatial structure matter, but order cannot yet be separated from the low-frequency envelope. | 4 | 3 | 2 | registered perturbation ladder in [S03](S03_artifacts/ladder_summary.csv); low-pass attribution in [S06b](S06b_artifacts/channel_consensus.csv); hidden co-location edits in [S08](S08_artifacts/tcav_use.csv) |
+| C03 | Members share a coarse channel/representation story, not one common signed position-by-position mechanism. | 3 | 3 | 1 | member attribution agreement in [S06b](S06b_artifacts/member_agreement.csv); signed spatial null in [S07](S07_artifacts/spatial_alignment.csv); representation similarity and motifs in [S10](S10_artifacts/cohort_comparison.csv) |
+| C04 | Broad concept decoding reaches about 91% and a compact 17-feature invariant vocabulary about 86%; neither is an exact formula. | 2 | 2 | 1 | concept completeness in [S09](S09_artifacts/completeness.csv); held-out distillation and the 13/64 unit limit in [S12](S12_artifacts/fidelity.csv), with [nested subsets](S12_artifacts/subset_fidelity.csv) |
+| C05 | All four physical candidates are associated with the same native GX output; no physical causal effect has been measured. | 2 | 1 | 1 | grouped-bootstrap native-output rank correlations in [S13 associations](S13_artifacts/fixed_associations.csv); adjusted and matching checks on that same outcome in [S13 rankings](S13_artifacts/candidate_ranking.csv) |
+| C06 | Geodesic/compression is the highest-value next physical target, not a causal winner. | 2 | 1 | 1 | native GX rank association plus fold-robust adjusted/residual checks in [S13](S13_artifacts/candidate_ranking.csv); member-variable hidden use and recurrence are retained as qualifiers from [S08](S08_artifacts/tcav_use.csv) and [S12](S12_artifacts/term_recurrence.csv) |
+| C07 | The evidence contradicts a specific learned GX zonal-flow mechanism. | 3 | 2 | 1 | hidden probe and use failures in [S08](S08_artifacts/probe_scores.csv) and [S08 use](S08_artifacts/tcav_use.csv); the observed association in [S07](S07_artifacts/zonal_association.csv) corroborates the distinct conjunct that the association is nonspecific |
+| C08 | Ensemble spread ranks error but is not a calibrated confidence interval or guaranteed bound. | 2 | 1 | 1 | spread/error association in [S11](S11_artifacts/spread_error_associations.csv); common-mode failure audit in [S11](S11_artifacts/failure_categories.csv) |
+| C09 | The evidence contradicts direct shared signed focus where GX transports heat along $z$. | 2 | 1 | 1 | signed density and attribution comparisons in [S07](S07_artifacts/spatial_alignment.csv); positive-but-limited local hidden probes and edits in [S08](S08_artifacts/probe_scores.csv) and [S08 use](S08_artifacts/tcav_use.csv) are qualifiers and do not count toward the rejection |
+
+The named method families show methodological variety, but they do not by
+themselves prove independence. Only **5/9** headlines span two or more source
+steps; C05/C06 draw both counted families from S13, C08 from S11, and C09 from
+one S07 artifact. Only C02 has two counted method families on the same declared
+conjunct; the other compound claims combine evidence for distinct
+sub-propositions. The claim register publishes the full per-conjunct family
+mapping, distinct source steps/artifacts, and `gate_margin`. Under a strict
+reading of PLAN's word “independent,” the criterion is therefore not
+demonstrated for every headline.
 
 ### Direction-label audit after review
 
@@ -171,8 +181,9 @@ config and ledger. Relative to that first response, the complete revision is:
 headline counts no longer depend on any of these row labels. C06 counts only the
 two S13 physical-observation families; C08 records `error-ranking utility` and
 `not a calibrated guarantee` as distinct conjuncts; and C09 counts only the two
-S07 families, with both S08 records marked as qualifiers. Thus a future label
-revision cannot silently make a headline pass.
+S07 families, with both S08 records marked as qualifiers. Thus a future
+candidate-level `direction` revision cannot silently make a headline pass;
+claim-alignment judgements remain a separate, disclosed input.
 
 None of these nine rows is a physical causal statement—the register names that
 column `physical_causal_statement`. S03, S04, S06, and S08
@@ -297,7 +308,7 @@ plus the S03 publication-verification manifest that pins the corrected ladder
 CSV by content hash.
 
 The [S14 manifest](S14_artifacts/manifest.json) records exact command, config,
-seed, Python and package versions, wall time (**0.675 s**), Git commit/tree,
+seed, Python and package versions, wall time (**0.768 s**), Git commit/tree,
 output hashes, all source hashes, and these immutable fingerprints:
 
 - external dataset SHA-256:
@@ -345,7 +356,7 @@ corrected outputs.
 
 Tests were written before implementation. The first focused run failed in six
 intended places while the synthesis validators were stubs. The final focused
-suite passes 26 tests, including a cyclic toy ledger with a known relevant
+suite passes 28 tests, including a cyclic toy ledger with a known relevant
 feature and an explicit null control, exact source-row reproduction for all 64
 evidence records, artifact hashes, numerical headline pins, and full manifest
 resolution. A real pilot-run test checks finalization and `--no-publish`, and
@@ -354,7 +365,7 @@ traceable grouping unit. Fixture tests also require every evidence artifact to
 have a manifest pin and require claim alignment/conjunct mappings to cover the
 exact linked evidence set.
 
-Three deliberate mutations were each confirmed to turn the suite red and were
+Five deliberate mutations were each confirmed to turn the suite red and were
 then reverted:
 
 1. made the claim gate read candidate-level `direction` instead of per-claim
@@ -365,20 +376,26 @@ then reverted:
    failed;
 3. disabled the error for evidence artifacts with no manifest content-hash pin;
    `test_manifest_pin_guard_rejects_unpinned_evidence` failed.
+4. disabled the `evidence_alignment` vocabulary whitelist;
+   `test_unknown_claim_alignment_is_rejected` failed;
+5. disabled the requirement that every declared candidate have a corroborating
+   claim-aligned link;
+   `test_every_declared_candidate_needs_claim_aligned_evidence` failed.
 
 The earlier production round also turned red when the physical-intervention
-guard and reproducibility-index manifest hash check were bypassed. No attempted
-mutation stayed green after the review fixes.
+guard and reproducibility-index manifest hash check were bypassed. The third
+automated review found items 4 and 5 before those tests existed; both exact
+mutations are now covered rather than being omitted from this record.
 
 Final local commands and outcomes:
 
 ```text
 .venv-xai/bin/python -m pytest tests/xai/test_synthesis.py \
   tests/xai/test_synthesis_script.py tests/xai/test_synthesis_artifacts.py -q
-26 passed
+28 passed
 
 source .venv-xai/bin/activate && make check
-342 passed
+344 passed
 ```
 
 ## Interpretation limits
@@ -402,14 +419,18 @@ source .venv-xai/bin/activate && make check
 ## Acceptance criteria
 
 1. **Every headline conclusion links to machine-readable evidence and at least
-   two independent method families.** Pass. The
-   [claim register](S14_artifacts/claim_register.csv) has nine headline rows;
-   every `corroborating_method_family_count` is at least 2 after filtering by
-   explicit per-evidence claim alignment and candidate scope, and every source
-   is a committed CSV. The register records which conjunct each link addresses;
-   record-level direction is not an acceptance input.
-   Exact source selectors and values are in the 64-row
-   [evidence ledger](S14_artifacts/evidence_ledger.csv).
+   two independent method families.** Qualified failure under the strict
+   reading of “independent.” All **9/9** headlines have at least two
+   claim-aligned method-family labels and committed machine-readable sources,
+   but only **5/9** span at least two source steps and only **1/9** has two
+   families corroborating the same declared conjunct. C05/C06 share S13, C08
+   shares S11, and C09's counted evidence shares one S07 artifact. The
+   [claim register](S14_artifacts/claim_register.csv) publishes per-conjunct
+   families, distinct source steps/artifacts, and gate margins; record-level
+   direction is not an acceptance input. Exact selectors and values are in the
+   64-row [evidence ledger](S14_artifacts/evidence_ledger.csv). Whether
+   differently named families within one run satisfy PLAN's intended
+   independence is a researcher decision, not something S14 silently assumes.
 2. **Every causal statement identifies its intervention.** Pass. The claim
    register contains zero physical causal statements because no physical
    intervention was executed. Every model diagnostic in the ledger records its named

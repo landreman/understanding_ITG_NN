@@ -10,7 +10,9 @@ simulations. S14 joins those answers without running a new model or simulation.
 
 It builds a machine-readable evidence matrix with 11 candidate explanations and
 all 11 evidence types required by the plan. Every headline conclusion has at
-least two independent analysis families behind it. Every source number can be
+least two claim-aligned method-family labels, but that is not the same as
+independence: only 5/9 headlines span two source steps, and only C02 has two
+families corroborating the same sub-proposition. Every source number can be
 traced to an exact row in a committed CSV, and every production run from S00 to
 S13 has a hash-checked manifest in the reproducibility index.
 
@@ -131,8 +133,9 @@ The committed S14 package contains:
 - a [64-record evidence ledger](S14_artifacts/evidence_ledger.csv) with exact
   source selectors and values;
 - a [nine-headline claim register](S14_artifacts/claim_register.csv), with at
-  least two explicitly claim-aligned method families per claim and the conjunct
-  each evidence item addresses;
+  least two explicitly claim-aligned method-family labels per claim, plus each
+  conjunct, source step/artifact count, and gate margin so the limits of
+  independence are visible;
 - an [18-run/19-record provenance index](S14_artifacts/reproducibility_index.csv),
   with manifest paths, the S03 publication verification, SHA-256 hashes, and an
   explicit content-hash pin for every evidence artifact. Seventeen run

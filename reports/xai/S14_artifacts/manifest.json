@@ -2816,22 +2816,22 @@
     "sha256": "9d8fa52f93f2782ad9948a38bf46943c0cd6df78cd08b94a006dad4e06c1c8ad"
   },
   "device": "cpu",
-  "git_commit": "d99afe7942b107eba84f23e2e303dc4313fb38c9",
+  "git_commit": "40f24351d1e552672a9b07d7395a84d6027fe70d",
   "git_dirty": true,
   "git_tracked_dirty": true,
-  "git_tree": "f82678465ff1f2cdb1446b67967743a6c02ce247",
+  "git_tree": "368b2c41fedb7d211439058769d06ac40a8a8d6a",
   "gradient_set": "synthesis of S01 registered fixed and varied panels",
   "gx_outputs_computed": false,
   "member_ids": [],
   "model_outputs_computed": false,
   "output_hashes": {
-    "claim_register.csv": "33f3fdf89dc41ce81ea3aa0ba5ca2183dcb6c33cf3e742ce589f03a25bfa9ca4",
-    "evidence_ledger.csv": "9f7a3d478993c4ba7a7cd9959a7962581608f101a2d385b0958572ae90ff48dc",
+    "claim_register.csv": "d4af0cd237256f15f4419bed41c67a5ed6ef466b98eeaffce666dce830bec860",
+    "evidence_ledger.csv": "7e3200841b775ccb0baf9d85ec081720423a7c24973384f048d350f3ce578aa9",
     "evidence_matrix.csv": "00b84e2207b8b802d6e85e12f891b0689127c78a15217e1392ed8a5051ddf8b9",
     "next_experiments.csv": "276440d37dabae79b9fa2fb76c977dbbb4787361cf7ea7b372eda427ebd61b11",
     "reproducibility_index.csv": "80b85097df659afc077138ebc750a8dd4e78b1af65b5fd80b15a71a3bef8ae89",
     "source_hashes.json": "377a3e00c881bbb16e122c9cf0b9b6415f0b8728522abbd9cf146d3f6682dc78",
-    "summary.json": "8932e4c0a3aa97af4e524f7696ade96fa6788a9d8d4ccba2703cd6636513a52d",
+    "summary.json": "c439e13575e45975b7d98e9e9b725c64b248e67016e4e8886a28f5603ae8d5bd",
     "upstream_manifest_S00.json": "b5108926fabfe46ee530115bcd89de11d0a58d25a9c7238fd2dd6d101b20f69c",
     "upstream_manifest_S01.json": "acb2da750e6418d697ddb332727bf1eb19197034d161181d240c121eb9bbfbeb",
     "upstream_manifest_S02_ORIGINAL.json": "edcba9af6047e295f1a2f49337d4f45162e408fa6219006ab65630e27533f1b1",
@@ -2860,6 +2860,7 @@
   },
   "review_slice_used": false,
   "row_ids": [],
+  "run_id": "synthesis-registered-evidence-s01-s13",
   "seed": 20260825,
   "source_evidence_artifact_count": 21,
   "source_manifest_count": 19,
@@ -2967,5 +2968,5 @@
       }
     }
   },
-  "wall_time_seconds": 0.6753389169898583
+  "wall_time_seconds": 0.7676947089930763
 }

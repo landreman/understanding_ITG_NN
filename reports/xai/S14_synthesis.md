@@ -14,7 +14,10 @@ or GX outputs.
 ## Acceptance criteria
 
 - Every headline conclusion links to machine-readable evidence and at least two
-  independent method families: pass, verified for all nine rows in
+  independent method families: qualified failure under the strict reading of
+  “independent.” All 9/9 rows have two claim-aligned method-family labels, 5/9
+  span two source steps, and only 1/9 has two families on the same conjunct.
+  The exact audit is in
   [claim_register.csv](S14_artifacts/claim_register.csv).
 - Every causal statement identifies its intervention: pass. There are zero
   physical causal statements; every executed model diagnostic and the

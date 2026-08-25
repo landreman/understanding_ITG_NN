@@ -1,5 +1,5 @@
 {
-  "all_headlines_have_two_independent_method_families": true,
+  "all_headlines_have_two_claim_aligned_method_families": true,
   "all_indexed_runs_recreatable_from_manifests": false,
   "all_physical_causal_statements_name_executed_interventions": true,
   "candidate_count": 11,
@@ -18,6 +18,8 @@
   ],
   "gx_outputs_computed": false,
   "headline_claim_count": 9,
+  "headline_claims_with_two_corroborating_source_steps": 5,
+  "headline_claims_with_two_families_on_one_conjunct": 1,
   "indexed_provenance_record_count": 19,
   "indexed_upstream_run_count": 18,
   "matrix_status_counts": {
