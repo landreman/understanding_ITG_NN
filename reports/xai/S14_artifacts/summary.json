@@ -1,0 +1,51 @@
+{
+  "all_headlines_have_two_claim_aligned_method_families": true,
+  "all_indexed_runs_recreatable_from_manifests": false,
+  "all_physical_causal_statements_name_executed_interventions": true,
+  "candidate_count": 11,
+  "canonical_function": "invariant_tilde_f",
+  "estimand": "native max(log Q, -2)",
+  "evidence_record_count": 64,
+  "fixed_panel_rows": 1000,
+  "fixed_stable_or_near_floor_rows": 23,
+  "fixed_unstable_rows": 977,
+  "function_scopes_separated": [
+    "original_f",
+    "ensemble_mean",
+    "phase_average_bar_f",
+    "invariant_tilde_f",
+    "observed_GX"
+  ],
+  "gx_outputs_computed": false,
+  "headline_claim_count": 9,
+  "headline_claims_with_two_corroborating_source_steps": 5,
+  "headline_claims_with_two_families_on_one_conjunct": 1,
+  "indexed_provenance_record_count": 19,
+  "indexed_upstream_run_count": 18,
+  "matrix_status_counts": {
+    "contradicted": 2,
+    "regime-dependent": 3,
+    "supported": 5,
+    "unresolved": 1
+  },
+  "model_outputs_computed": false,
+  "physical_causal_statement_count": 0,
+  "review_slice_used_for_development_or_reporting": false,
+  "run_id": "synthesis-registered-evidence-s01-s13",
+  "smallest_next_calculation": {
+    "calculation": "At three typical unstable anchors, compute VMEC boundary-coefficient Jacobians and search both signed directions for each candidate while recomputing force-balanced equilibria.",
+    "decision_gate": "researcher approval required before external compute",
+    "estimated_cost": "2 Perlmutter node-hours planning allowance; no GX runs",
+    "experiment_id": "N01_VMEC_JACOBIAN_FEASIBILITY",
+    "minimum_success": "candidate movement >= 0.5 panel IQR and every registered constraint drift <= 0.1 panel IQR in both signs at all three anchors",
+    "priority": 1,
+    "question": "Can equilibrium-consistent boundary changes move geodesic/compression and bad-curvature/compression independently enough to test them?",
+    "validity_tag_if_run": "plausibly-local until equilibrium checks pass; then equilibrium-consistent intervention candidate",
+    "why_information_gain_is_high": "It tests whether the proposed causal intervention exists before any GX expenditure; failure immediately removes or replaces an arm."
+  },
+  "step": "S14",
+  "synthesis_kind": "registered committed evidence only; no new model or GX computation",
+  "varied_panel_rows": 1000,
+  "varied_stable_or_near_floor_rows": 240,
+  "varied_unstable_rows": 760
+}
