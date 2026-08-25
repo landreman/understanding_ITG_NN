@@ -7,4 +7,6 @@
 # against this repository's models in .venv-xai, and record the check in the
 # step report.
 captum==0.9.0
+interpret-core==0.7.8
+numpy==1.26.4
 scipy==1.13.1

@@ -1,0 +1,18 @@
+feature_name,formula,source_vocabulary,cyclic_reduction,validity_tag,version
+a_over_LT,a/L_T,drive,invariant,observed-comparison,S12-v1
+a_over_Ln,a/L_n,drive,invariant,observed-comparison,S12-v1
+log_f_Q,log mean((H(cvdrift)+0.2)|grad x|^3/B),paper,invariant,observed-comparison,S12-v1
+f_stab,mean((H(gbdrift)+0.4)|grad x|/sqrt(B)),paper,invariant,observed-comparison,S12-v1
+log_FSA_grad_x,log flux-surface-average(|grad x|),paper,invariant,observed-comparison,S12-v1
+bad_curvature_compression,variance(H(cvdrift)|grad x|^2/B),paper/S05/S08,invariant,observed-comparison,S12-v1
+paper_bad_curvature_feature_mean_square,mean-square(H(cvdrift)|grad x|^2/B),paper,invariant,observed-comparison,S12-v1
+geodesic_curvature_abs_mean,mean(abs(radial drift / geodesic curvature)),paper/S05/S08,invariant,observed-comparison,S12-v1
+geodesic_curvature_compression,mean(abs(geodesic curvature)|grad x|/B),paper/S05,invariant,observed-comparison,S12-v1
+parallel_roughness_iqr_scaled,"RMS_z,channel(d/dz(channel/IQR_channel))",S05,invariant,observed-comparison,S12-v1
+cross_channel_colocation,mean(H(cvdrift)|grad x|^3/B),S09,invariant,observed-comparison,S12-v1
+bmag_parallel_expected_k,expected non-DC Fourier mode of B,paper/S05,invariant,observed-comparison,S12-v1
+compression_parallel_expected_k,expected non-DC Fourier mode of |grad x|,paper/S05,invariant,observed-comparison,S12-v1
+curvature_parallel_expected_k,expected non-DC Fourier mode of cvdrift,paper/S05,invariant,observed-comparison,S12-v1
+local_shear_abs_mean,mean(abs(d/dz(gds21/gds22))),paper/S05,invariant,observed-comparison,S12-v1
+f_Q_integrand_w25_peak,max_z circular-mean_25(f_Q integrand),S05,invariant,observed-comparison,S12-v1
+geodesic_abs_w25_peak,max_z circular-mean_25(abs(geodesic curvature)),S05,invariant,observed-comparison,S12-v1

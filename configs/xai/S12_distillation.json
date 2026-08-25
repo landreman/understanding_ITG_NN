@@ -1,0 +1,49 @@
+{
+  "step": "S12",
+  "run_id": "distillation-top3-panel1000",
+  "seed": 20260824,
+  "device": "cpu",
+  "members": 3,
+  "panel_varied_rows": 1000,
+  "batch_size": 64,
+  "stable_threshold_log_Q": -1.9,
+  "feature_table_version": "S12-v1",
+  "split_unit": "equilibrium_files",
+  "outer_folds": 5,
+  "ebm_max_bins": 128,
+  "ebm_max_interaction_bins": 32,
+  "ebm_max_rounds": 300,
+  "ebm_outer_bags": 4,
+  "ebm_learning_rate": 0.03,
+  "ebm_min_samples_leaf": 3,
+  "bootstrap_replicates": 30,
+  "top_k_features": 5,
+  "registered_interactions": [
+    ["a_over_LT", "log_f_Q"],
+    ["a_over_LT", "bad_curvature_compression"],
+    ["a_over_LT", "geodesic_curvature_abs_mean"],
+    ["a_over_Ln", "bad_curvature_compression"],
+    ["log_f_Q", "geodesic_curvature_abs_mean"]
+  ],
+  "symbolic_regression": {
+    "status": "deferred_toolchain_incompatible",
+    "requested_pysr_version": "1.5.10",
+    "installed_julia_version": "1.12.6",
+    "pysr_supported_julia": "1.10.3-1.11",
+    "failure": "OpenSSL_jll ~3.0 is unsatisfiable under the forced Julia 1.12.6 registry"
+  },
+  "dataset": "/Users/mattland/20260523-01-files_for_Kosmos_interpreting_neural_networks/20250102-01_GX_stellarator_dataset.h5",
+  "checkpoint": "models/cyclic_ensemble_pre2.pt",
+  "cohorts": "reports/xai/S01_artifacts/cohorts.json",
+  "channel_scales": "reports/xai/S01_artifacts/channel_robust_scales.csv",
+  "published_dir": "reports/xai/S12_artifacts",
+  "pilot": {
+    "run_id": "pilot-top1-panel96",
+    "members": 1,
+    "panel_varied_rows": 96,
+    "outer_folds": 3,
+    "ebm_max_rounds": 100,
+    "ebm_outer_bags": 2,
+    "bootstrap_replicates": 5
+  }
+}

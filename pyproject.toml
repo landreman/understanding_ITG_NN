@@ -21,6 +21,8 @@ dependencies = [
 # pins here after a compatibility smoke test; see requirements/xai.lock.
 xai = [
   "captum==0.9.0",
+  "interpret-core==0.7.8",
+  "numpy>=1.24,<2",
   "scipy==1.13.1",
 ]
 # Test/lint tooling. CI installs this extra; it deliberately excludes the XAI
