@@ -359,7 +359,7 @@ with the observational expectation.
 | PLAN criterion | Verdict | Number or artifact |
 | --- | --- | --- |
 | “claims are graded as model-mechanistic, observational-physical, or intervention-ready” | **Pass.** | [candidate_ranking.csv](S13_artifacts/candidate_ranking.csv) grades all four candidates `observational-physical`; no candidate is `intervention-ready`. Earlier network evidence remains model-mechanistic and the prospective intervention is separately marked proposal-only. |
-| “confounding and invalid perturbations remain visible” | **Pass.** | Post-match maximum imbalance is 1.068–4.151 against a 0.5 gate; across all published AIPW rows overlap is 0.214–0.505 against 0.8 (0.232–0.478 for the all-row native-output ranking rows); every natural comparison is tagged `observed-comparison`, every row has `causal_claim_permitted=False`, and `summary.json` records `invalid_perturbations_used=false`. The GX spec requires recomputed VMEC equilibria and is not executed. |
+| “confounding and invalid perturbations remain visible” | **Pass.** | Post-match maximum imbalance is 1.068–4.151 against a 0.5 gate; across all published AIPW rows overlap is 0.214–0.505 against 0.8 (0.232–0.478 for the all-row native-output ranking rows). All 1,123 published CSV rows are tagged `observed-comparison`; every effect, adjusted-sensitivity, distance-sensitivity, and ranking row carries `causal_claim_permitted=False` (148 rows). `summary.json` records `invalid_perturbations_used=false` and `causal_claims_made=false`. The GX spec requires recomputed VMEC equilibria and is not executed. |
 
 The MVD is complete: task 1 covers fixed-gradient $Q$, $Q(z)$, `Q_stds`, zonal
 magnitude, matching, and AIPW sensitivity; task 3 covers residuals beyond both
