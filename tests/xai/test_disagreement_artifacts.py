@@ -153,3 +153,21 @@ def test_member_symmetry_and_spread_error_diagnostics_are_published():
     absolute = np.asarray([float(row["absolute_change_native"]) for row in signed])
     assert changes.min() < 0 < changes.max()
     np.testing.assert_allclose(absolute, np.abs(changes))
+
+    by_row = {}
+    for row in signed:
+        by_row.setdefault(int(row["row_id"]), []).append(float(row["signed_change_native"]))
+    diagnostics = {int(row["row_id"]): row for row in _rows("row_diagnostics.csv")}
+    assert set(by_row) == set(diagnostics)
+    for row_id, member_changes in by_row.items():
+        values = np.asarray(member_changes)
+        np.testing.assert_allclose(
+            float(diagnostics[row_id]["member_mean_absolute_shift_error_top10"]),
+            np.mean(np.abs(values)),
+            atol=1e-7,
+        )
+        np.testing.assert_allclose(
+            float(diagnostics[row_id]["symmetry_error"]),
+            np.abs(np.mean(values)),
+            atol=1e-7,
+        )
