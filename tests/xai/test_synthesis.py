@@ -186,6 +186,68 @@ def test_headline_uses_claim_alignment_not_candidate_direction() -> None:
         validate_claim_register([claim], validate_evidence_ledger(evidence))
 
 
+def test_qualifying_cross_step_evidence_does_not_inflate_corroborating_steps() -> None:
+    one = _evidence("one", "candidate", "input_attribution", "gradient_path")
+    two = _evidence("two", "candidate", "hidden_encoding", "hidden_probe")
+    qualifier = _evidence("qualifier", "candidate", "distillation", "distillation")
+    qualifier["source_step"] = "SOTHER"
+    claim = {
+        "claim_id": "C1",
+        "headline": True,
+        "claim_text": "candidate is supported with a cross-step limitation",
+        "status": "supported",
+        "scope": "toy",
+        "candidate_ids": "candidate",
+        "evidence_polarity": "supports",
+        "physical_causal_statement": False,
+        "physical_intervention": "not_causal",
+        "evidence_ids": "one;two;qualifier",
+        "evidence_alignment": {
+            "one": "corroborates",
+            "two": "corroborates",
+            "qualifier": "qualifies",
+        },
+        "evidence_conjunct": {
+            "one": "candidate support",
+            "two": "candidate support",
+            "qualifier": "scope limit",
+        },
+        "limitations": "toy only",
+    }
+    validated = validate_claim_register(
+        [claim], validate_evidence_ledger([one, two, qualifier])
+    )[0]
+    assert validated["corroborating_source_step_count"] == 1
+    assert validated["corroborating_source_steps"] == "STOY"
+
+
+def test_corroborating_families_remain_separate_across_claim_conjuncts() -> None:
+    evidence = validate_evidence_ledger(
+        [
+            _evidence("one", "candidate", "input_attribution", "gradient_path"),
+            _evidence("two", "candidate", "hidden_encoding", "hidden_probe"),
+        ]
+    )
+    claim = {
+        "claim_id": "C1",
+        "headline": True,
+        "claim_text": "compound candidate claim",
+        "status": "supported",
+        "scope": "toy",
+        "candidate_ids": "candidate",
+        "evidence_polarity": "supports",
+        "physical_causal_statement": False,
+        "physical_intervention": "not_causal",
+        "evidence_ids": "one;two",
+        "evidence_alignment": {"one": "corroborates", "two": "corroborates"},
+        "evidence_conjunct": {"one": "first conjunct", "two": "second conjunct"},
+        "limitations": "toy only",
+    }
+    validated = validate_claim_register([claim], evidence)[0]
+    assert validated["corroborating_method_family_count"] == 2
+    assert validated["maximum_corroborating_families_per_conjunct"] == 1
+
+
 def test_claim_alignment_and_conjunct_cover_exactly_the_linked_evidence() -> None:
     evidence = validate_evidence_ledger(
         [

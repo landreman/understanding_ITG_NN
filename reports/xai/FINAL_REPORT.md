@@ -356,7 +356,7 @@ corrected outputs.
 
 Tests were written before implementation. The first focused run failed in six
 intended places while the synthesis validators were stubs. The final focused
-suite passes 28 tests, including a cyclic toy ledger with a known relevant
+suite passes 30 tests, including a cyclic toy ledger with a known relevant
 feature and an explicit null control, exact source-row reproduction for all 64
 evidence records, artifact hashes, numerical headline pins, and full manifest
 resolution. A real pilot-run test checks finalization and `--no-publish`, and
@@ -365,7 +365,7 @@ traceable grouping unit. Fixture tests also require every evidence artifact to
 have a manifest pin and require claim alignment/conjunct mappings to cover the
 exact linked evidence set.
 
-Five deliberate mutations were each confirmed to turn the suite red and were
+Seven deliberate mutations were each confirmed to turn the suite red and were
 then reverted:
 
 1. made the claim gate read candidate-level `direction` instead of per-claim
@@ -381,21 +381,28 @@ then reverted:
 5. disabled the requirement that every declared candidate have a corroborating
    claim-aligned link;
    `test_every_declared_candidate_needs_claim_aligned_evidence` failed.
+6. counted a cross-step `qualifies` link in the corroborating source-step total;
+   `test_qualifying_cross_step_evidence_does_not_inflate_corroborating_steps`
+   failed;
+7. collapsed distinct claim conjuncts into one bucket when counting
+   corroborating families;
+   `test_corroborating_families_remain_separate_across_claim_conjuncts` failed.
 
 The earlier production round also turned red when the physical-intervention
 guard and reproducibility-index manifest hash check were bypassed. The third
-automated review found items 4 and 5 before those tests existed; both exact
-mutations are now covered rather than being omitted from this record.
+automated review found items 4 and 5 before those tests existed, and the fourth
+found items 6 and 7; all four exact mutations are now covered rather than being
+omitted from this record.
 
 Final local commands and outcomes:
 
 ```text
 .venv-xai/bin/python -m pytest tests/xai/test_synthesis.py \
   tests/xai/test_synthesis_script.py tests/xai/test_synthesis_artifacts.py -q
-28 passed
+30 passed
 
 source .venv-xai/bin/activate && make check
-344 passed
+346 passed
 ```
 
 ## Interpretation limits
